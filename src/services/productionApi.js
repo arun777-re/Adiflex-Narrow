@@ -9,11 +9,12 @@ export const getProductionByProcess = async (process) => {
 };
 
 export const updateProductionProcess = async (payload) => {
+  console.log("payload for update process:",payload)
   const { data } = await api.patch(
     "/production/process",
     payload
   );
-
+console.log("data comes in slices for prod:",data)
   return data;
 };
 
