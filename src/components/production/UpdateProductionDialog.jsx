@@ -25,6 +25,8 @@ const UpdateProductionDialog = ({
   process,
 }) => {
 
+  console.log("process received in dialog:", process);
+
   const dispatch = useDispatch();
 
   const { updating } = useSelector(
