@@ -2,6 +2,8 @@ import {
   Grid,
   Paper,
   Typography,
+  Box,
+  Skeleton,
 } from "@mui/material";
 
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
@@ -9,15 +11,16 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
 
-import DummyComponent from "../DummyComponent";
-
 const ProcessSummaryCards = ({
   rows = [],
   loading = false,
 }) => {
-  const pending = rows.length;
 
-  const completed = rows.filter(
+// data calculations 
+
+  const pendingOrders = rows.length;
+
+  const completedOrders = rows.filter(
     (row) => row.status === "Completed"
   ).length;
 
@@ -33,93 +36,148 @@ const ProcessSummaryCards = ({
     0
   );
 
+//   summary cards
   const cards = [
     {
       title: "Pending Orders",
-      value: pending,
-      icon: (
-        <PendingActionsIcon
-          fontSize="large"
-          color="warning"
-        />
-      ),
+      value: pendingOrders.toLocaleString(),
+      icon: <PendingActionsIcon fontSize="large" />,
     },
+
     {
       title: "Completed",
-      value: completed,
-      icon: (
-        <CheckCircleIcon
-          fontSize="large"
-          color="success"
-        />
-      ),
+      value: completedOrders.toLocaleString(),
+      icon: <CheckCircleIcon fontSize="large" />,
     },
+
     {
       title: "Target Qty",
       value: targetQty.toLocaleString(),
-      icon: (
-        <InventoryIcon
-          fontSize="large"
-          color="primary"
-        />
-      ),
+      icon: <InventoryIcon fontSize="large" />,
     },
+
     {
       title: "Production Qty",
       value: productionQty.toLocaleString(),
       icon: (
-        <PrecisionManufacturingIcon
-          fontSize="large"
-          color="secondary"
-        />
+        <PrecisionManufacturingIcon fontSize="large" />
       ),
     },
   ];
 
   return (
-    <Grid container spacing={3}>
+    <Grid
+      container
+      spacing={{ xs: 2, sm: 2.5, md: 3 }}
+    >
+      {cards.map((card) => (
+        <Grid
+          key={card.title}
+          size={{
+            xs: 12,
+            sm: 6,
+            lg: 3,
+          }}
+        >
+          <Paper
+            elevation={3}
+            sx={{
+              p: {
+                xs: 2,
+                sm: 2.5,
+                md: 3,
+              },
 
-      {loading && Array.isArray(card) && card.length <= 0 ? (
-        <DummyComponent />
-      ) : (
-        cards.map((card) => (
-          <Grid
-            key={card.title}
-            size={{ xs: 12, sm: 6, lg: 3 }}
+              minHeight: {
+                xs: 120,
+                sm: 135,
+              },
+
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+
+              borderRadius: 3,
+
+              transition:
+                "transform 0.2s ease, box-shadow 0.2s ease",
+
+              "&:hover": {
+                transform: "translateY(-3px)",
+                boxShadow: 6,
+              },
+            }}
           >
-            <Paper
-              elevation={3}
+            {/* CARD CONTENT */}
+
+            <Box
               sx={{
-                p: 3,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderRadius: 3,
+                minWidth: 0,
               }}
             >
-              <div>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  {card.title}
-                </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                fontWeight={600}
+                noWrap
+              >
+                {card.title}
+              </Typography>
 
+              {loading ? (
+                <Skeleton
+                  variant="text"
+                  width={100}
+                  height={48}
+                />
+              ) : (
                 <Typography
                   variant="h4"
                   fontWeight={700}
                   mt={1}
+                  sx={{
+                    fontSize: {
+                      xs: "1.8rem",
+                      sm: "2rem",
+                      md: "2.2rem",
+                    },
+                  }}
                 >
                   {card.value}
                 </Typography>
-              </div>
+              )}
+            </Box>
 
+            {/* CARD ICON */}
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+
+                width: {
+                  xs: 48,
+                  sm: 56,
+                },
+
+                height: {
+                  xs: 48,
+                  sm: 56,
+                },
+
+                borderRadius: "50%",
+
+                bgcolor: "action.hover",
+
+                flexShrink: 0,
+              }}
+            >
               {card.icon}
-            </Paper>
-          </Grid>
-        ))
-      )}
-
+            </Box>
+          </Paper>
+        </Grid>
+      ))}
     </Grid>
   );
 };

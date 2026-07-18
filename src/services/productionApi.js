@@ -1,28 +1,97 @@
 import api from "./api";
 
-export const getProductionByProcess = async (process) => {
-  const { data } = await api.get(
-    `/production/process/${process}`
-  );
+
+// get production by process
+
+export const getProductionByProcess = async (
+  process
+) => {
+
+  const { data } =
+    await api.get(
+      `/production/process/${process}`
+    );
 
   return data;
+
 };
 
-export const updateProductionProcess = async (payload) => {
-  console.log("payload for update process:",payload)
-  const { data } = await api.patch(
-    "/production/process",
+
+// start production process
+
+export const startProductionProcess = async (
+  payload
+) => {
+
+  console.log(
+    "Payload for starting process:",
     payload
   );
-console.log("data comes in slices for prod:",data)
+
+  const { data } =
+    await api.patch(
+
+      "/production/process/start",
+
+      payload
+
+    );
+
+  console.log(
+    "Start process response:",
+    data
+  );
+
   return data;
+
 };
 
-export const updateWastage = async (payload) => {
-  const { data } = await api.patch(
-    "/production/wastage",
+
+// complete production process 
+
+export const completeProductionProcess = async (
+  payload
+) => {
+
+  console.log(
+    "Payload for completing process:",
     payload
   );
 
+  const { data } =
+    await api.patch(
+
+      "/production/process/complete",
+
+      payload
+
+    );
+
+  console.log(
+    "Complete process response:",
+    data
+  );
+
   return data;
+
+};
+
+
+// update wastage 
+
+export const updateWastage = async (
+  payload
+) => {
+
+  const { data } =
+    await api.patch(
+
+      "/production/wastage",
+
+      payload
+
+    );
+
+  return data;
+
 };

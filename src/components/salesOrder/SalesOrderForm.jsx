@@ -25,7 +25,9 @@ import { addSalesOrder } from "../../redux/slices/salesOrderSlice";
 const SalesOrderForm = () => {
   const dispatch = useDispatch();
 
-  const { user, loading } = useSelector((state) => state.auth);
+  const { user, loading } = useSelector(
+    (state) => state.auth
+  );
 
   const {
     control,
@@ -40,6 +42,7 @@ const SalesOrderForm = () => {
       date: new Date().toISOString().slice(0, 10),
       customer: "",
       division: "",
+      location: "",
       jobWork: false,
 
       products: [
@@ -63,44 +66,53 @@ const SalesOrderForm = () => {
   const products = watch("products");
 
   useEffect(() => {
-    console.log(products);
-
     products?.forEach((item, index) => {
       const productionQty =
-        (Number(item.qty) || 0) - (Number(item.openingFgQty) || 0);
-
-      console.log(index, productionQty);
+        (Number(item.qty) || 0) -
+        (Number(item.openingFgQty) || 0);
 
       setValue(
         `products.${index}.productionQty`,
-        productionQty > 0 ? productionQty : 0,
+        productionQty > 0 ? productionQty : 0
       );
     });
-  }, [products]);
+  }, [products, setValue]);
 
   const onSubmit = async (data) => {
     const payload = {
       ...data,
+
       orderReceivedBy: user?.user?.name,
 
       products: data.products.map((item) => ({
         ...item,
         qty: Number(item.qty),
         rate: Number(item.rate),
-        openingFgQty: Number(item.openingFgQty),
+        openingFgQty: Number(item.openingFgQty) || 0,
         productionQty: Number(item.productionQty),
       })),
     };
-console.log("Payload in SalesOrderForm component:", payload);
-    const res = await dispatch(addSalesOrder(payload));
+
+    console.log(
+      "Payload in SalesOrderForm component:",
+      payload
+    );
+
+    const res = await dispatch(
+      addSalesOrder(payload)
+    );
 
     if (res?.payload?.success) {
       alert("Sales Order Created");
 
       reset({
-        date: new Date().toISOString().slice(0, 10),
+        date: new Date()
+          .toISOString()
+          .slice(0, 10),
+
         customer: "",
         division: "",
+        location: "",
         jobWork: false,
 
         products: [
@@ -119,13 +131,21 @@ console.log("Payload in SalesOrderForm component:", payload);
 
   return (
     <Paper elevation={0}>
-      <Typography variant="h5" fontWeight={700} mb={3}>
+      <Typography
+        variant="h5"
+        fontWeight={700}
+        mb={3}
+      >
         Create Sales Order
       </Typography>
 
-      <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit(onSubmit)}
+      >
         <Grid container spacing={2}>
-          {/* Date */}
+
+          {/* DATE */}
 
           <Grid size={{ xs: 12, md: 3 }}>
             <TextField
@@ -135,44 +155,109 @@ console.log("Payload in SalesOrderForm component:", payload);
               InputLabelProps={{
                 shrink: true,
               }}
+              error={!!errors.date}
+              helperText={
+                errors.date
+                  ? "Date is required"
+                  : ""
+              }
               {...register("date", {
                 required: true,
               })}
             />
           </Grid>
 
-          {/* Customer */}
+          {/* CUSTOMER */}
 
           <Grid size={{ xs: 12, md: 5 }}>
             <TextField
               fullWidth
               label="Customer"
+              error={!!errors.customer}
+              helperText={
+                errors.customer
+                  ? "Customer is required"
+                  : ""
+              }
               {...register("customer", {
                 required: true,
               })}
             />
           </Grid>
 
-          {/* Division */}
+          {/* DIVISION */}
 
           <Grid size={{ xs: 12, md: 4 }}>
             <TextField
               select
               fullWidth
-              defaultValue=""
               label="Division"
+              defaultValue=""
+              error={!!errors.division}
+              helperText={
+                errors.division
+                  ? "Division is required"
+                  : ""
+              }
               {...register("division", {
                 required: true,
               })}
             >
-              <MenuItem value="Woven">Woven</MenuItem>
+              <MenuItem value="">
+                Select Division
+              </MenuItem>
 
-              <MenuItem value="Crochet">Crochet</MenuItem>
+              <MenuItem value="Woven">
+                Woven
+              </MenuItem>
+
+              <MenuItem value="Crochet">
+                Crochet
+              </MenuItem>
             </TextField>
           </Grid>
 
+          {/* LOCATION */}
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              fullWidth
+              label="Location"
+              placeholder="Enter location"
+              error={!!errors.location}
+              helperText={
+                errors.location
+                  ? "Location is required"
+                  : ""
+              }
+              {...register("location", {
+                required: true,
+              })}
+            />
+          </Grid>
+
+          {/* JOB WORK */}
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  {...register("jobWork")}
+                />
+              }
+              label="Job Work Required"
+            />
+          </Grid>
+
+          {/* PRODUCTS */}
+
           <Grid size={12}>
-            <Typography variant="h6" fontWeight={600} mt={2} mb={1}>
+            <Typography
+              variant="h6"
+              fontWeight={600}
+              mt={2}
+              mb={1}
+            >
               Products
             </Typography>
           </Grid>
@@ -189,123 +274,165 @@ console.log("Payload in SalesOrderForm component:", payload);
                 p: 2,
               }}
             >
-              <Grid size={{ xs: 12, md: 3 }}>
+
+              {/* PRODUCT */}
+
+              <Grid
+                size={{ xs: 12, md: 3 }}
+              >
                 <TextField
                   fullWidth
                   label="Product"
-                  {...register(`products.${index}.product`, {
-                    required: true,
-                  })}
+                  error={
+                    !!errors.products?.[index]
+                      ?.product
+                  }
+                  helperText={
+                    errors.products?.[index]
+                      ?.product
+                      ? "Product is required"
+                      : ""
+                  }
+                  {...register(
+                    `products.${index}.product`,
+                    {
+                      required: true,
+                    }
+                  )}
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, md: 1.5 }}>
+              {/* SO QTY */}
+
+              <Grid
+                size={{ xs: 12, md: 1.5 }}
+              >
                 <TextField
                   fullWidth
                   type="number"
                   label="SO Qty"
-                  {...register(`products.${index}.qty`)}
-                  sx={{
-                    "& input[type=number]": {
-                      MozAppearance: "textfield",
-                    },
-                    "& input[type=number]::-webkit-outer-spin-button": {
-                      WebkitAppearance: "none",
-                      margin: 0,
-                    },
-                    "& input[type=number]::-webkit-inner-spin-button": {
-                      WebkitAppearance: "none",
-                      margin: 0,
-                    },
-                  }}
+                  error={
+                    !!errors.products?.[index]
+                      ?.qty
+                  }
+                  helperText={
+                    errors.products?.[index]
+                      ?.qty
+                      ? "Required"
+                      : ""
+                  }
+                  {...register(
+                    `products.${index}.qty`,
+                    {
+                      required: true,
+                      min: 1,
+                    }
+                  )}
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, md: 1.5 }}>
+              {/* RATE */}
+
+              <Grid
+                size={{ xs: 12, md: 1.5 }}
+              >
                 <TextField
                   fullWidth
                   type="number"
                   label="Rate"
-                  inputProps={{ step: "0.01" }}
-                  {...register(`products.${index}.rate`)}
-                  sx={{
-                     "& input[type=number]": {
-                      MozAppearance: "textfield",
-                    },
-                    "& input[type=number]::-webkit-outer-spin-button": {
-                      WebkitAppearance: "none",
-                      margin: 0,
-                    },
-                    "& input[type=number]::-webkit-inner-spin-button": {
-                      WebkitAppearance: "none",
-                      margin: 0,
-                    },
+                  inputProps={{
+                    step: "0.01",
                   }}
+                  error={
+                    !!errors.products?.[index]
+                      ?.rate
+                  }
+                  helperText={
+                    errors.products?.[index]
+                      ?.rate
+                      ? "Required"
+                      : ""
+                  }
+                  {...register(
+                    `products.${index}.rate`,
+                    {
+                      required: true,
+                      min: 0,
+                    }
+                  )}
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, md: 2 }}>
+              {/* OPENING FG QTY - OPTIONAL */}
+
+              <Grid
+                size={{ xs: 12, md: 2 }}
+              >
                 <TextField
                   fullWidth
                   type="number"
                   label="Opening FG Qty"
-                  {...register(`products.${index}.openingFgQty`)}
-                  sx={{
-                    "& input[type=number]": {
-                      MozAppearance: "textfield",
-                    },
-                    "& input[type=number]::-webkit-outer-spin-button": {
-                      WebkitAppearance: "none",
-                      margin: 0,
-                    },
-                    "& input[type=number]::-webkit-inner-spin-button": {
-                      WebkitAppearance: "none",
-                      margin: 0,
-                    },
-                  }}
+                  {...register(
+                    `products.${index}.openingFgQty`
+                  )}
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, md: 2 }}>
+              {/* PRODUCTION QTY */}
+
+              <Grid
+                size={{ xs: 12, md: 2 }}
+              >
                 <TextField
                   fullWidth
                   label="Production Qty"
                   value={Math.max(
-                    (Number(watch(`products.${index}.qty`)) || 0) -
-                      (Number(watch(`products.${index}.openingFgQty`)) || 0),
-                    0,
+                    (Number(
+                      watch(
+                        `products.${index}.qty`
+                      )
+                    ) || 0) -
+                      (Number(
+                        watch(
+                          `products.${index}.openingFgQty`
+                        )
+                      ) || 0),
+                    0
                   )}
                   InputProps={{
                     readOnly: true,
                   }}
-                  sx={{
-                    "& input[type=number]": {
-                      MozAppearance: "textfield",
-                    },
-                    "& input[type=number]::-webkit-outer-spin-button": {
-                      WebkitAppearance: "none",
-                      margin: 0,
-                    },
-                    "& input[type=number]::-webkit-inner-spin-button": {
-                      WebkitAppearance: "none",
-                      margin: 0,
-                    },
-                  }}
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, md: 1.5 }}>
+              {/* UNIT */}
+
+              <Grid
+                size={{ xs: 12, md: 1.5 }}
+              >
                 <TextField
                   select
                   fullWidth
+                  label="Unit"
                   defaultValue="Meter"
-                  {...register(`products.${index}.unit`)}
+                  {...register(
+                    `products.${index}.unit`,
+                    {
+                      required: true,
+                    }
+                  )}
                 >
-                  <MenuItem value="Meter">Meter</MenuItem>
+                  <MenuItem value="Meter">
+                    Meter
+                  </MenuItem>
 
-                  <MenuItem value="Roll">Roll</MenuItem>
+                  <MenuItem value="Roll">
+                    Roll
+                  </MenuItem>
                 </TextField>
               </Grid>
+
+              {/* DELETE */}
 
               <Grid
                 size={{ xs: 12, md: 1 }}
@@ -315,15 +442,20 @@ console.log("Payload in SalesOrderForm component:", payload);
               >
                 <IconButton
                   color="error"
-                  disabled={fields.length === 1}
-                  onClick={() => remove(index)}
+                  disabled={
+                    fields.length === 1
+                  }
+                  onClick={() =>
+                    remove(index)
+                  }
                 >
                   <DeleteIcon />
                 </IconButton>
               </Grid>
             </Grid>
           ))}
-          {/* Add Product Button */}
+
+          {/* ADD PRODUCT */}
 
           <Grid size={12}>
             <Button
@@ -344,22 +476,17 @@ console.log("Payload in SalesOrderForm component:", payload);
             </Button>
           </Grid>
 
-          {/* Job Work */}
+          {/* ORDER RECEIVED BY */}
 
-          <Grid size={{ xs: 12, md: 6 }}>
-            <FormControlLabel
-              control={<Checkbox {...register("jobWork")} />}
-              label="Job Work Required"
-            />
-          </Grid>
-
-          {/* Order Received By */}
-
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid
+            size={{ xs: 12, md: 6 }}
+          >
             <TextField
               fullWidth
               label="Order Received By"
-              value={user?.user?.name || ""}
+              value={
+                user?.user?.name || ""
+              }
               InputProps={{
                 readOnly: true,
               }}
@@ -367,17 +494,28 @@ console.log("Payload in SalesOrderForm component:", payload);
           </Grid>
         </Grid>
 
-        {/* Buttons */}
+        {/* BUTTONS */}
 
-        <Stack direction="row" spacing={2} justifyContent="flex-end" mt={4}>
+        <Stack
+          direction={{
+            xs: "column",
+            sm: "row",
+          }}
+          spacing={2}
+          justifyContent="flex-end"
+          mt={4}
+        >
           <Button
             variant="outlined"
             onClick={() =>
               reset({
-                date: new Date().toISOString().slice(0, 10),
+                date: new Date()
+                  .toISOString()
+                  .slice(0, 10),
 
                 customer: "",
                 division: "",
+                location: "",
                 jobWork: false,
 
                 products: [
@@ -405,7 +543,9 @@ console.log("Payload in SalesOrderForm component:", payload);
               fontWeight: 600,
             }}
           >
-            {loading ? "Saving..." : "Save Sales Order"}
+            {loading
+              ? "Saving..."
+              : "Save Sales Order"}
           </Button>
         </Stack>
       </Box>
