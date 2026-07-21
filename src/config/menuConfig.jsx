@@ -259,6 +259,28 @@ export const menuConfig = {
       icon:
         <AssessmentRoundedIcon />,
     },
+       {
+      id: 4,
+
+      title: "Sales Orders",
+
+      path: "/sales-order",
+
+      icon:
+        <ShoppingCartRoundedIcon />,
+    },
+
+
+    {
+      id: 5,
+
+      title: "Create Sales Order",
+
+      path: "/sales-order/create",
+
+      icon:
+        <AddShoppingCartRoundedIcon />,
+    },
 
   ],
 

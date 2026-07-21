@@ -27,6 +27,7 @@ export const routeConfig = {
   "/sales-order": [
 
     ROLES.ADMIN,
+    ROLES.SUPERVISOR
 
   ],
 
@@ -34,6 +35,7 @@ export const routeConfig = {
   "/sales-order/create": [
 
     ROLES.ADMIN,
+    ROLES.SUPERVISOR
 
   ],
 
