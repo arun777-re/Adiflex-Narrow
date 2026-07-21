@@ -8,10 +8,16 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 
+
 import App from "./App";
 import theme from "./theme";
 
 import { store, persistor } from "../src/redux/store/store";
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({
+  immediate: true,
+});
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
