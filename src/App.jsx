@@ -9,6 +9,7 @@ import SalesOrder from "./pages/SalesOrder";
 import SalesOrderCreate from "./pages/SalesOrderCreate";
 import Production from "./pages/Production";
 import ProductionDashboard from "./pages/Production/ProductionDashBoard";
+import DispatchPage from "./pages/DispatchPage";
 
 function App() {
 
@@ -44,6 +45,10 @@ function App() {
           <Route
           path="/production"
           element={<ProductionDashboard/>}
+        />
+          <Route
+          path="/dispatch"
+          element={<DispatchPage/>}
         />
 
       </Route>

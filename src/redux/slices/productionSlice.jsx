@@ -1,165 +1,125 @@
-import {
-  createSlice,
-  createAsyncThunk,
-} from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 import {
   getProductionByProcess,
   startProductionProcess,
   completeProductionProcess,
-  updateWastage,
+  completeQualityWithWastage,
+  getAllProduction,
 } from "../../services/productionApi";
 
+// fetch production orders by process
+export const fetchProductionByProcess = createAsyncThunk(
+  "production/fetchProductionByProcess",
 
-// fetch production by process 
+  async (
+    {
+      process,
+      division,
+    },
+    thunkAPI
+  ) => {
 
-export const fetchProductionByProcess =
-  createAsyncThunk(
-    "production/fetchProductionByProcess",
+    try {
 
-    async (process, thunkAPI) => {
+      const data =
+        await getProductionByProcess({
 
-      try {
+          process,
 
-        const data =
-          await getProductionByProcess(process);
+          division,
 
-        console.log(
-          "Production data:",
-          data.data
-        );
+        });
 
-        return data.data;
+      return data.data;
 
-      } catch (error) {
+    } catch (error) {
 
-        return thunkAPI.rejectWithValue(
+      return thunkAPI.rejectWithValue(
 
-          error.response?.data?.message ||
-          error.message
+        error.response?.data?.message ||
+        error.message
 
-        );
-
-      }
-
-    }
-  );
-
-
-// =====================================================
-// START PRODUCTION PROCESS
-// =====================================================
-
-export const startProduction =
-  createAsyncThunk(
-
-    "production/startProduction",
-
-    async (payload, thunkAPI) => {
-
-      try {
-
-        const data =
-          await startProductionProcess(
-            payload
-          );
-
-        return data;
-
-      } catch (error) {
-
-        return thunkAPI.rejectWithValue(
-
-          error.response?.data?.message ||
-          error.message
-
-        );
-
-      }
+      );
 
     }
 
-  );
+  }
 
+);
 
-// =====================================================
-// COMPLETE PRODUCTION PROCESS
-// =====================================================
+// start production process
+export const startProduction = createAsyncThunk(
+  "production/startProduction",
 
-export const completeProduction =
-  createAsyncThunk(
+  async (payload, thunkAPI) => {
+    try {
+      const data = await startProductionProcess(payload);
 
-    "production/completeProduction",
-
-    async (payload, thunkAPI) => {
-
-      try {
-
-        const data =
-          await completeProductionProcess(
-            payload
-          );
-
-        return data;
-
-      } catch (error) {
-
-        return thunkAPI.rejectWithValue(
-
-          error.response?.data?.message ||
-          error.message
-
-        );
-
-      }
-
+      return data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message,
+      );
     }
+  },
+);
 
-  );
-
-
-// =====================================================
-// UPDATE WASTAGE
-// =====================================================
-
-export const updateProductionWastage =
-  createAsyncThunk(
-
-    "production/updateProductionWastage",
-
-    async (payload, thunkAPI) => {
-
-      try {
-
-        const data =
-          await updateWastage(
-            payload
-          );
-
-        return data;
-
-      } catch (error) {
-
-        return thunkAPI.rejectWithValue(
-
-          error.response?.data?.message ||
-          error.message
-
-        );
-
-      }
-
+// get all production orders
+export const getAllProductions = createAsyncThunk(
+  "/get-all",
+  async (division, thunkAPI) => {
+    try {
+      const data = await getAllProduction(division);
+      return data.productionOrders;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message,
+      );
     }
+  },
+);
 
-  );
+// complete production process
+export const completeProduction = createAsyncThunk(
+  "production/completeProduction",
 
+  async (payload, thunkAPI) => {
+    try {
+      const data = await completeProductionProcess(payload);
+
+      return data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message,
+      );
+    }
+  },
+);
+
+// complete quality plus wastage
+export const completeQuality = createAsyncThunk(
+  "production/completeQuality",
+
+  async (payload, thunkAPI) => {
+    try {
+      const data = await completeQualityWithWastage(payload);
+
+      return data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message,
+      );
+    }
+  },
+);
 
 // =====================================================
 // INITIAL STATE
 // =====================================================
 
 const initialState = {
-
+  allProductionOrders: [],
   productionOrders: [],
 
   loading: false,
@@ -168,241 +128,198 @@ const initialState = {
 
   completing: false,
 
-  updating: false,
+  completingQuality: false,
 
   error: null,
-
 };
-
 
 // =====================================================
 // SLICE
 // =====================================================
 
 const productionSlice = createSlice({
-
   name: "production",
 
   initialState,
 
   reducers: {
-
     clearProductionError: (state) => {
-
       state.error = null;
-
     },
-
   },
 
-
   extraReducers: (builder) => {
-
     builder
-
 
       // ==========================================
       // FETCH PRODUCTION
       // ==========================================
 
       .addCase(
-
         fetchProductionByProcess.pending,
 
         (state) => {
-
           state.loading = true;
 
           state.error = null;
-
-        }
-
+        },
       )
 
-
       .addCase(
-
         fetchProductionByProcess.fulfilled,
 
         (state, action) => {
-
           state.loading = false;
 
-          state.productionOrders =
-            action.payload;
-
-        }
-
+          state.productionOrders = action.payload;
+        },
       )
 
-
       .addCase(
-
         fetchProductionByProcess.rejected,
 
         (state, action) => {
-
           state.loading = false;
 
-          state.error =
-            action.payload;
-
-        }
-
+          state.error = action.payload;
+        },
       )
-
 
       // ==========================================
       // START PROCESS
       // ==========================================
 
       .addCase(
-
         startProduction.pending,
 
         (state) => {
-
           state.starting = true;
 
           state.error = null;
-
-        }
-
+        },
       )
 
-
       .addCase(
-
         startProduction.fulfilled,
 
         (state) => {
-
           state.starting = false;
-
-        }
-
+        },
       )
 
-
       .addCase(
-
         startProduction.rejected,
 
         (state, action) => {
-
           state.starting = false;
 
-          state.error =
-            action.payload;
-
-        }
-
+          state.error = action.payload;
+        },
       )
 
-
       // ==========================================
-      // COMPLETE PROCESS
+      // COMPLETE NORMAL PROCESS
       // ==========================================
 
       .addCase(
-
         completeProduction.pending,
 
         (state) => {
-
           state.completing = true;
 
           state.error = null;
-
-        }
-
+        },
       )
 
-
       .addCase(
-
         completeProduction.fulfilled,
 
         (state) => {
-
           state.completing = false;
-
-        }
-
+        },
       )
 
-
       .addCase(
-
         completeProduction.rejected,
 
         (state, action) => {
-
           state.completing = false;
 
-          state.error =
-            action.payload;
-
-        }
-
+          state.error = action.payload;
+        },
       )
 
-
       // ==========================================
-      // UPDATE WASTAGE
+      // COMPLETE QUALITY + WASTAGE
       // ==========================================
 
       .addCase(
-
-        updateProductionWastage.pending,
+        completeQuality.pending,
 
         (state) => {
-
-          state.updating = true;
+          state.completingQuality = true;
 
           state.error = null;
-
-        }
-
+        },
       )
 
-
       .addCase(
-
-        updateProductionWastage.fulfilled,
+        completeQuality.fulfilled,
 
         (state) => {
-
-          state.updating = false;
-
-        }
-
+          state.completingQuality = false;
+        },
       )
 
-
       .addCase(
-
-        updateProductionWastage.rejected,
+        completeQuality.rejected,
 
         (state, action) => {
+          state.completingQuality = false;
 
-          state.updating = false;
+          state.error = action.payload;
+        },
+      )
+      .addCase(
+        getAllProductions.pending,
 
-          state.error =
-            action.payload;
+        (state) => {
+          state.allOrdersLoading = true;
 
-        }
+          state.error = null;
+        },
+      )
 
+      .addCase(
+        getAllProductions.fulfilled,
+
+        (state, action) => {
+          state.allOrdersLoading = false;
+
+          state.allProductionOrders = action.payload;
+        },
+      )
+
+      .addCase(
+        getAllProductions.rejected,
+
+        (state, action) => {
+          state.allOrdersLoading = false;
+
+          state.error = action.payload;
+        },
       );
-
   },
-
 });
 
+// =====================================================
+// ACTIONS
+// =====================================================
 
-export const {
-  clearProductionError,
-} = productionSlice.actions;
+export const { clearProductionError } = productionSlice.actions;
 
+// =====================================================
+// REDUCER
+// =====================================================
 
 export default productionSlice.reducer;

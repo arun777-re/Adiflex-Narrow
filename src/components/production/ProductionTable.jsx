@@ -5,6 +5,7 @@ import {
   Chip,
   Box,
   Stack,
+  Typography,
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
@@ -13,37 +14,209 @@ import UpdateProductionDialog
   from "./UpdateProductionDialog";
 
 
+// =====================================================
+// PROCESS ORDER
+// =====================================================
+
+const PROCESS_ORDER = [
+  {
+    key: "warping",
+    label: "Warping",
+    startField: "warpingStartAt",
+    endField: "warpingEndsAt",
+  },
+
+  {
+    key: "yarnBeam",
+    label: "Yarn Beam",
+    startField: "yarnBeamStartAt",
+    endField: "yarnBeamEndsAt",
+  },
+
+  {
+    key: "machine",
+    label: "Machine",
+    startField: "machineStartsAt",
+    endField: "machineEndsAt",
+  },
+
+  {
+    key: "quality",
+    label: "Quality",
+    startField: "qualityStartsAt",
+    endField: "qualityEndsAt",
+  },
+
+  {
+    key: "finishing",
+    label: "Finishing",
+    startField: "finishingStartsAt",
+    endField: "finishingEndsAt",
+  },
+
+  {
+    key: "rolling",
+    label: "Rolling",
+    startField: "rollingStartsAt",
+    endField: "rollingEndsAt",
+  },
+
+  {
+    key: "packing",
+    label: "Packing",
+    startField: "packingStartsAt",
+    endField: "packingEndsAt",
+  },
+];
+
+// get current process of order
+const getCurrentProcess = (row) => {
+  const processOrder = [];
+
+  // ==========================================
+  // JOB WORK
+  // ==========================================
+
+  if (row.isJobWork === true) {
+    processOrder.push({
+      key: "jobWork",
+      label: "Job Work",
+      startField: "jobWorkStartTime",
+      endField: "jobWorkEndTime",
+    });
+  }
+
+  // ==========================================
+  // NORMAL PRODUCTION PROCESSES
+  // ==========================================
+
+  processOrder.push(...PROCESS_ORDER);
+
+  // ==========================================
+  // FIND CURRENT PROCESS
+  // ==========================================
+
+  for (const process of processOrder) {
+    const startTime = row[process.startField];
+    const endTime = row[process.endField];
+
+    // ----------------------------------------
+    // COMPLETED
+    // ----------------------------------------
+
+    if (endTime) {
+      continue;
+    }
+
+    // ----------------------------------------
+    // IN PROGRESS
+    // ----------------------------------------
+
+    if (startTime) {
+      return {
+        key: process.key,
+        label: process.label,
+        status: "In Progress",
+      };
+    }
+
+    // ----------------------------------------
+    // PENDING
+    // ----------------------------------------
+
+    return {
+      key: process.key,
+      label: process.label,
+      status: "Pending",
+    };
+  }
+
+  // ==========================================
+  // ALL COMPLETED
+  // ==========================================
+
+  return {
+    key: null,
+    label: "Completed",
+    status: "Completed",
+  };
+};
+// component 
+
 const ProductionTable = ({
+
   rows = [],
+
   loading = false,
-  process,
+
 }) => {
 
-  const [open, setOpen] = useState(false);
 
-  const [selectedOrder, setSelectedOrder] =
-    useState(null);
+  const [
 
-  const [selectedAction, setSelectedAction] =
-    useState(null);
+    open,
+
+    setOpen,
+
+  ] = useState(false);
 
 
-// open process dialogue
+  const [
+
+    selectedOrder,
+
+    setSelectedOrder,
+
+  ] = useState(null);
+
+
+  const [
+
+    selectedAction,
+
+    setSelectedAction,
+
+  ] = useState(null);
+
+
+  // =====================================================
+  // OPEN DIALOG
+  // =====================================================
+
   const handleProcessAction = (
+
     row,
-    action
+
+    action,
+
+    process,
+
   ) => {
 
-    setSelectedOrder(row);
+    setSelectedOrder({
 
-    setSelectedAction(action);
+      ...row,
+
+      currentProcess:
+        process,
+
+    });
+
+
+    setSelectedAction(
+      action
+    );
+
 
     setOpen(true);
 
   };
 
 
-// close dialogue function
+  // =====================================================
+  // CLOSE DIALOG
+  // =====================================================
+
   const handleClose = () => {
 
     setOpen(false);
@@ -55,259 +228,413 @@ const ProductionTable = ({
   };
 
 
+  // =====================================================
+  // COLUMNS
+  // =====================================================
+
   const columns = useMemo(
+
     () => [
 
+      // -----------------------------------------------
+      // SO NO
+      // -----------------------------------------------
+
       {
-        field: "soNo",
 
-        headerName: "SO No",
+        field:
+          "soNo",
 
-        width: 130,
+        headerName:
+          "SO No",
+
+        width:
+          130,
+
       },
 
 
+      // -----------------------------------------------
+      // PRODUCT
+      // -----------------------------------------------
+
       {
-        field: "product",
 
-        headerName: "Product",
+        field:
+          "product",
 
-        flex: 1.5,
+        headerName:
+          "Product",
 
-        minWidth: 220,
+        flex:
+          1.5,
+
+        minWidth:
+          220,
+
       },
 
 
+      // -----------------------------------------------
+      // DIVISION
+      // -----------------------------------------------
+
       {
-        field: "division",
 
-        headerName: "Division",
+        field:
+          "division",
 
-        width: 120,
+        headerName:
+          "Division",
+
+        width:
+          120,
+
       },
 
 
+      // -----------------------------------------------
+      // TARGET
+      // -----------------------------------------------
+
       {
-        field: "productionTargetQty",
 
-        headerName: "Target Qty",
+        field:
+          "productionTargetQty",
 
-        type: "number",
+        headerName:
+          "Target Qty",
 
-        width: 130,
+        type:
+          "number",
 
-        align: "center",
+        width:
+          130,
 
-        headerAlign: "center",
+        align:
+          "center",
+
+        headerAlign:
+          "center",
+
       },
 
 
+      // -----------------------------------------------
+      // PRODUCTION QTY
+      // -----------------------------------------------
+
       {
-        field: "productionQty",
 
-        headerName: "Production Qty",
+        field:
+          "productionQty",
 
-        type: "number",
+        headerName:
+          "Production Qty",
 
-        width: 150,
+        type:
+          "number",
 
-        align: "center",
+        width:
+          150,
 
-        headerAlign: "center",
+        align:
+          "center",
+
+        headerAlign:
+          "center",
+
       },
 
 
-    // start time 
-      {
-        field: "processStartTime",
-
-        headerName: "Start Time",
-
-        width: 180,
-
-        valueGetter: (value) => {
-
-          return value || "-";
-
-        },
-
-      },
-
-// end time 
-      {
-        field: "processEndTime",
-
-        headerName: "End Time",
-
-        width: 180,
-
-        valueGetter: (value) => {
-
-          return value || "-";
-
-        },
-
-      },
-
-// current process status
-      {
-        field: "processStatus",
-
-        headerName: "Status",
-
-        width: 140,
-
-        renderCell: (params) => {
-
-          const status =
-            params.value || "Pending";
-
-
-          let color = "warning";
-
-
-          if (
-            status === "In Progress"
-          ) {
-
-            color = "info";
-
-          }
-
-
-          if (
-            status === "Completed"
-          ) {
-
-            color = "success";
-
-          }
-
-
-          return (
-
-            <Chip
-
-              label={status}
-
-              color={color}
-
-              size="small"
-
-            />
-
-          );
-
-        },
-
-      },
-
-// action
+      // -----------------------------------------------
+      // CURRENT PROCESS
+      // -----------------------------------------------
 
       {
-        field: "action",
 
-        headerName: "Action",
+        field:
+          "currentProcess",
 
-        width: 200,
+        headerName:
+          "Current Process",
 
-        sortable: false,
+        width:
+          170,
 
-        renderCell: (params) => {
+        renderCell:
+          (params) => {
 
-          const status =
-            params.row.processStatus ||
-            "Pending";
+            const process =
+              getCurrentProcess(
+                params.row
+              );
 
-// pending
-
-          if (
-            status === "Pending"
-          ) {
 
             return (
 
-              <Button
+              <Chip
 
-                variant="contained"
+                label={
+                  process.label
+                }
 
-                color="primary"
+                color={
+                  process.status ===
+                  "Completed"
+
+                    ? "success"
+
+                    : "primary"
+                }
 
                 size="small"
 
-                onClick={() =>
-                  handleProcessAction(
-                    params.row,
-                    "start"
-                  )
-                }
-
-              >
-
-                Start Process
-
-              </Button>
+              />
 
             );
 
-          }
+          },
 
-// in progress
+      },
 
-          if (
-            status === "In Progress"
-          ) {
+
+      // -----------------------------------------------
+      // STATUS
+      // -----------------------------------------------
+
+      {
+
+        field:
+          "currentStatus",
+
+        headerName:
+          "Status",
+
+        width:
+          140,
+
+        renderCell:
+          (params) => {
+
+            const process =
+              getCurrentProcess(
+                params.row
+              );
+
+
+            let color =
+              "warning";
+
+
+            if (
+
+              process.status ===
+              "In Progress"
+
+            ) {
+
+              color =
+                "info";
+
+            }
+
+
+            if (
+
+              process.status ===
+              "Completed"
+
+            ) {
+
+              color =
+                "success";
+
+            }
+
 
             return (
 
-              <Button
+              <Chip
 
-                variant="contained"
+                label={
+                  process.status
+                }
 
-                color="success"
+                color={
+                  color
+                }
 
                 size="small"
 
-                onClick={() =>
-                  handleProcessAction(
-                    params.row,
-                    "complete"
-                  )
-                }
-
-              >
-
-                Complete Process
-
-              </Button>
+              />
 
             );
 
-          }
+          },
 
-// completed
+      },
 
-          return (
 
-            <Chip
+      // -----------------------------------------------
+      // ACTION
+      // -----------------------------------------------
 
-              label="Completed"
+      {
 
-              color="success"
+        field:
+          "action",
 
-              size="small"
+        headerName:
+          "Action",
 
-            />
+        width:
+          220,
 
-          );
+        sortable:
+          false,
 
-        },
+        renderCell:
+          (params) => {
+
+
+            const process =
+              getCurrentProcess(
+                params.row
+              );
+
+
+            // ALL COMPLETED
+
+            if (
+
+              process.status ===
+              "Completed"
+
+            ) {
+
+              return (
+
+                <Chip
+
+                  label="Production Completed"
+
+                  color="success"
+
+                  size="small"
+
+                />
+
+              );
+
+            }
+
+
+            // PENDING
+
+            if (
+
+              process.status ===
+              "Pending"
+
+            ) {
+
+              return (
+
+                <Button
+
+                  variant="contained"
+
+                  color="primary"
+
+                  size="small"
+
+                  onClick={() =>
+
+                    handleProcessAction(
+
+                      params.row,
+
+                      "start",
+
+                      process.key,
+
+                    )
+
+                  }
+
+                >
+
+                  Start{" "}
+
+                  {
+                    process.label
+                  }
+
+                </Button>
+
+              );
+
+            }
+
+
+            // IN PROGRESS
+
+            if (
+
+              process.status ===
+              "In Progress"
+
+            ) {
+
+              return (
+
+                <Button
+
+                  variant="contained"
+
+                  color="success"
+
+                  size="small"
+
+                  onClick={() =>
+
+                    handleProcessAction(
+
+                      params.row,
+
+                      "complete",
+
+                      process.key,
+
+                    )
+
+                  }
+
+                >
+
+                  Complete{" "}
+
+                  {
+                    process.label
+                  }
+
+                </Button>
+
+              );
+
+            }
+
+
+            return null;
+
+          },
 
       },
 
     ],
 
-    [process]
+    []
 
   );
 
@@ -320,7 +647,8 @@ const ProductionTable = ({
 
         sx={{
 
-          width: "100%",
+          width:
+            "100%",
 
           height:
             "calc(100vh - 280px)",
@@ -331,15 +659,23 @@ const ProductionTable = ({
 
         <DataGrid
 
-          rows={rows}
+          rows={
+            rows
+          }
 
-          columns={columns}
+          columns={
+            columns
+          }
 
-          loading={loading}
+          loading={
+            loading
+          }
 
-          getRowId={(row) =>
+          getRowId={
 
-            `${row.soNo}-${row.product}`
+            (row) =>
+
+              `${row.soNo}-${row.product}`
 
           }
 
@@ -348,9 +684,13 @@ const ProductionTable = ({
           density="compact"
 
           pageSizeOptions={[
+
             10,
+
             20,
+
             50,
+
           ]}
 
           initialState={{
@@ -359,7 +699,8 @@ const ProductionTable = ({
 
               paginationModel: {
 
-                pageSize: 10,
+                pageSize:
+                  10,
 
               },
 
@@ -369,25 +710,30 @@ const ProductionTable = ({
 
           sx={{
 
-            borderRadius: 2,
+            borderRadius:
+              2,
 
             "& .MuiDataGrid-columnHeaders": {
 
-              backgroundColor: "#f5f5f5",
+              backgroundColor:
+                "#f5f5f5",
 
-              fontWeight: 700,
+              fontWeight:
+                700,
 
             },
 
             "& .MuiDataGrid-columnHeaderTitle": {
 
-              fontWeight: 700,
+              fontWeight:
+                700,
 
             },
 
             "& .MuiDataGrid-row:hover": {
 
-              backgroundColor: "#f1f8ff",
+              backgroundColor:
+                "#f1f8ff",
 
             },
 
@@ -397,19 +743,30 @@ const ProductionTable = ({
 
       </Box>
 
-{/* process dialogue */}
+
+      {/* PROCESS DIALOG */}
 
       <UpdateProductionDialog
 
-        open={open}
+        open={
+          open
+        }
 
-        onClose={handleClose}
+        onClose={
+          handleClose
+        }
 
-        order={selectedOrder}
+        order={
+          selectedOrder
+        }
 
-        process={process}
+        process={
+          selectedOrder?.currentProcess
+        }
 
-        action={selectedAction}
+        action={
+          selectedAction
+        }
 
       />
 

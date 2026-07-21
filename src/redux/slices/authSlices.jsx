@@ -5,6 +5,7 @@ import { loginUser } from "../../services/authApi";
 
 export const login = createAsyncThunk("auth/login",async(payload,{rejectWithValue})=>{
     try{
+        console.log("login payload",payload)
 const data = await loginUser(payload);
 if(!data.success){
     return rejectWithValue(data.message);

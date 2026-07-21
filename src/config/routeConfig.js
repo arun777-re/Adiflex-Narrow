@@ -1,46 +1,118 @@
 import { ROLES } from "./roles";
 
+
 export const routeConfig = {
+
+  // ==========================================
+  // DASHBOARD
+  // ==========================================
+
   "/dashboard": [
+
     ROLES.ADMIN,
-    ROLES.SALES,
-    ROLES.PRODUCTION,
-    ROLES.PRINTING,
-    ROLES.PACKING,
+
+    ROLES.PRODUCTION_SUPERVISOR,
+
     ROLES.DISPATCH,
+
+    ROLES.SUPERVISOR,
+
   ],
+
+
+  // ==========================================
+  // SALES ORDERS
+  // ==========================================
 
   "/sales-order": [
+
     ROLES.ADMIN,
-    ROLES.SALES,
+
   ],
+
 
   "/sales-order/create": [
+
     ROLES.ADMIN,
-    ROLES.SALES,
+
   ],
+
+
+  // ==========================================
+  // PRODUCTION
+  // ==========================================
 
   "/production": [
+
     ROLES.ADMIN,
-    ROLES.PRODUCTION,
+
+    ROLES.PRODUCTION_SUPERVISOR,
+
   ],
 
-  "/printing": [
+
+  // ==========================================
+  // INVENTORY
+  // ==========================================
+
+  "/inventory": [
+
     ROLES.ADMIN,
-    ROLES.PRINTING,
+
+    ROLES.PRODUCTION_SUPERVISOR,
+
+    ROLES.DISPATCH,
+
   ],
 
-  "/packing": [
-    ROLES.ADMIN,
-    ROLES.PACKING,
-  ],
+
+  // ==========================================
+  // DISPATCH
+  // ==========================================
 
   "/dispatch": [
+
     ROLES.ADMIN,
+
     ROLES.DISPATCH,
+
   ],
 
-  "/activity-log": [
+
+  // ==========================================
+  // MONITORING
+  // ==========================================
+
+  "/monitoring": [
+
     ROLES.ADMIN,
+
+    ROLES.SUPERVISOR,
+
   ],
+
+
+  // ==========================================
+  // REPORTS
+  // ==========================================
+
+  "/reports": [
+
+    ROLES.ADMIN,
+
+    ROLES.SUPERVISOR,
+
+  ],
+
+
+  // ==========================================
+  // ACTIVITY LOG
+  // ==========================================
+
+  "/activity-log": [
+
+    ROLES.ADMIN,
+
+  ],
+
 };

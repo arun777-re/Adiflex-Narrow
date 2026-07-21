@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   Box,
   Button,
@@ -10,117 +11,131 @@ import {
   MenuItem,
   Select,
   TextField,
-  Typography,
 } from "@mui/material";
-import {useDispatch,useSelector} from 'react-redux';
+
+import { useDispatch, useSelector } from "react-redux";
+
 import { login } from "../redux/slices/authSlices";
 
-// constant data 
-const loginData = [
-{
-  id:1,
-  value:"admin",
-  name:"Admin"
-},
-{
-  id:2,
-  value:"yarnBeam",
-  name:"YarnBeam"
-},
-{
-  id:3,
-  value:"machine",
-  name:"Machine"
-},
-{
-  id:4,
-  value:"quality",
-  name:"Quality"
-},
-{
-  id:5,
-  value:"finishing",
-  name:"Finishing"
-},
-{
-  id:6,
-  value:"rolling",
-  name:"Rolling"
-},
-{
-  id:7,
-  value:"packing",
-  name:"Packing"
-},
-{
-  id:8,
-  value:"jobWork",
-  name:"JobWork"
-},
-{
-  id:9,
-  value:"warping",
-  name:"Warping"
-},
-]
+import { loginData } from "../utils/loginRoleData";
+
 const Login = () => {
-const navigate = useNavigate();
-const dispatch = useDispatch();
-const { user,loading,error } = useSelector(state=> state.auth);
+  const navigate = useNavigate();
+
+  const dispatch = useDispatch();
+
+  const { loading } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
     role: "",
+
+    division: "",
+
     password: "",
   });
 
+  // ==========================================
+  // HANDLE CHANGE
+  // ==========================================
+
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+    const { name, value } = e.target;
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+    // ========================================
+    // ROLE CHANGE
+    // ========================================
 
-  try {
+    if (name === "role") {
+      const selectedRole = loginData.find((item) => item.value === value);
 
-    const data = await dispatch(login(formData)).unwrap();
-    console.log("data comes from login action:", data);
-    if (!data.success) {
-      alert(data.message);
+      const roleDivisions = selectedRole?.divisions || [];
+
+      const isOnlyAllDivision =
+        roleDivisions.length === 1 && roleDivisions[0] === "all";
+
+      setFormData((prev) => ({
+        ...prev,
+
+        role: value,
+
+        division: isOnlyAllDivision ? "all" : "",
+      }));
+
       return;
     }
 
-  
-    navigate("/dashboard");
+    // ========================================
+    // OTHER FIELDS
+    // ========================================
 
-  } catch (err) {
+    setFormData((prev) => ({
+      ...prev,
 
-    console.error(err);
+      [name]: value,
+    }));
+  };
 
-    alert("Server Error");
+  // ==========================================
+  // SUBMIT
+  // ==========================================
 
-  }
-};
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const data = await dispatch(login(formData)).unwrap();
+
+      console.log("Login response:", data);
+
+      if (!data.success) {
+        alert(data.message);
+
+        return;
+      }
+
+      navigate("/dashboard");
+    } catch (error) {
+      console.error(error);
+
+      alert(error?.message || "Server Error");
+    }
+  };
+
+  // ==========================================
+  // SELECTED ROLE
+  // ==========================================
+
+  const selectedRole = loginData.find((item) => item.value === formData.role);
+
+  const allowedDivisions = selectedRole?.divisions || [];
+
+  const isAllDivisionOnly =
+    allowedDivisions.length === 1 && allowedDivisions[0] === "all";
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
+
         display: "flex",
+
         justifyContent: "center",
+
         alignItems: "center",
       }}
     >
-      <Card sx={{ width: 400 }}>
+      <Card
+        sx={{
+          width: 400,
+        }}
+      >
         <CardContent>
+          <Box component="form" onSubmit={handleSubmit}>
+            {/* ================================= */}
+            {/* ROLE */}
+            {/* ================================= */}
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-          >
-            <FormControl fullWidth margin="normal">
+            <FormControl fullWidth margin="normal" required>
               <InputLabel>Role</InputLabel>
 
               <Select
@@ -129,16 +144,52 @@ const handleSubmit = async (e) => {
                 label="Role"
                 onChange={handleChange}
               >
-                {loginData.map((i)=>{
-                  return   <MenuItem id={i.id} value={i.value}>{i.name}</MenuItem>
-                })}
-                
+                {loginData.map((item) => (
+                  <MenuItem key={item.id} value={item.value}>
+                    {item.name}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
+
+            {/* ================================= */}
+            {/* DIVISION */}
+            {/* ================================= */}
+
+            <FormControl
+              fullWidth
+              margin="normal"
+              required
+              disabled={isAllDivisionOnly}
+            >
+              <InputLabel>Division</InputLabel>
+
+              <Select
+                name="division"
+                value={formData.division}
+                label="Division"
+                onChange={handleChange}
+              >
+                {allowedDivisions.map((division) => (
+                  <MenuItem key={division} value={division}>
+                    {division === "all"
+                      ? "All"
+                      : division === "woven"
+                        ? "Woven"
+                        : "Crochet"}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* ================================= */}
+            {/* PASSWORD */}
+            {/* ================================= */}
 
             <TextField
               fullWidth
               margin="normal"
+              required
               label="Password"
               type="password"
               name="password"
@@ -146,17 +197,22 @@ const handleSubmit = async (e) => {
               onChange={handleChange}
             />
 
+            {/* ================================= */}
+            {/* LOGIN BUTTON */}
+            {/* ================================= */}
+
             <Button
               fullWidth
               variant="contained"
               type="submit"
-              sx={{ mt: 3 }}
+              disabled={loading}
+              sx={{
+                mt: 3,
+              }}
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </Button>
-
           </Box>
-
         </CardContent>
       </Card>
     </Box>

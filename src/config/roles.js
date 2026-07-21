@@ -1,19 +1,12 @@
 export const ROLES = {
   ADMIN: "admin",
 
-  WARPING: "warping",
+  PRODUCTION_SUPERVISOR:
+    "productionSupervisor",
 
-  YARN_BEAM: "yarnBeam",
+  DISPATCH:
+    "dispatch",
 
-  MACHINE: "machine",
-
-  QUALITY: "quality",
-
-  FINISHING: "finishing",
-
-  ROLLING: "rolling",
-
-  PACKING: "packing",
-
-  JOB_WORK: "jobWork",
+  SUPERVISOR:
+    "supervisor",
 };

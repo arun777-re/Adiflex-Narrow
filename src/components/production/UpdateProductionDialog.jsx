@@ -19,7 +19,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   startProduction,
   completeProduction,
-  fetchProductionByProcess,
+  completeQuality,
+  getAllProductions,
 } from "../../redux/slices/productionSlice";
 
 
@@ -33,50 +34,62 @@ const UpdateProductionDialog = ({
 
   const dispatch = useDispatch();
 
-// production state
+// production state store in redux
 
   const {
     starting = false,
     completing = false,
+    completingQuality = false,
   } = useSelector(
     (state) => state.production
   );
 
+// logged in user information
+  const { user } = useSelector(
+    (state) => state.auth
+  );
 
-  const { user } =
-    useSelector(
-      (state) => state.auth
-    );
+
+  // current division
+  const currentDivision =
+    user?.user?.division ||
+    user?.division ||
+    "";
 
 
+// form
   const {
     register,
     handleSubmit,
     reset,
+    formState: { errors },
   } = useForm();
 
 
-// loading state
+// loading
+
   const loading =
     starting ||
-    completing;
+    completing ||
+    completingQuality;
 
 
-// selection of first order based on job work yes or no
+// process type
   const isFirstProcess =
     process === "jobWork" ||
     process === "warping";
 
-// load orders
+  const isQualityProcess =
+    process === "quality";
+
+
+// load order data
 
   useEffect(() => {
 
     if (!order) {
-
       return;
-
     }
-
 
     reset({
 
@@ -91,36 +104,47 @@ const UpdateProductionDialog = ({
           ? order.productionQty || ""
           : "",
 
+      wastageQty:
+        "",
+
     });
 
   }, [
-
     order,
-
     reset,
-
     isFirstProcess,
-
   ]);
 
-// Submit function
 
-  const onSubmit = async (
-    data
-  ) => {
+// refresh production data for a division 
+  const refreshProductionData = async () => {
 
+    await dispatch(
+      getAllProductions(
+        currentDivision
+      )
+    );
+
+  };
+
+
+
+// onsubmit function
+  const onSubmit = async (data) => {
 
     const updatedBy =
       user?.name ||
       user?.user?.name ||
       "";
 
-// start process
+
+    // ========================================
+    // START PROCESS
+    // ========================================
 
     if (
       action === "start"
     ) {
-
 
       const result =
         await dispatch(
@@ -135,6 +159,9 @@ const UpdateProductionDialog = ({
 
             process,
 
+            division:
+              currentDivision,
+
             updatedBy,
 
           })
@@ -143,122 +170,195 @@ const UpdateProductionDialog = ({
 
 
       if (
-
         startProduction.fulfilled
           .match(result)
-
       ) {
 
-        await dispatch(
-
-          fetchProductionByProcess(
-            process
-          )
-
-        );
-
+        await refreshProductionData();
 
         onClose();
 
       }
-
 
       return;
 
     }
 
-// complete first process
+
+    // ========================================
+    // ONLY COMPLETE ACTION
+    // ========================================
+
     if (
-      action === "complete"
+      action !== "complete"
     ) {
 
+      return;
 
-      const payload = {
-
-        soNo:
-          data.soNo,
-
-        product:
-          data.product,
-
-        process,
-
-        updatedBy,
-
-      };
+    }
 
 
-      // ==================================
-      // QTY ONLY FIRST PROCESS
-      // ==================================
+    // ========================================
+    // QUALITY PROCESS
+    // COMPLETE + WASTAGE
+    // ========================================
 
-      if (
-        isFirstProcess
-      ) {
-
-        payload.productionQty =
-          Number(
-            data.productionQty
-          );
-
-      }
-
+    if (
+      isQualityProcess
+    ) {
 
       const result =
         await dispatch(
 
-          completeProduction(
+          completeQuality({
 
-            payload
+            soNo:
+              data.soNo,
 
-          )
+            product:
+              data.product,
+
+            process,
+
+            division:
+              currentDivision,
+
+            wastageQty:
+              Number(
+                data.wastageQty
+              ),
+
+            updatedBy,
+
+          })
 
         );
 
 
       if (
-
-        completeProduction.fulfilled
+        completeQuality.fulfilled
           .match(result)
-
       ) {
 
-        await dispatch(
-
-          fetchProductionByProcess(
-            process
-          )
-
-        );
-
+        await refreshProductionData();
 
         onClose();
 
       }
 
+      return;
+
+    }
+
+
+    // ========================================
+    // NORMAL PROCESS
+    // ========================================
+
+    const payload = {
+
+      soNo:
+        data.soNo,
+
+      product:
+        data.product,
+
+      process,
+
+      division:
+        currentDivision,
+
+      updatedBy,
+
+    };
+
+
+    // ========================================
+    // FIRST PROCESS QTY
+    // ========================================
+
+    if (
+      isFirstProcess
+    ) {
+
+      payload.productionQty =
+        Number(
+          data.productionQty
+        );
+
+    }
+
+  
+
+    const result =
+      await dispatch(
+
+        completeProduction(
+          payload
+        )
+
+      );
+
+
+    if (
+      completeProduction.fulfilled
+        .match(result)
+    ) {
+
+      await refreshProductionData();
+
+      onClose();
+
     }
 
   };
-// Dialogue title
 
-  const title =
+
+// dialogue title bhai 
+  let title =
+    "Complete Process";
+
+
+  if (
     action === "start"
+  ) {
 
-      ? `Start ${process} Process`
+    title =
+      "Start Process";
 
-      : `Complete ${process} Process`;
+  }
 
+
+  if (
+    action === "complete"
+  ) {
+
+    title =
+      "Complete Process";
+
+  }
+
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
 
     <Dialog
 
-      open={open}
+      open={
+        open
+      }
 
       onClose={
+
         loading
+
           ? undefined
+
           : onClose
+
       }
 
       fullWidth
@@ -266,7 +366,6 @@ const UpdateProductionDialog = ({
       maxWidth="sm"
 
     >
-
 
       <DialogTitle>
 
@@ -285,9 +384,7 @@ const UpdateProductionDialog = ({
 
       >
 
-
         <DialogContent>
-
 
           <Grid
 
@@ -296,7 +393,8 @@ const UpdateProductionDialog = ({
             spacing={2}
 
           >
-{/* SO No */}
+
+            {/* SO NO */}
 
             <Grid size={12}>
 
@@ -320,7 +418,9 @@ const UpdateProductionDialog = ({
 
             </Grid>
 
-{/* products */}
+
+            {/* PRODUCT */}
+
             <Grid size={12}>
 
               <TextField
@@ -342,7 +442,9 @@ const UpdateProductionDialog = ({
               />
 
             </Grid>
-{/* start process */}
+
+
+            {/* START PROCESS */}
 
             {action === "start" && (
 
@@ -364,9 +466,7 @@ const UpdateProductionDialog = ({
                 >
 
                   <Typography
-
                     variant="body2"
-
                   >
 
                     Click below to start the{" "}
@@ -391,7 +491,6 @@ const UpdateProductionDialog = ({
                   >
 
                     The process start time will be
-
                     recorded automatically.
 
                   </Typography>
@@ -402,9 +501,11 @@ const UpdateProductionDialog = ({
 
             )}
 
-{/* production qty */}
+
+            {/* PRODUCTION QTY */}
 
             {action === "complete" &&
+
               isFirstProcess && (
 
                 <Grid size={12}>
@@ -422,6 +523,19 @@ const UpdateProductionDialog = ({
                       min: 1,
 
                     }}
+
+                    error={
+
+                      !!errors.productionQty
+
+                    }
+
+                    helperText={
+
+                      errors.productionQty
+                        ?.message
+
+                    }
 
                     {...register(
 
@@ -448,6 +562,8 @@ const UpdateProductionDialog = ({
                     )}
 
                   />
+
+
                   <Typography
 
                     variant="caption"
@@ -457,7 +573,6 @@ const UpdateProductionDialog = ({
                   >
 
                     Production quantity is entered
-
                     only in the first process.
 
                   </Typography>
@@ -465,10 +580,15 @@ const UpdateProductionDialog = ({
                 </Grid>
 
               )}
-{/* Next process information */}
+
+
+            {/* OTHER PROCESSES */}
+
             {action === "complete" &&
 
-              !isFirstProcess && (
+              !isFirstProcess &&
+
+              !isQualityProcess && (
 
                 <Grid size={12}>
 
@@ -501,8 +621,7 @@ const UpdateProductionDialog = ({
 
                         {Number(
 
-                          order?.productionQty ||
-                          0
+                          order?.productionQty || 0
 
                         ).toLocaleString()}
 
@@ -520,12 +639,177 @@ const UpdateProductionDialog = ({
                     >
 
                       This process does not require
-
                       a production quantity.
 
                     </Typography>
 
                   </Box>
+
+                </Grid>
+
+              )}
+
+
+            {/* QUALITY INFO */}
+
+            {action === "complete" &&
+
+              isQualityProcess && (
+
+                <Grid size={12}>
+
+                  <Box
+
+                    sx={{
+
+                      p: 2,
+
+                      bgcolor:
+                        "warning.lighter",
+
+                      borderRadius: 2,
+
+                    }}
+
+                  >
+
+                    <Typography
+                      variant="body2"
+                    >
+
+                      Production Qty:{" "}
+
+                      <strong>
+
+                        {Number(
+
+                          order?.productionQty || 0
+
+                        ).toLocaleString()}
+
+                      </strong>
+
+                    </Typography>
+
+
+                    <Typography
+
+                      variant="caption"
+
+                      color="text.secondary"
+
+                    >
+
+                      Quality complete hone ke saath
+                      wastage save hoga aur Nett Qty RTD
+                      automatically calculate hogi.
+
+                    </Typography>
+
+                  </Box>
+
+                </Grid>
+
+              )}
+
+
+            {/* WASTAGE QTY */}
+
+            {action === "complete" &&
+
+              isQualityProcess && (
+
+                <Grid size={12}>
+
+                  <TextField
+
+                    fullWidth
+
+                    type="number"
+
+                    label="Wastage Qty"
+
+                    inputProps={{
+
+                      min: 0,
+
+                      step: "any",
+
+                    }}
+
+                    error={
+
+                      !!errors.wastageQty
+
+                    }
+
+                    helperText={
+
+                      errors.wastageQty
+                        ?.message
+
+                    }
+
+                    {...register(
+
+                      "wastageQty",
+
+                      {
+
+                        required:
+
+                          "Wastage Qty is required",
+
+                        min: {
+
+                          value: 0,
+
+                          message:
+
+                            "Wastage cannot be negative",
+
+                        },
+
+                        validate: (value) => {
+
+                          const wastage =
+                            Number(value);
+
+                          const productionQty =
+                            Number(
+                              order?.productionQty || 0
+                            );
+
+                          return (
+
+                            wastage <=
+                            productionQty
+
+                          ) ||
+
+                          "Wastage cannot be greater than Production Qty";
+
+                        },
+
+                      }
+
+                    )}
+
+                  />
+
+
+                  <Typography
+
+                    variant="caption"
+
+                    color="text.secondary"
+
+                  >
+
+                    Nett Qty RTD =
+                    Production Qty - Wastage Qty
+
+                  </Typography>
 
                 </Grid>
 
@@ -538,12 +822,15 @@ const UpdateProductionDialog = ({
 
         <DialogActions>
 
-
           <Button
 
-            onClick={onClose}
+            onClick={
+              onClose
+            }
 
-            disabled={loading}
+            disabled={
+              loading
+            }
 
           >
 
@@ -558,32 +845,23 @@ const UpdateProductionDialog = ({
 
             variant="contained"
 
-            disabled={loading}
+            disabled={
+              loading
+            }
 
           >
 
             {loading
 
-              ? action === "start"
+              ? "Processing..."
 
-                ? "Starting..."
-
-                : "Completing..."
-
-              : action === "start"
-
-                ? "Start Process"
-
-                : "Complete Process"}
+              : "Submit"}
 
           </Button>
 
-
         </DialogActions>
 
-
       </form>
-
 
     </Dialog>
 

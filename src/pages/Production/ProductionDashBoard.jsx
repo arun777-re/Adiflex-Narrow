@@ -15,120 +15,136 @@ import ProductionTable
   from "../../components/production/ProductionTable";
 
 import {
-  fetchProductionByProcess,
+  getAllProductions,
 } from "../../redux/slices/productionSlice";
 
 
 const ProductionDashboard = () => {
 
-  const dispatch =
-    useDispatch();
+  const dispatch = useDispatch();
 
-    // authentication user
-  const { user } =
-    useSelector(
-      (state) => state.auth
-    );
 
-// production state
+  // =========================
+  // AUTH USER
+  // =========================
+
+  const {
+    user,
+  } = useSelector(
+    (state) => state.auth
+  );
+
+
+  // =========================
+  // CURRENT DIVISION
+  // =========================
+
+  const currentDivision =
+    user?.user?.division;
+
+
+  // =========================
+  // PRODUCTION STATE
+  // =========================
+
   const {
 
-    productionOrders = [],
+    allProductionOrders = [],
 
-    loading = false,
+    allOrdersLoading = false,
 
     error = null,
 
-  } =
-    useSelector(
-      (state) => state.production
-    );
+  } = useSelector(
+    (state) => state.production
+  );
 
 
-// current process by role login
-  const currentProcess =
-    user?.user?.role;
+  // =========================
+  // FETCH ALL DIVISION ORDERS
+  // =========================
 
-
-// fetch orders on page load
   useEffect(() => {
 
-    if (!currentProcess) {
-
+    if (!currentDivision) {
       return;
-
     }
 
 
     dispatch(
-
-      fetchProductionByProcess(
-
-        currentProcess
-
+      getAllProductions(
+        currentDivision
       )
-
     );
+
 
   }, [
 
     dispatch,
 
-    currentProcess,
+    currentDivision,
 
   ]);
 
 
-  console.log(
-
-    "Current Process:",
-
-    currentProcess
-
-  );
-
-
-  console.log(
-
-    "Production Orders:",
-
-    productionOrders
-
-  );
-
   return (
 
     <Box>
-{/* current process title */}
-      <Typography
 
-        variant="h5"
+      {/* HEADER */}
 
-        fontWeight={700}
-
-        mb={3}
-
+      <Box
         sx={{
-
-          textTransform: "capitalize",
-
+          mb: 3,
         }}
-
       >
 
-        {currentProcess || "Production"} Dashboard
+        <Typography
+          variant="h5"
+          fontWeight={700}
+        >
+          Production Dashboard
+        </Typography>
 
-      </Typography>
 
-{/* summary cards */}
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            textTransform: "capitalize",
+          }}
+        >
+
+          Division:{" "}
+
+          {currentDivision || "Loading..."}
+
+        </Typography>
+
+      </Box>
+
+
+      {/* SUMMARY CARDS */}
+
       <ProcessSummaryCards
 
-        rows={productionOrders}
+        rows={
+          allProductionOrders
+        }
 
-        loading={loading}
+        loading={
+          allOrdersLoading
+        }
+
+        division={
+          currentDivision
+        }
 
       />
-{/* table of production */}
+
+
+      {/* PRODUCTION TABLE */}
+
       <Paper
 
         elevation={3}
@@ -153,24 +169,26 @@ const ProductionDashboard = () => {
 
         <ProductionTable
 
-          rows={productionOrders}
+          rows={
+            allProductionOrders
+          }
 
-          loading={loading}
-
-          process={currentProcess}
+          loading={
+            allOrdersLoading
+          }
 
         />
 
       </Paper>
-{/* error handling */}
+
+
+      {/* ERROR */}
+
       {error && (
 
         <Typography
-
           color="error"
-
           mt={2}
-
         >
 
           {error}

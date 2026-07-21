@@ -6,180 +6,340 @@ import {
   Skeleton,
 } from "@mui/material";
 
-import PendingActionsIcon from "@mui/icons-material/PendingActions";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import InventoryIcon from "@mui/icons-material/Inventory";
-import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
+import PendingActionsIcon
+  from "@mui/icons-material/PendingActions";
+
+import CheckCircleIcon
+  from "@mui/icons-material/CheckCircle";
+
+import InventoryIcon
+  from "@mui/icons-material/Inventory";
+
+import PrecisionManufacturingIcon
+  from "@mui/icons-material/PrecisionManufacturing";
+
 
 const ProcessSummaryCards = ({
+
   rows = [],
+
   loading = false,
+
 }) => {
 
-// data calculations 
 
-  const pendingOrders = rows.length;
+  // =========================
+  // TOTAL ORDERS
+  // =========================
 
-  const completedOrders = rows.filter(
-    (row) => row.status === "Completed"
-  ).length;
+  const totalOrders =
+    rows.length;
 
-  const targetQty = rows.reduce(
-    (sum, row) =>
-      sum + Number(row.productionTargetQty || 0),
-    0
-  );
 
-  const productionQty = rows.reduce(
-    (sum, row) =>
-      sum + Number(row.productionQty || 0),
-    0
-  );
+  // =========================
+  // COMPLETED ORDERS
+  // =========================
 
-//   summary cards
+  const completedOrders =
+    rows.filter(
+
+      (row) =>
+        row.status ===
+        "Completed"
+
+    ).length;
+
+
+  // =========================
+  // TARGET QTY
+  // =========================
+
+  const targetQty =
+    rows.reduce(
+
+      (sum, row) =>
+
+        sum +
+
+        Number(
+          row.productionTargetQty ||
+          0
+        ),
+
+      0
+
+    );
+
+
+  // =========================
+  // PRODUCTION QTY
+  // =========================
+
+  const productionQty =
+    rows.reduce(
+
+      (sum, row) =>
+
+        sum +
+
+        Number(
+          row.productionQty ||
+          0
+        ),
+
+      0
+
+    );
+
+
   const cards = [
+
     {
-      title: "Pending Orders",
-      value: pendingOrders.toLocaleString(),
-      icon: <PendingActionsIcon fontSize="large" />,
+
+      title:
+        "Total Orders",
+
+      value:
+        totalOrders
+          .toLocaleString(),
+
+      icon:
+        <InventoryIcon
+          fontSize="large"
+        />,
+
     },
 
     {
-      title: "Completed",
-      value: completedOrders.toLocaleString(),
-      icon: <CheckCircleIcon fontSize="large" />,
+
+      title:
+        "Completed",
+
+      value:
+        completedOrders
+          .toLocaleString(),
+
+      icon:
+        <CheckCircleIcon
+          fontSize="large"
+        />,
+
     },
 
     {
-      title: "Target Qty",
-      value: targetQty.toLocaleString(),
-      icon: <InventoryIcon fontSize="large" />,
+
+      title:
+        "Target Qty",
+
+      value:
+        targetQty
+          .toLocaleString(),
+
+      icon:
+        <InventoryIcon
+          fontSize="large"
+        />,
+
     },
 
     {
-      title: "Production Qty",
-      value: productionQty.toLocaleString(),
-      icon: (
-        <PrecisionManufacturingIcon fontSize="large" />
-      ),
+
+      title:
+        "Production Qty",
+
+      value:
+        productionQty
+          .toLocaleString(),
+
+      icon:
+        <PrecisionManufacturingIcon
+          fontSize="large"
+        />,
+
     },
+
   ];
 
+
   return (
+
     <Grid
       container
-      spacing={{ xs: 2, sm: 2.5, md: 3 }}
+      spacing={{
+        xs: 2,
+        sm: 2.5,
+        md: 3,
+      }}
     >
-      {cards.map((card) => (
-        <Grid
-          key={card.title}
-          size={{
-            xs: 12,
-            sm: 6,
-            lg: 3,
-          }}
-        >
-          <Paper
-            elevation={3}
-            sx={{
-              p: {
-                xs: 2,
-                sm: 2.5,
-                md: 3,
-              },
 
-              minHeight: {
-                xs: 120,
-                sm: 135,
-              },
+      {cards.map(
 
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+        (card) => (
 
-              borderRadius: 3,
+          <Grid
 
-              transition:
-                "transform 0.2s ease, box-shadow 0.2s ease",
+            key={
+              card.title
+            }
 
-              "&:hover": {
-                transform: "translateY(-3px)",
-                boxShadow: 6,
-              },
+            size={{
+              xs: 12,
+              sm: 6,
+              lg: 3,
             }}
+
           >
-            {/* CARD CONTENT */}
 
-            <Box
+            <Paper
+
+              elevation={3}
+
               sx={{
-                minWidth: 0,
-              }}
-            >
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontWeight={600}
-                noWrap
-              >
-                {card.title}
-              </Typography>
 
-              {loading ? (
-                <Skeleton
-                  variant="text"
-                  width={100}
-                  height={48}
-                />
-              ) : (
+                p: {
+
+                  xs: 2,
+
+                  sm: 2.5,
+
+                  md: 3,
+
+                },
+
+                minHeight: {
+
+                  xs: 120,
+
+                  sm: 135,
+
+                },
+
+                display:
+                  "flex",
+
+                justifyContent:
+                  "space-between",
+
+                alignItems:
+                  "center",
+
+                borderRadius:
+                  3,
+
+                transition:
+                  "transform 0.2s ease",
+
+                "&:hover": {
+
+                  transform:
+                    "translateY(-3px)",
+
+                },
+
+              }}
+
+            >
+
+              <Box>
+
                 <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  mt={1}
-                  sx={{
-                    fontSize: {
-                      xs: "1.8rem",
-                      sm: "2rem",
-                      md: "2.2rem",
-                    },
-                  }}
+
+                  variant="body2"
+
+                  color="text.secondary"
+
+                  fontWeight={600}
+
                 >
-                  {card.value}
+
+                  {
+                    card.title
+                  }
+
                 </Typography>
-              )}
-            </Box>
 
-            {/* CARD ICON */}
 
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                {loading ? (
 
-                width: {
-                  xs: 48,
-                  sm: 56,
-                },
+                  <Skeleton
 
-                height: {
-                  xs: 48,
-                  sm: 56,
-                },
+                    variant="text"
 
-                borderRadius: "50%",
+                    width={100}
 
-                bgcolor: "action.hover",
+                    height={48}
 
-                flexShrink: 0,
-              }}
-            >
-              {card.icon}
-            </Box>
-          </Paper>
-        </Grid>
-      ))}
+                  />
+
+                ) : (
+
+                  <Typography
+
+                    variant="h4"
+
+                    fontWeight={700}
+
+                    mt={1}
+
+                  >
+
+                    {
+                      card.value
+                    }
+
+                  </Typography>
+
+                )}
+
+              </Box>
+
+
+              <Box
+
+                sx={{
+
+                  display:
+                    "flex",
+
+                  alignItems:
+                    "center",
+
+                  justifyContent:
+                    "center",
+
+                  width: 56,
+
+                  height: 56,
+
+                  borderRadius:
+                    "50%",
+
+                  bgcolor:
+                    "action.hover",
+
+                }}
+
+              >
+
+                {
+                  card.icon
+                }
+
+              </Box>
+
+            </Paper>
+
+          </Grid>
+
+        )
+
+      )}
+
     </Grid>
+
   );
+
 };
+
 
 export default ProcessSummaryCards;

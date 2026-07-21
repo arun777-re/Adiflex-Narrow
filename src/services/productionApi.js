@@ -1,15 +1,23 @@
 import api from "./api";
 
 
-// get production by process
+// =====================================================
+// GET PRODUCTION BY PROCESS + DIVISION
+// =====================================================
 
-export const getProductionByProcess = async (
-  process
-) => {
+export const getProductionByProcess = async ({
+  process,
+  division,
+}) => {
 
   const { data } =
     await api.get(
-      `/production/process/${process}`
+      `/production/process/${process}`,
+      {
+        params: {
+          division,
+        },
+      }
     );
 
   return data;
@@ -17,81 +25,89 @@ export const getProductionByProcess = async (
 };
 
 
-// start production process
+// =====================================================
+// GET ALL PRODUCTION ORDERS
+// =====================================================
 
-export const startProductionProcess = async (
-  payload
-) => {
+export const getAllProduction = async (division) => {
+  const response =
+    await api.get(
+      `/production/getAll/${division}`
+    );
 
-  console.log(
-    "Payload for starting process:",
-    payload
-  );
+  return response.data;
 
-  const { data } =
-    await api.patch(
+};
 
-      "/production/process/start",
 
+// =====================================================
+// START PRODUCTION PROCESS
+// =====================================================
+
+export const startProductionProcess =
+  async (payload) => {
+
+    console.log(
+      "Payload for starting process:",
       payload
-
     );
 
-  console.log(
-    "Start process response:",
-    data
-  );
+    const { data } =
+      await api.patch(
 
-  return data;
+        "/production/process/start",
 
-};
+        payload
+
+      );
+
+    return data;
+
+  };
 
 
-// complete production process 
+// =====================================================
+// COMPLETE PRODUCTION PROCESS
+// =====================================================
 
-export const completeProductionProcess = async (
-  payload
-) => {
+export const completeProductionProcess =
+  async (payload) => {
 
-  console.log(
-    "Payload for completing process:",
-    payload
-  );
-
-  const { data } =
-    await api.patch(
-
-      "/production/process/complete",
-
+    console.log(
+      "Payload for completing process:",
       payload
-
     );
 
-  console.log(
-    "Complete process response:",
-    data
-  );
+    const { data } =
+      await api.patch(
 
-  return data;
+        "/production/process/complete",
 
-};
+        payload
+
+      );
+
+    return data;
+
+  };
 
 
-// update wastage 
+// =====================================================
+// COMPLETE QUALITY + WASTAGE
+// =====================================================
 
-export const updateWastage = async (
-  payload
-) => {
+export const completeQualityWithWastage =
+  async (payload) => {
 
-  const { data } =
-    await api.patch(
+    const response =
+      await api.post(
 
-      "/production/wastage",
+        "/production/complete-quality",
 
-      payload
+        payload
 
-    );
+      );
 
-  return data;
+    return response.data;
 
-};
+  };
