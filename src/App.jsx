@@ -10,6 +10,7 @@ import SalesOrderCreate from "./pages/SalesOrderCreate";
 import Production from "./pages/Production";
 import ProductionDashboard from "./pages/Production/ProductionDashBoard";
 import DispatchPage from "./pages/DispatchPage";
+import Inventory from "./pages/Inventory";
 
 function App() {
 
@@ -49,6 +50,10 @@ function App() {
           <Route
           path="/dispatch"
           element={<DispatchPage/>}
+        />
+          <Route
+          path="/inventory"
+          element={<Inventory/>}
         />
 
       </Route>

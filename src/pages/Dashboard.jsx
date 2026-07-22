@@ -11,6 +11,7 @@ import {
 } from "react-redux";
 
 import DashboardCard from "../components/DashboardCard";
+import RecentOrderTable from "../components/salesOrder/RecentOrderTable";
 
 
 const Dashboard = () => {
@@ -23,13 +24,36 @@ const Dashboard = () => {
         state.auth
     );
 
+    // here api fetches for sales orders according to role 
+    const {salesOrders} = useSelector((state)=>state.salesOrder);
+
+ const totalOrders = salesOrders.length;
+
+  const pendingOrders = salesOrders.filter(
+    (item) =>
+      item.status !== "Completed" &&
+      item.status !== "Cancelled"
+  ).length;
+
+  const completedOrders = salesOrders.filter(
+    (item) => item.status === "Completed"
+  ).length;
+
+  const cancelledOrders = salesOrders.filter(
+    (item) => item.status === "Cancelled"
+  ).length;
 
   const role =
-    user?.role;
+    user?.user.role;
 
 
   const division =
-    user?.division;
+    user?.user.division;
+
+const recentOrders =
+  Array.isArray(salesOrders) && salesOrders.length > 0
+    ? [...salesOrders].reverse().slice(0, 10)
+    : [];
 
 
   const getRoleName =
@@ -115,7 +139,7 @@ const Dashboard = () => {
             Welcome,{" "}
 
             <strong>
-              {user?.name}
+              {user?.user.name}
             </strong>
 
           </Typography>
@@ -198,7 +222,7 @@ const Dashboard = () => {
 
             title="Total Orders"
 
-            value="0"
+            value={totalOrders}
 
           />
 
@@ -223,7 +247,7 @@ const Dashboard = () => {
 
             title="Pending Production"
 
-            value="0"
+            value={pendingOrders}
 
           />
 
@@ -248,7 +272,7 @@ const Dashboard = () => {
 
             title="Ready to Dispatch"
 
-            value="0"
+            value={"0"}
 
           />
 
@@ -273,7 +297,7 @@ const Dashboard = () => {
 
             title="Completed"
 
-            value="0"
+            value={completedOrders}
 
           />
 
@@ -335,6 +359,7 @@ const Dashboard = () => {
           }
 
         </Typography>
+        <RecentOrderTable recentOrders={recentOrders}/>
 
       </Paper>
 

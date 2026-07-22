@@ -42,17 +42,20 @@ const SalesOrderForm = () => {
       date: new Date().toISOString().slice(0, 10),
       customer: "",
       division: "",
+      ordertype:"",
       location: "",
       jobWork: false,
 
       products: [
         {
           product: "",
+          skucode:"",
           qty: "",
           rate: "",
           unit: "Meter",
           openingFgQty: 0,
           productionQty: 0,
+          
         },
       ],
     },
@@ -90,13 +93,9 @@ const SalesOrderForm = () => {
         rate: Number(item.rate),
         openingFgQty: Number(item.openingFgQty) || 0,
         productionQty: Number(item.productionQty),
+        
       })),
     };
-
-    console.log(
-      "Payload in SalesOrderForm component:",
-      payload
-    );
 
     const res = await dispatch(
       addSalesOrder(payload)
@@ -112,12 +111,14 @@ const SalesOrderForm = () => {
 
         customer: "",
         division: "",
+        ordertype:"",
         location: "",
         jobWork: false,
 
         products: [
           {
             product: "",
+            skucode:"",
             qty: "",
             rate: "",
             unit: "Meter",
@@ -217,6 +218,37 @@ const SalesOrderForm = () => {
             </TextField>
           </Grid>
 
+          {/* order type */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <TextField
+              select
+              fullWidth
+              label="Order Type"
+              defaultValue=""
+              error={!!errors.ordertype}
+              helperText={
+                errors.ordertype
+                  ? "Order Type is required"
+                  : ""
+              }
+              {...register("ordertype", {
+                required: true,
+              })}
+            >
+              <MenuItem value="">
+                Select Order Type
+              </MenuItem>
+
+              <MenuItem value="Customer">
+                Customer
+              </MenuItem>
+
+              <MenuItem value="Internal">
+                Internal
+              </MenuItem>
+            </TextField>
+          </Grid>
+
           {/* LOCATION */}
 
           <Grid size={{ xs: 12, md: 6 }}>
@@ -295,6 +327,31 @@ const SalesOrderForm = () => {
                   }
                   {...register(
                     `products.${index}.product`,
+                    {
+                      required: true,
+                    }
+                  )}
+                />
+              </Grid>
+              {/* SKU CODE */}
+              <Grid
+                size={{ xs: 12, md: 3 }}
+              >
+                <TextField
+                  fullWidth
+                  label="SKU Code"
+                  error={
+                    !!errors.products?.[index]
+                      ?.skucode
+                  }
+                  helperText={
+                    errors.products?.[index]
+                      ?.skucode
+                      ? "SKU Code is required"
+                      : ""
+                  }
+                  {...register(
+                    `products.${index}.skucode`,
                     {
                       required: true,
                     }

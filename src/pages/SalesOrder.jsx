@@ -58,7 +58,7 @@ const SalesOrder = () => {
   ).length;
 
   const completedOrders = salesOrders.filter(
-    (item) => item.status === "Completed"
+    (item) => item.status === "Ready To Dispatch"
   ).length;
 
   const cancelledOrders = salesOrders.filter(
