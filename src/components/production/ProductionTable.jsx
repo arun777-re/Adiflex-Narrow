@@ -27,10 +27,10 @@ const PROCESS_ORDER = [
   },
 
   {
-    key: "yarnBeam",
-    label: "Yarn Beam",
-    startField: "yarnBeamStartAt",
-    endField: "yarnBeamEndsAt",
+    key: "filling",
+    label: "Filling",
+    startField: "fillingStartAt",
+    endField: "fillingEndsAt",
   },
 
   {
@@ -40,18 +40,19 @@ const PROCESS_ORDER = [
     endField: "machineEndsAt",
   },
 
-  {
-    key: "quality",
-    label: "Quality",
-    startField: "qualityStartsAt",
-    endField: "qualityEndsAt",
-  },
+
 
   {
     key: "finishing",
     label: "Finishing",
     startField: "finishingStartsAt",
     endField: "finishingEndsAt",
+  },
+    {
+    key: "quality",
+    label: "Quality",
+    startField: "qualityStartsAt",
+    endField: "qualityEndsAt",
   },
 
   {

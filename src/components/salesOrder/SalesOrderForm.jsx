@@ -35,7 +35,9 @@ const SalesOrderForm = () => {
 
   const { user, loading } = useSelector((state) => state.auth);
 
-  const { products: allproducts } = useSelector((state) => state.product);
+  const { allproducts } = useSelector((state) => state.product);
+
+
 
   const {
     control,
@@ -330,7 +332,7 @@ const SalesOrderForm = () => {
                   options={allproducts || []}
                   getOptionLabel={(option) => option?.sku || ""}
                   onChange={(event, newValue) => {
-                    console.log("Selected:", newValue);
+                    console.log("Selected:hellooooooooooooooooooooooooooooooooooooooooooooo............", newValue);
                     if (newValue) {
                       setValue(`products.${index}.skucode`, newValue.sku);
                       setValue(
