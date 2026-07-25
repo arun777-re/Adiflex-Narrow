@@ -281,6 +281,26 @@ export const menuConfig = {
       icon:
         <AddShoppingCartRoundedIcon />,
     },
+    {
+      id: 6,
+
+      title: "Create Product",
+
+      path: "/create-product",
+
+      icon:
+        <AddShoppingCartRoundedIcon />,
+    },
+    {
+      id: 7,
+
+      title: "All Products",
+
+      path: "/view-product",
+
+      icon:
+        <AddShoppingCartRoundedIcon />,
+    },
 
   ],
 

@@ -11,6 +11,8 @@ import Production from "./pages/Production";
 import ProductionDashboard from "./pages/Production/ProductionDashBoard";
 import DispatchPage from "./pages/DispatchPage";
 import Inventory from "./pages/Inventory";
+import ViewAllProducts from "./pages/ViewAllProducts";
+import CreateProduct from "./pages/CreateProduct";
 
 function App() {
 
@@ -54,6 +56,14 @@ function App() {
           <Route
           path="/inventory"
           element={<Inventory/>}
+        />
+          <Route
+          path="/view-product"
+          element={<ViewAllProducts/>}
+        />
+          <Route
+          path="/create-product"
+          element={<CreateProduct/>}
         />
 
       </Route>

@@ -12,6 +12,9 @@ const persistConfig = {
   whitelist: [
     "auth",
     "salesOrder",
+    "product",
+    "dispatch",
+    "production",
   ],
 };
 
