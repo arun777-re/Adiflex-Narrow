@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import loginPic from "../assets/SR.Tech.png";
 
 import {
   Box,
@@ -11,6 +12,7 @@ import {
   MenuItem,
   Select,
   TextField,
+  Typography,
 } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -120,16 +122,48 @@ const Login = () => {
         display: "flex",
 
         justifyContent: "center",
-
+        px: { xs: 2, md: 8 },
         alignItems: "center",
+        backgroundImage: `url(${loginPic})`,
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
       }}
     >
       <Card
         sx={{
-          width: 400,
+          width: { xs: "100%", sm: 420 },
+
+          borderRadius: 4,
+
+          p: 2,
+
+          bgcolor: "rgba(255,255,255,0.92)",
+
+          backdropFilter: "blur(12px)",
+
+          WebkitBackdropFilter: "blur(12px)",
+
+          boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
         }}
       >
         <CardContent>
+          <Typography
+            variant="h4"
+            fontWeight={700}
+            textAlign="center"
+            color="primary"
+          >
+            Welcome Back
+          </Typography>
+
+          <Typography
+            variant="body2"
+            textAlign="center"
+            color="text.secondary"
+            mb={3}
+          >
+            Sign in to continue to S.R. Technologies ERP
+          </Typography>
           <Box component="form" onSubmit={handleSubmit}>
             {/* ================================= */}
             {/* ROLE */}
@@ -208,6 +242,10 @@ const Login = () => {
               disabled={loading}
               sx={{
                 mt: 3,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 700,
+                fontSize: "1rem",
               }}
             >
               {loading ? "Logging in..." : "Login"}
