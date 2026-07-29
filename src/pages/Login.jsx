@@ -116,12 +116,28 @@ const Login = () => {
 
   return (
     <Box
-      sx={{
+  sx={{
     minHeight: "100vh",
+
     display: "flex",
-    justifyContent: "flex-end",
+
+    justifyContent: {
+      xs: "center",
+      md: "flex-end",
+    },
+
     alignItems: "center",
-    px: 10,
+
+    px: {
+      xs: 2,
+      sm: 4,
+      md: 10,
+    },
+
+    py: {
+      xs: 3,
+      md: 0,
+    },
 
     backgroundImage: `
       linear-gradient(
@@ -132,7 +148,10 @@ const Login = () => {
     `,
 
     backgroundSize: "cover",
+
     backgroundPosition: "center",
+
+    backgroundRepeat: "no-repeat",
   }}
     >
       <Card
