@@ -6,11 +6,13 @@ import salesOrderReducer from '../slices/salesOrderSlice.jsx';
 import productionReducer from '../slices/productionSlice.jsx'
 import dispatchReducer from '../slices/dispatchSlice.jsx';
 import productReducer from '../slices/productSlice.jsx';
+import fgReducer from '../slices/fgSlice.jsx';
 
 export const rootReducer = combineReducers({
   auth: authReducer,
   salesOrder: salesOrderReducer,
   production:productionReducer,
   dispatch:dispatchReducer,
-  product:productReducer
+  product:productReducer,
+  fginventory:fgReducer,
 });
