@@ -117,53 +117,76 @@ const Login = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    px: 10,
 
-        display: "flex",
+    backgroundImage: `
+      linear-gradient(
+        rgba(0,0,0,.45),
+        rgba(0,0,0,.45)
+      ),
+      url(${loginPic})
+    `,
 
-        justifyContent: "center",
-        px: { xs: 2, md: 8 },
-        alignItems: "center",
-        backgroundImage: `url(${loginPic})`,
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-      }}
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
     >
       <Card
-        sx={{
-          width: { xs: "100%", sm: 420 },
+        elevation={0}
+       sx={{
+width:420,
 
-          borderRadius: 4,
+background:"rgba(255,255,255,.95)",
 
-          p: 2,
+borderRadius:4,
 
-          bgcolor: "rgba(255,255,255,0.92)",
+boxShadow:"0 30px 70px rgba(0,0,0,.45)",
 
-          backdropFilter: "blur(12px)",
-
-          WebkitBackdropFilter: "blur(12px)",
-
-          boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
-        }}
+overflow:"hidden"
+}}
       >
-        <CardContent>
-          <Typography
-            variant="h4"
-            fontWeight={700}
-            textAlign="center"
-            color="primary"
-          >
-            Welcome Back
-          </Typography>
+        <Box
+sx={{
+background:"#1976d2",
+color:"#fff",
+p:3
+}}
+>
 
-          <Typography
-            variant="body2"
-            textAlign="center"
-            color="text.secondary"
-            mb={3}
-          >
-            Sign in to continue to S.R. Technologies ERP
-          </Typography>
+<Typography
+variant="h5"
+fontWeight={700}
+>
+S.R. TECHNOLOGIES
+</Typography>
+
+<Typography>
+Enterprise ERP System
+</Typography>
+
+</Box>
+        <CardContent>
+     
+        <Typography
+  variant="h4"
+  fontWeight={700}
+  textAlign="center"
+>
+  Welcome Back
+</Typography>
+
+<Typography
+  variant="body2"
+  textAlign="center"
+  color="text.secondary"
+  mb={4}
+>
+  Login to S.R. Technologies ERP
+</Typography>
           <Box component="form" onSubmit={handleSubmit}>
             {/* ================================= */}
             {/* ROLE */}
@@ -235,21 +258,32 @@ const Login = () => {
             {/* LOGIN BUTTON */}
             {/* ================================= */}
 
-            <Button
-              fullWidth
-              variant="contained"
-              type="submit"
-              disabled={loading}
-              sx={{
-                mt: 3,
-                py: 1.5,
-                borderRadius: 2,
-                fontWeight: 700,
-                fontSize: "1rem",
-              }}
-            >
-              {loading ? "Logging in..." : "Login"}
-            </Button>
+           <Button
+  fullWidth
+  type="submit"
+  variant="contained"
+  disabled={loading}
+  sx={{
+    mt: 3,
+    py: 1.6,
+    borderRadius: 3,
+    fontSize: 17,
+    fontWeight: 700,
+    textTransform: "none",
+    boxShadow: "0 10px 25px rgba(25,118,210,.35)",
+  }}
+>
+  {loading ? "Logging in..." : "Login"}
+</Button>
+<Typography
+  variant="caption"
+  display="block"
+  textAlign="center"
+  mt={3}
+  color="text.secondary"
+>
+  © 2026 S.R. Technologies ERP
+</Typography>
           </Box>
         </CardContent>
       </Card>
