@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState,useEffect } from "react";
 
 import {
   Box,
@@ -22,7 +22,11 @@ import {
 const ProductTable = () => {
   const dispatch = useDispatch();
 
-  const { products, loading } = useSelector(
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
+
+  const { allproducts, loading } = useSelector(
     (state) => state.product
   );
 
@@ -67,7 +71,9 @@ const ProductTable = () => {
 
   // FILTERED DATA
   const filteredRows = useMemo(() => {
-    return products.filter((item) => {
+    const Product = Array.isArray(allproducts) && allproducts.length > 0 ? allproducts : [];
+    console.log("all products:",Product)
+    return  Product.filter((item) => {
       const searchMatch =
         search === "" ||
         [
@@ -95,7 +101,7 @@ const ProductTable = () => {
       );
     });
   }, [
-    products,
+    allproducts,
     search,
     division,
     status,

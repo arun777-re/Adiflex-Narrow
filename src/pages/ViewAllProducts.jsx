@@ -12,11 +12,7 @@ import { fetchProducts } from "../redux/slices/productSlice.jsx";
 import ProductTable from "../components/product/ProductTable.jsx";
 
 const ViewAllProducts = () => {
-  const dispatch = useDispatch();
 
-  useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch]);
 
   return (
     <Paper

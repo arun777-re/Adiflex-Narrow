@@ -439,6 +439,7 @@ const SalesOrderForm = () => {
                   fullWidth
                   type="number"
                   label="Opening FG Qty"
+                  disabled={watch("ordertype") === 'Internal'}
                   {...register(`products.${index}.openingFgQty`)}
                 />
               </Grid>
