@@ -7,7 +7,6 @@ import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import SalesOrder from "./pages/SalesOrder";
 import SalesOrderCreate from "./pages/SalesOrderCreate";
-import Production from "./pages/Production";
 import ProductionDashboard from "./pages/Production/ProductionDashBoard";
 import DispatchPage from "./pages/DispatchPage";
 import Inventory from "./pages/Inventory";

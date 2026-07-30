@@ -72,6 +72,17 @@ const PROCESS_ORDER = [
 
 // get current process of order
 const getCurrentProcess = (row) => {
+   // OLD PRODUCTION CYCLE
+  if (
+    row.overAllStatus === "Cycle Completed" ||
+    row.overAllStatus === "Completed"
+  ) {
+    return {
+      key: null,
+      label: "Completed",
+      status: "Completed",
+    }
+  }
   const processOrder = [];
 
   // ==========================================

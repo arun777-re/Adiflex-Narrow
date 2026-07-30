@@ -20,6 +20,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { login } from "../redux/slices/authSlices";
 
 import { loginData } from "../utils/loginRoleData";
+import { companyData } from "../utils/companyInfo";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -116,30 +117,30 @@ const Login = () => {
 
   return (
     <Box
-  sx={{
-    minHeight: "100vh",
+      sx={{
+        minHeight: "100vh",
 
-    display: "flex",
+        display: "flex",
 
-    justifyContent: {
-      xs: "center",
-      md: "flex-end",
-    },
+        justifyContent: {
+          xs: "center",
+          md: "flex-end",
+        },
 
-    alignItems: "center",
+        alignItems: "center",
 
-    px: {
-      xs: 2,
-      sm: 4,
-      md: 10,
-    },
+        px: {
+          xs: 2,
+          sm: 4,
+          md: 10,
+        },
 
-    py: {
-      xs: 3,
-      md: 0,
-    },
+        py: {
+          xs: 3,
+          md: 0,
+        },
 
-    backgroundImage: `
+        backgroundImage: `
       linear-gradient(
         rgba(0,0,0,.45),
         rgba(0,0,0,.45)
@@ -147,65 +148,53 @@ const Login = () => {
       url(${loginPic})
     `,
 
-    backgroundSize: "cover",
+        backgroundSize: "cover",
 
-    backgroundPosition: "center",
+        backgroundPosition: "center",
 
-    backgroundRepeat: "no-repeat",
-  }}
+        backgroundRepeat: "no-repeat",
+      }}
     >
       <Card
         elevation={0}
-       sx={{
-width:420,
+        sx={{
+          width: 420,
 
-background:"rgba(255,255,255,.95)",
+          background: "rgba(255,255,255,.95)",
 
-borderRadius:4,
+          borderRadius: 4,
 
-boxShadow:"0 30px 70px rgba(0,0,0,.45)",
+          boxShadow: "0 30px 70px rgba(0,0,0,.45)",
 
-overflow:"hidden"
-}}
+          overflow: "hidden",
+        }}
       >
         <Box
-sx={{
-background:"#1976d2",
-color:"#fff",
-p:3
-}}
->
+          sx={{
+            background: "#1976d2",
+            color: "#fff",
+            p: 3,
+          }}
+        >
+          <Typography variant="h5" fontWeight={700}>
+          {companyData.companyName}
+          </Typography>
 
-<Typography
-variant="h5"
-fontWeight={700}
->
-S.R. TECHNOLOGIES
-</Typography>
-
-<Typography>
-Enterprise ERP System
-</Typography>
-
-</Box>
+          <Typography>{companyData.work}</Typography>
+        </Box>
         <CardContent>
-     
-        <Typography
-  variant="h4"
-  fontWeight={700}
-  textAlign="center"
->
-  Welcome Back
-</Typography>
+          <Typography variant="h4" fontWeight={700} textAlign="center">
+            Welcome Back
+          </Typography>
 
-<Typography
-  variant="body2"
-  textAlign="center"
-  color="text.secondary"
-  mb={4}
->
-  Login to S.R. Technologies ERP
-</Typography>
+          <Typography
+            variant="body2"
+            textAlign="center"
+            color="text.secondary"
+            mb={4}
+          >
+            Login to S.R. Technologies ERP
+          </Typography>
           <Box component="form" onSubmit={handleSubmit}>
             {/* ================================= */}
             {/* ROLE */}
@@ -277,32 +266,32 @@ Enterprise ERP System
             {/* LOGIN BUTTON */}
             {/* ================================= */}
 
-           <Button
-  fullWidth
-  type="submit"
-  variant="contained"
-  disabled={loading}
-  sx={{
-    mt: 3,
-    py: 1.6,
-    borderRadius: 3,
-    fontSize: 17,
-    fontWeight: 700,
-    textTransform: "none",
-    boxShadow: "0 10px 25px rgba(25,118,210,.35)",
-  }}
->
-  {loading ? "Logging in..." : "Login"}
-</Button>
-<Typography
-  variant="caption"
-  display="block"
-  textAlign="center"
-  mt={3}
-  color="text.secondary"
->
-  © 2026 S.R. Technologies ERP
-</Typography>
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              disabled={loading}
+              sx={{
+                mt: 3,
+                py: 1.6,
+                borderRadius: 3,
+                fontSize: 17,
+                fontWeight: 700,
+                textTransform: "none",
+                boxShadow: "0 10px 25px rgba(25,118,210,.35)",
+              }}
+            >
+              {loading ? "Logging in..." : "Login"}
+            </Button>
+            <Typography
+              variant="caption"
+              display="block"
+              textAlign="center"
+              mt={3}
+              color="text.secondary"
+            >
+              © 2026 S.R. Technologies ERP
+            </Typography>
           </Box>
         </CardContent>
       </Card>
