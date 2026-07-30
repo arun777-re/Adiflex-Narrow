@@ -5,6 +5,7 @@ import { DataGrid } from "@mui/x-data-grid";
 import { Box, Paper, TextField, Chip, InputAdornment } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
+import { useSelector } from "react-redux";
 
 const columns = [
   {
@@ -60,16 +61,17 @@ const columns = [
 const InventoryDataGrid = ({ data = [], loading = false }) => {
   const [search, setSearch] = React.useState("");
 
-  const rows = Array.isArray(data)
-    ? data.map((item, index) => ({
-        id: index + 1,
-        sku: item[0],
-        product: item[1],
-        division: item[2],
-        unit: item[3],
-        availableQty: Number(item[4] || 0),
-      }))
-    : [];
+
+const rows = Array.isArray(data)
+  ? data.map((item, index) => ({
+      id: index + 1,
+      sku: item[0],
+      product: item[1],
+      division: item[2],
+      unit: item[3],
+      availableQty: Number(item[4] || 0),
+    }))
+  : [];
 
   const filteredRows = rows.filter(
     (row) =>

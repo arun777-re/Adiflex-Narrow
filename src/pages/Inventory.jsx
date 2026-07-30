@@ -21,13 +21,25 @@ const Inventory = () => {
   }, []);
 
   const {inventory,loading} = useSelector((state)=> state.fginventory);
-  const availableFGStock = Array.isArray(inventory.data) && inventory.data.reduce((sum,item)=>sum + Number(item[4] || 0),0)
+  const { user } = useSelector((state) => state.auth.user);
+
+let finalData = inventory.data;
+
+if (user?.division?.toLowerCase() !== "all") {
+  finalData = inventory.data.filter(
+    (item) =>
+      item[2]?.trim().toLowerCase() ===
+      user.division.trim().toLowerCase()
+  );
+}
+console.log("finalllllllldatatatatat",finalData)
+  const availableFGStock = Array.isArray(finalData) && finalData.reduce((sum,item)=>sum + Number(item[4] || 0),0)
   const lowStockItemsLength =
-  Array.isArray(inventory.data)
-    ? inventory.data.filter((i) => Number(i[4]) < 100).length
+  Array.isArray(finalData)
+    ? finalData.filter((i) => Number(i[4]) < 100).length
     : 0;
 
-    const outOfStockItemsLength = Array.isArray(inventory.data) ? inventory.data.filter((i) => Number(i[4]) <=0 ).length : 0;
+    const outOfStockItemsLength = Array.isArray(finalData) ? finalData.filter((i) => Number(i[4]) <=0 ).length : 0;
   return (
     <Box p={3}>
       {/* Heading */}
@@ -44,7 +56,7 @@ const Inventory = () => {
             </Typography>
 
             <Typography variant="h5">
-              {inventory.count || 0}
+              {finalData.length || 0}
             </Typography>
           </Paper>
         </Grid>
@@ -90,7 +102,7 @@ const Inventory = () => {
 
       {/* DataGrid */}
      
-        <InventoryDataGrid data={inventory.data || []}
+        <InventoryDataGrid data={finalData || []}
         loading = { loading}
         />
     </Box>
