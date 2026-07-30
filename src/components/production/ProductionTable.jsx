@@ -163,7 +163,7 @@ const ProductionTable = ({
 
 }) => {
 
-
+console.log("rowsveere vevevevevverererererererrere___________:",rows)
   const [
 
     open,
@@ -684,10 +684,9 @@ const ProductionTable = ({
           }
 
           getRowId={
-
             (row) =>
 
-              `${row.soNo}-${row.product}`
+             row.id
 
           }
 
