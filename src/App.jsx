@@ -12,6 +12,8 @@ import DispatchPage from "./pages/DispatchPage";
 import Inventory from "./pages/Inventory";
 import ViewAllProducts from "./pages/ViewAllProducts";
 import CreateProduct from "./pages/CreateProduct";
+import ActivityLog from "./pages/ActivityLog";
+import Reports from "./pages/Reports";
 
 function App() {
 
@@ -63,6 +65,14 @@ function App() {
           <Route
           path="/create-product"
           element={<CreateProduct/>}
+        />
+          <Route
+          path="/activity-log"
+          element={<ActivityLog/>}
+        />
+          <Route
+          path="/reports"
+          element={<Reports/>}
         />
 
       </Route>

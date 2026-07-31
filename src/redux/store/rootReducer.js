@@ -3,10 +3,11 @@ import { combineReducers } from "@reduxjs/toolkit";
 
 import authReducer from '../slices/authSlices.jsx';
 import salesOrderReducer from '../slices/salesOrderSlice.jsx';
-import productionReducer from '../slices/productionSlice.jsx'
+import productionReducer from '../slices/productionSlice.jsx' 
 import dispatchReducer from '../slices/dispatchSlice.jsx';
 import productReducer from '../slices/productSlice.jsx';
 import fgReducer from '../slices/fgSlice.jsx';
+import dashboardReducer from '../slices/dashboardSlice.jsx';
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -15,4 +16,5 @@ export const rootReducer = combineReducers({
   dispatch:dispatchReducer,
   product:productReducer,
   fginventory:fgReducer,
+  dashboard:dashboardReducer
 });

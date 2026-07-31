@@ -23,16 +23,15 @@ const Inventory = () => {
   const {inventory,loading} = useSelector((state)=> state.fginventory);
   const { user } = useSelector((state) => state.auth.user);
 
-let finalData = inventory.data;
+let finalData = inventory?.data || [];
 
 if (user?.division?.toLowerCase() !== "all") {
-  finalData = inventory.data.filter(
+  finalData = inventory?.data.filter(
     (item) =>
       item[2]?.trim().toLowerCase() ===
       user.division.trim().toLowerCase()
   );
 }
-console.log("finalllllllldatatatatat",finalData)
   const availableFGStock = Array.isArray(finalData) && finalData.reduce((sum,item)=>sum + Number(item[4] || 0),0)
   const lowStockItemsLength =
   Array.isArray(finalData)
