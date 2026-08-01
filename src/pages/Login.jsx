@@ -21,12 +21,12 @@ import { login } from "../redux/slices/authSlices";
 
 import { loginData } from "../utils/loginRoleData";
 import { companyData } from "../utils/companyInfo";
+import { notificationAudio } from "../utils/audio";
 
 const Login = () => {
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
-
 
   const { loading } = useSelector((state) => state.auth);
 
@@ -97,6 +97,9 @@ const Login = () => {
         return;
       }
 
+      await notificationAudio.play();
+      notificationAudio.pause();
+      notificationAudio.currentTime = 0;
       navigate("/dashboard");
     } catch (error) {
       console.error(error);
@@ -178,7 +181,7 @@ const Login = () => {
           }}
         >
           <Typography variant="h5" fontWeight={700}>
-          {companyData.companyName}
+            {companyData.companyName}
           </Typography>
 
           <Typography>{companyData.work}</Typography>
