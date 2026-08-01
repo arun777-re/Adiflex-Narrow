@@ -5,6 +5,13 @@ import CrochetDashBoard from './CrochetDashBoard';
 
 const ProductionDashBoard = () => {
 const {user} = useSelector((state)=> state.auth.user);
+  React.useEffect(() => {
+    socket.emit("join-room", {
+      role: user.role,
+
+      division: user.division,
+    });
+  }, []);
 if (!user) return null;
 
   if (
