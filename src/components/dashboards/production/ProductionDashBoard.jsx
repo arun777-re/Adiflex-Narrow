@@ -2,6 +2,7 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 import WovenDashBoard from './WovenDashBoard';
 import CrochetDashBoard from './CrochetDashBoard';
+import { socket } from '../../../socket/socket';
 
 const ProductionDashBoard = () => {
 const {user} = useSelector((state)=> state.auth.user);

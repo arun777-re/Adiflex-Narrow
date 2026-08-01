@@ -2,12 +2,7 @@ import React from 'react'
 import { socket } from '../../../socket/socket';
 
 const WovenDashBoard = () => {
-   React.useEffect(() => {
-      socket.emit("join-room", {
-        role: user.role,
-        division: user.division,
-      });
-    }, []);
+
   
     const audio = new Audio("/notification.mp3");
     React.useEffect(() => {
