@@ -14,7 +14,7 @@ import {useDispatch,useSelector} from 'react-redux';
 
 const Navbar = ({ handleDrawerToggle }) => {
   const dispatch = useDispatch();
-  const {user} = useSelector(state => console.log("State in Navbar component:", state) || state.auth);
+  const {user} = useSelector(state => state.auth);
   return (
     <AppBar
       position="fixed"
@@ -87,7 +87,7 @@ const Navbar = ({ handleDrawerToggle }) => {
               fontWeight={600}
               fontSize={14}
             >
-              {user?.name || "Admin"}
+              {user?.user?.name || "Admin"}
             </Typography>
 
             <Typography
@@ -97,12 +97,12 @@ const Navbar = ({ handleDrawerToggle }) => {
                 textTransform: "capitalize",
               }}
             >
-              {user?.role || "admin"}
+              {user?.user?.role || "admin"}
             </Typography>
           </Box>
 
           <Avatar>
-            {(user?.name || "A")
+            {(user?.user?.name || "A")
               .charAt(0)
               .toUpperCase()}
           </Avatar>

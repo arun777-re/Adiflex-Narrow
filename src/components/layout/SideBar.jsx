@@ -78,30 +78,6 @@ const Sidebar = ({
     menuConfig[role] || [];
 
 
-  console.log(
-    "Sidebar User:",
-    loggedInUser
-  );
-
-
-  console.log(
-    "Sidebar Role:",
-    role
-  );
-
-
-  console.log(
-    "Sidebar Division:",
-    division
-  );
-
-
-  console.log(
-    "Sidebar Menus:",
-    menus
-  );
-
-
   // ==========================================
   // LOGOUT
   // ==========================================

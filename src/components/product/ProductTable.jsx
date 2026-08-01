@@ -72,7 +72,6 @@ const ProductTable = () => {
   // FILTERED DATA
   const filteredRows = useMemo(() => {
     const Product = Array.isArray(allproducts) && allproducts.length > 0 ? allproducts : [];
-    console.log("all products:",Product)
     return  Product.filter((item) => {
       const searchMatch =
         search === "" ||

@@ -1,167 +1,228 @@
 import { useMemo } from "react";
-import { Chip, Box, Typography } from "@mui/material";
+import { Box, Chip } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
 const SalesOrderTable = ({ rows = [], loading = false }) => {
+  const columns = useMemo(
+    () => [
+      {
+        field: "soNo",
+        headerName: "SO No",
+        width: 110,
+      },
 
+      {
+        field: "date",
+        headerName: "Date",
+        width: 120,
+      },
 
- const columns = useMemo(()=>[
-  { field: "soNo", headerName: "SO No", width: 110 },
+      {
+        field: "skucode",
+        headerName: "SKU Code",
+        width: 120,
+      },
 
-  { field: "date", headerName: "Date", width: 120 },
+      {
+        field: "customer",
+        headerName: "Customer",
+        minWidth: 200,
+        flex: 1,
+      },
 
-  {
-    field: "customer",
-    headerName: "Customer",
-    minWidth: 200,
-    flex: 1,
-  },
+      {
+        field: "product",
+        headerName: "Product Name",
+        minWidth: 220,
+        flex: 1.3,
+      },
 
-  {
-    field: "product",
-    headerName: "Product",
-    minWidth: 220,
-    flex: 1.2,
-  },
+      {
+        field: "ordertype",
+        headerName: "Order Type",
+        width: 120,
+      },
 
-  {
-    field: "division",
-    headerName: "Division",
-    width: 110,
-  },
+      {
+        field: "division",
+        headerName: "Division",
+        width: 110,
+      },
 
-  {
-    field: "qty",
-    headerName: "SO Qty",
-    type: "number",
-    width: 100,
-    align: "center",
-    headerAlign: "center",
-  },
+      {
+        field: "qty",
+        headerName: "SO Qty",
+        width: 100,
+        align: "center",
+        headerAlign: "center",
+      },
 
-  {
-    field: "rate",
-    headerName: "Rate",
-    type: "number",
-    width: 100,
-    align: "center",
-    headerAlign: "center",
-     renderCell: (params) => (
-   <>₹ {Number(params.row.rate || 0).toFixed(2)}</>
-     ),
-  },
+      {
+        field: "rate",
+        headerName: "Std Rate",
+        width: 110,
+        align: "center",
+        headerAlign: "center",
+        renderCell: ({ row }) =>
+          `₹ ${Number(row.rate || 0).toFixed(2)}`,
+      },
 
-  {
-    field: "unit",
-    headerName: "Unit",
-    width: 90,
-    align: "center",
-    headerAlign: "center",
-  },
+      {
+        field: "rateadjustment",
+        headerName: "Adjustment",
+        width: 120,
+        align: "center",
+        headerAlign: "center",
+        renderCell: ({ row }) =>
+          `₹ ${Number(row.rateadjustment || 0).toFixed(2)}`,
+      },
 
-  {
-    field: "openingFgQty",
-    headerName: "Opening FG",
-    type: "number",
-    width: 120,
-    align: "center",
-    headerAlign: "center",
-  },
+      {
+        field: "finalrate",
+        headerName: "Final Rate",
+        width: 120,
+        align: "center",
+        headerAlign: "center",
+        renderCell: ({ row }) => (
+          <strong>
+            ₹ {Number(row.finalrate || 0).toFixed(2)}
+          </strong>
+        ),
+      },
 
-  {
-    field: "productionQty",
-    headerName: "Production",
-    type: "number",
-    width: 120,
-    align: "center",
-    headerAlign: "center",
-  },
+      {
+        field: "unit",
+        headerName: "Unit",
+        width: 90,
+        align: "center",
+        headerAlign: "center",
+      },
 
-  {
-    field: "manufacturedQty",
-    headerName: "Manufactured",
-    type: "number",
-    width: 130,
-    align: "center",
-    headerAlign: "center",
-  },
+      {
+        field: "openingFgQty",
+        headerName: "Opening FG",
+        width: 120,
+        align: "center",
+        headerAlign: "center",
+      },
 
-  {
-    field: "dispatchedQty",
-    headerName: "Dispatched",
-    type: "number",
-    width: 120,
-    align: "center",
-    headerAlign: "center",
-  },
+      {
+        field: "productionQty",
+        headerName: "Production",
+        width: 120,
+        align: "center",
+        headerAlign: "center",
+      },
 
-  {
-    field: "orderReceivedBy",
-    headerName: "Created By",
-    width: 150,
-  },
+      {
+        field: "jobWork",
+        headerName: "Job Work",
+        width: 110,
+        align: "center",
+        headerAlign: "center",
+        renderCell: ({ row }) => (
+          <Chip
+            size="small"
+            label={row.jobWork ? "Yes" : "No"}
+            color={row.jobWork ? "success" : "default"}
+          />
+        ),
+      },
 
-  {
-    field: "status",
-    headerName: "Status",
-    width: 140,
-  },
-]);
+      {
+        field: "manufacturedQty",
+        headerName: "Manufactured",
+        width: 130,
+        align: "center",
+        headerAlign: "center",
+      },
+
+      {
+        field: "dispatchedQty",
+        headerName: "Dispatched",
+        width: 120,
+        align: "center",
+        headerAlign: "center",
+      },
+
+      {
+        field: "orderReceivedBy",
+        headerName: "Created By",
+        width: 150,
+      },
+
+      {
+        field: "status",
+        headerName: "Status",
+        width: 130,
+        renderCell: ({ row }) => (
+          <Chip
+            size="small"
+            label={row.status || "Pending"}
+            color={
+              row.status === "Completed"
+                ? "success"
+                : row.status === "Running"
+                ? "warning"
+                : row.status === "Dispatch"
+                ? "primary"
+                : "default"
+            }
+          />
+        ),
+      },
+    ],
+    []
+  );
 
   return (
-<Box
-  sx={{
-    width: "100%",
-    height: "calc(100vh - 180px)",
-    overflow: "auto",
-    borderRadius: 2,
-  }}
->
-<DataGrid
-  rows={rows}
-  columns={columns}
-  loading={loading}
-  getRowId={(row) => row.soNo}
-  disableRowSelectionOnClick
-  pageSizeOptions={[10, 20, 50, 100]}
-  density="compact"
-  columnHeaderHeight={48}
-  rowHeight={42}
-  initialState={{
-    pagination: {
-      paginationModel: {
-        pageSize: 10,
-      },
-    },
-  }}
-  sx={{
-    border: 0,
-    "& .MuiDataGrid-columnHeaderTitle": {
-      fontWeight: 700,
-    },
+    <Box
+      sx={{
+        width: "100%",
+        height: "calc(100vh - 180px)",
+        borderRadius: 2,
+      }}
+    >
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        loading={loading}
+        getRowId={(row) => `${row.soNo}-${row.product}`}
+        disableRowSelectionOnClick
+        density="compact"
+        pageSizeOptions={[10, 20, 50, 100]}
+        initialState={{
+          pagination: {
+            paginationModel: {
+              pageSize: 10,
+            },
+          },
+        }}
+        sx={{
+          border: 0,
 
-    "& .MuiDataGrid-cell": {
-      borderBottom: "1px solid #eee",
-      fontSize: 13,
-    },
+          "& .MuiDataGrid-columnHeaderTitle": {
+            fontWeight: 700,
+          },
 
-    "& .MuiDataGrid-row:nth-of-type(even)": {
-      backgroundColor: "#fafafa",
-    },
+          "& .MuiDataGrid-cell": {
+            borderBottom: "1px solid #eee",
+            fontSize: 13,
+          },
 
-    "& .MuiDataGrid-row:hover": {
-      backgroundColor: "#e3f2fd",
-    },
+          "& .MuiDataGrid-row:nth-of-type(even)": {
+            backgroundColor: "#fafafa",
+          },
 
-    "& .MuiDataGrid-footerContainer": {
-      borderTop: "1px solid #ddd",
-    },
+          "& .MuiDataGrid-row:hover": {
+            backgroundColor: "#e3f2fd",
+          },
 
-    "& .MuiDataGrid-virtualScroller": {
-      overflowX: "auto",
-    },
-  }}
-/>
+          "& .MuiDataGrid-footerContainer": {
+            borderTop: "1px solid #ddd",
+          },
+        }}
+      />
     </Box>
   );
 };

@@ -163,7 +163,6 @@ const ProductionTable = ({
 
 }) => {
 
-console.log("rowsveere vevevevevverererererererrere___________:",rows)
   const [
 
     open,

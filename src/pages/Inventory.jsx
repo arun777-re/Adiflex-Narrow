@@ -20,25 +20,25 @@ const Inventory = () => {
     dispatch(fetchAllFG())
   }, []);
 
-  const {inventory,loading} = useSelector((state)=> state.fginventory);
+  const {inventory,loading} = useSelector((state)=> state?.fginventory);
   const { user } = useSelector((state) => state.auth.user);
 
 let finalData = inventory?.data || [];
 
 if (user?.division?.toLowerCase() !== "all") {
-  finalData = inventory?.data.filter(
+  finalData = inventory?.data?.filter(
     (item) =>
       item[2]?.trim().toLowerCase() ===
       user.division.trim().toLowerCase()
   );
 }
-  const availableFGStock = Array.isArray(finalData) && finalData.reduce((sum,item)=>sum + Number(item[4] || 0),0)
+  const availableFGStock = Array.isArray(finalData) && finalData?.reduce((sum,item)=>sum + Number(item[4] || 0),0)
   const lowStockItemsLength =
   Array.isArray(finalData)
-    ? finalData.filter((i) => Number(i[4]) < 100).length
+    ? finalData?.filter((i) => Number(i[4]) < 100).length
     : 0;
 
-    const outOfStockItemsLength = Array.isArray(finalData) ? finalData.filter((i) => Number(i[4]) <=0 ).length : 0;
+    const outOfStockItemsLength = Array.isArray(finalData) ? finalData?.filter((i) => Number(i[4]) <=0 ).length : 0;
   return (
     <Box p={3}>
       {/* Heading */}
@@ -55,7 +55,7 @@ if (user?.division?.toLowerCase() !== "all") {
             </Typography>
 
             <Typography variant="h5">
-              {finalData.length || 0}
+              {finalData?.length || 0}
             </Typography>
           </Paper>
         </Grid>

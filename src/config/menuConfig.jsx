@@ -236,31 +236,8 @@ export const menuConfig = {
         <DashboardRoundedIcon />,
     },
 
-
-    {
-      id: 2,
-
-      title: "Monitoring",
-
-      path: "/monitoring",
-
-      icon:
-        <AssessmentRoundedIcon />,
-    },
-
-
-    {
-      id: 3,
-
-      title: "Reports",
-
-      path: "/reports",
-
-      icon:
-        <AssessmentRoundedIcon />,
-    },
        {
-      id: 4,
+      id: 2,
 
       title: "Sales Orders",
 
@@ -272,7 +249,7 @@ export const menuConfig = {
 
 
     {
-      id: 5,
+      id: 3,
 
       title: "Create Sales Order",
 
@@ -282,7 +259,7 @@ export const menuConfig = {
         <AddShoppingCartRoundedIcon />,
     },
     {
-      id: 6,
+      id: 4,
 
       title: "Create Product",
 
@@ -292,7 +269,7 @@ export const menuConfig = {
         <AddShoppingCartRoundedIcon />,
     },
     {
-      id: 7,
+      id: 5,
 
       title: "All Products",
 

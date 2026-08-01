@@ -2,7 +2,7 @@ import AdminDashBoard from "../components/dashboards/admin/AdminDashBoard";
 import BillingDashBoard from "../components/dashboards/BillingDashBoard";
 import DispatchDashBoard from "../components/dashboards/DispatchDashBoard";
 import MerchandiserDashBoard from "../components/dashboards/MerchandiserDashBoard";
-import ProductionDashBoard from "../components/dashboards/ProductionDashBoard";
+import ProductionDashBoard from "../components/dashboards/production/ProductionDashBoard";
 
 export const DASHBOARD_COMPONENTS = {
   admin: AdminDashBoard,
