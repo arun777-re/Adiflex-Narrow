@@ -18,9 +18,12 @@ const CrochetDashBoard = () => {
       console.log("🔥 Received:", data);
       console.log(socket.id);
       console.log(socket.connected);
+      audio.currentTime = 0;
+       audio.play().catch((error) => {
+        console.error("Error playing audio:", error);
+      });
       toast.success(`New Sales Order: ${data.soNo}`);
     };
-audio.play();
     socket.on("new-sales-order", handleNewSalesOrder);
 
     return () => {
