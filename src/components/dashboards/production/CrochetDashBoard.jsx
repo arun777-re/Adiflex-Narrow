@@ -14,15 +14,17 @@ const CrochetDashBoard = () => {
 
   const audio = new Audio("/notification.mp3");
   React.useEffect(() => {
-    socket.on("new-sales-order", (data) => {
-
-      toast.success(`New Sales Order Created:${data.soNo}`);
-      audio.play();
-      console.log("socket se data aaya hai veererererererer", data);
-    });
+    const handleNewSalesOrder = (data) => {
+      console.log("🔥 Received:", data);
+      console.log(socket.id);
+      console.log(socket.connected);
+      toast.success(`New Sales Order: ${data.soNo}`);
+    };
+audio.play();
+    socket.on("new-sales-order", handleNewSalesOrder);
 
     return () => {
-      socket.off("new-sales-order");
+      socket.off("new-sales-order", handleNewSalesOrder);
     };
   }, []);
 
