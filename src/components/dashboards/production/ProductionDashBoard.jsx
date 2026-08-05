@@ -8,16 +8,21 @@ const ProductionDashBoard = () => {
 const {user} = useSelector((state)=> state.auth.user);
 
 if (!user) return null;
-
   if (
     user.role !== "productionSupervisor"
   ) {
     return null;
   }
 
+  // =========================
+  // CURRENT DIVISION
+  // =========================
+
+  const currentDivision = user?.user?.division;
+
   return (
     <>
-    {user.division === "woven" && user.role==="productionSupervisor" && (<WovenDashBoard/>)}
+    {user.division === "woven" && user.role==="productionSupervisor" && (<WovenDashBoard />)}
     {user.division === "crochet" && user.role==="productionSupervisor" && (<CrochetDashBoard/>)}
     </>
   )

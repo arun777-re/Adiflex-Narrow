@@ -1,11 +1,15 @@
 import { useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useSelector,useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import { socket } from "../socket/socket";
 import { notificationAudio } from "../utils/audio.js";
 
-const useNotification = () => {
+const useNotification = ({
+  event = "new-notification",
+  refetch= null
+}) => {
   const { user } = useSelector((state) => state?.auth?.user);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (!user) return;
@@ -25,14 +29,17 @@ const useNotification = () => {
       notificationAudio.play().catch((err) => {
         console.log("Audio Error:", err);
       });
+      if(refetch && typeof refetch === "function"){
+        dispatch(refetch());
+      }
     };
 
-    socket.on("new-notification", handleNotification);
+    socket.on(event, handleNotification);
 
     return () => {
-      socket.off("new-notification", handleNotification);
+      socket.off(event, handleNotification);
     };
-  }, [user]);
+  }, [user,event,refetch,dispatch]);
 };
 
 export default useNotification;

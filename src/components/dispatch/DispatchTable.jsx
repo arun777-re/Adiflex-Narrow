@@ -34,6 +34,11 @@ const DispatchTable = ({
         headerName: "SO No",
         width: 130,
       },
+      {
+        field: "skuCode",
+        headerName: "SKU Code",
+        width: 130,
+      },
 
       {
         field: "product",

@@ -9,21 +9,12 @@ import ProcessSummaryCards from "../../components/production/ProcessSummaryCards
 import ProductionTable from "../../components/production/ProductionTable";
 
 import { getAllProductions } from "../../redux/slices/productionSlice";
+import toast from "react-hot-toast";
 
 const ProductionDashboard = () => {
   const dispatch = useDispatch();
-
-  // =========================
-  // AUTH USER
-  // =========================
-
-  const { user } = useSelector((state) => state.auth);
-
-  // =========================
-  // CURRENT DIVISION
-  // =========================
-
-  const currentDivision = user?.user?.division;
+const { user } = useSelector((state) => state.auth.user);
+const currentDivision = user?.division;
 
   // =========================
   // PRODUCTION STATE
@@ -49,6 +40,13 @@ const ProductionDashboard = () => {
     dispatch(getAllProductions(currentDivision));
   }, [dispatch, currentDivision]);
 
+
+  useEffect(()=>{
+    if(error){
+      toast.error(error);
+    }
+  },[error])
+
   return (
     <Box>
       {/* HEADER */}
@@ -73,13 +71,6 @@ const ProductionDashboard = () => {
         </Typography>
       </Box>
 
-      {/* SUMMARY CARDS */}
-
-      <ProcessSummaryCards
-        rows={allProductionOrders}
-        loading={allOrdersLoading}
-        division={currentDivision}
-      />
 
       {/* PRODUCTION TABLE */}
 
@@ -105,11 +96,7 @@ const ProductionDashboard = () => {
 
       {/* ERROR */}
 
-      {error && (
-        <Typography color="error" mt={2}>
-          {error}
-        </Typography>
-      )}
+     
     </Box>
   );
 };

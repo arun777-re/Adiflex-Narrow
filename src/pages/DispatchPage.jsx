@@ -23,7 +23,10 @@ const DispatchPage = () => {
   }, [dispatch]);
 
   
-  useNotification();
+  useNotification({
+    event: "new-dispatch-notification",
+    refetch:getAllDispatch,
+  });
 
   return (
     <Box
