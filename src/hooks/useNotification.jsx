@@ -5,11 +5,11 @@ import { socket } from "../socket/socket";
 import { notificationAudio } from "../utils/audio.js";
 
 const useNotification = () => {
-  const { user } = useSelector((state) => state.auth.user);
+  const { user } = useSelector((state) => state?.auth?.user);
 
   useEffect(() => {
     if (!user) return;
- console.log("Joining Room...", user);
+    console.log("Joining Room...", user);
     socket.emit("join-room", {
       role: user.role,
       division: user.division,
