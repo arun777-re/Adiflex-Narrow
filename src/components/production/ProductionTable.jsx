@@ -1,18 +1,10 @@
 import { useMemo, useState } from "react";
 
-import {
-  Button,
-  Chip,
-  Box,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Button, Chip, Box, Stack, Typography } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
 
-import UpdateProductionDialog
-  from "./UpdateProductionDialog";
-
+import UpdateProductionDialog from "./UpdateProductionDialog";
 
 // =====================================================
 // PROCESS ORDER
@@ -40,15 +32,13 @@ const PROCESS_ORDER = [
     endField: "machineEndsAt",
   },
 
-
-
   {
     key: "finishing",
     label: "Finishing",
     startField: "finishingStartsAt",
     endField: "finishingEndsAt",
   },
-    {
+  {
     key: "quality",
     label: "Quality",
     startField: "qualityStartsAt",
@@ -72,7 +62,7 @@ const PROCESS_ORDER = [
 
 // get current process of order
 const getCurrentProcess = (row) => {
-   // OLD PRODUCTION CYCLE
+  // OLD PRODUCTION CYCLE
   if (
     row.overAllStatus === "Cycle Completed" ||
     row.overAllStatus === "Completed"
@@ -81,7 +71,7 @@ const getCurrentProcess = (row) => {
       key: null,
       label: "Completed",
       status: "Completed",
-    }
+    };
   }
   const processOrder = [];
 
@@ -153,638 +143,336 @@ const getCurrentProcess = (row) => {
     status: "Completed",
   };
 };
-// component 
+// component
 
 const ProductionTable = ({
-
   rows = [],
 
   loading = false,
-
 }) => {
+  const [open, setOpen] = useState(false);
 
-  const [
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
-    open,
+  const [selectedAction, setSelectedAction] = useState(null);
 
-    setOpen,
-
-  ] = useState(false);
-
-
-  const [
-
-    selectedOrder,
-
-    setSelectedOrder,
-
-  ] = useState(null);
-
-
-  const [
-
-    selectedAction,
-
-    setSelectedAction,
-
-  ] = useState(null);
-
+  let activeRows = []
+  if(Array.isArray(rows) && rows.length > 0) {
+    activeRows = rows.filter((row) => row.status !== "Completed" && row.status !== "Cycle Completed");
+  }
 
   // =====================================================
   // OPEN DIALOG
   // =====================================================
 
   const handleProcessAction = (
-
     row,
 
     action,
 
     process,
-
   ) => {
-
     setSelectedOrder({
-
       ...row,
 
-      currentProcess:
-        process,
-
+      currentProcess: process,
     });
 
-
-    setSelectedAction(
-      action
-    );
-
+    setSelectedAction(action);
 
     setOpen(true);
-
   };
-
 
   // =====================================================
   // CLOSE DIALOG
   // =====================================================
 
   const handleClose = () => {
-
     setOpen(false);
 
     setSelectedOrder(null);
 
     setSelectedAction(null);
-
   };
-
 
   // =====================================================
   // COLUMNS
   // =====================================================
 
   const columns = useMemo(
-
     () => [
-
       // -----------------------------------------------
       // SO NO
       // -----------------------------------------------
 
       {
+        field: "soNo",
 
-        field:
-          "soNo",
+        headerName: "SO No",
 
-        headerName:
-          "SO No",
-
-        width:
-          130,
-
+        width: 130,
       },
+      {
+        field: "cycleID",
 
+        headerName: "Cycle ID",
+
+        width: 130,
+      },
 
       // -----------------------------------------------
       // PRODUCT
       // -----------------------------------------------
 
       {
+        field: "product",
 
-        field:
-          "product",
+        headerName: "Product",
 
-        headerName:
-          "Product",
+        flex: 1.5,
 
-        flex:
-          1.5,
-
-        minWidth:
-          220,
-
+        minWidth: 220,
       },
-
 
       // -----------------------------------------------
       // DIVISION
       // -----------------------------------------------
 
       {
+        field: "division",
 
-        field:
-          "division",
+        headerName: "Division",
 
-        headerName:
-          "Division",
-
-        width:
-          120,
-
+        width: 120,
       },
-
 
       // -----------------------------------------------
       // TARGET
       // -----------------------------------------------
 
       {
+        field: "productionTargetQty",
 
-        field:
-          "productionTargetQty",
+        headerName: "Target Qty",
 
-        headerName:
-          "Target Qty",
+        type: "number",
 
-        type:
-          "number",
+        width: 130,
 
-        width:
-          130,
+        align: "center",
 
-        align:
-          "center",
-
-        headerAlign:
-          "center",
-
+        headerAlign: "center",
       },
-
 
       // -----------------------------------------------
       // PRODUCTION QTY
       // -----------------------------------------------
 
       {
+        field: "productionQty",
 
-        field:
-          "productionQty",
+        headerName: "Production Qty",
 
-        headerName:
-          "Production Qty",
+        type: "number",
 
-        type:
-          "number",
+        width: 150,
 
-        width:
-          150,
+        align: "center",
 
-        align:
-          "center",
-
-        headerAlign:
-          "center",
-
+        headerAlign: "center",
       },
-
 
       // -----------------------------------------------
       // CURRENT PROCESS
       // -----------------------------------------------
 
       {
+        field: "currentProcess",
 
-        field:
-          "currentProcess",
+        headerName: "Current Process",
 
-        headerName:
-          "Current Process",
+        width: 170,
 
-        width:
-          170,
+        renderCell: (params) => {
+          const process = getCurrentProcess(params.row);
 
-        renderCell:
-          (params) => {
-
-            const process =
-              getCurrentProcess(
-                params.row
-              );
-
-
-            return (
-
-              <Chip
-
-                label={
-                  process.label
-                }
-
-                color={
-                  process.status ===
-                  "Completed"
-
-                    ? "success"
-
-                    : "primary"
-                }
-
-                size="small"
-
-              />
-
-            );
-
-          },
-
+          return (
+            <Chip
+              label={process.label}
+              color={process.status === "Completed" ? "success" : "primary"}
+              size="small"
+            />
+          );
+        },
       },
-
 
       // -----------------------------------------------
       // STATUS
       // -----------------------------------------------
 
       {
+        field: "currentStatus",
 
-        field:
-          "currentStatus",
+        headerName: "Status",
 
-        headerName:
-          "Status",
+        width: 140,
 
-        width:
-          140,
+        renderCell: (params) => {
+          const process = getCurrentProcess(params.row);
 
-        renderCell:
-          (params) => {
+          let color = "warning";
 
-            const process =
-              getCurrentProcess(
-                params.row
-              );
+          if (process.status === "In Progress") {
+            color = "info";
+          }
 
+          if (process.status === "Completed") {
+            color = "success";
+          }
 
-            let color =
-              "warning";
-
-
-            if (
-
-              process.status ===
-              "In Progress"
-
-            ) {
-
-              color =
-                "info";
-
-            }
-
-
-            if (
-
-              process.status ===
-              "Completed"
-
-            ) {
-
-              color =
-                "success";
-
-            }
-
-
-            return (
-
-              <Chip
-
-                label={
-                  process.status
-                }
-
-                color={
-                  color
-                }
-
-                size="small"
-
-              />
-
-            );
-
-          },
-
+          return <Chip label={process.status} color={color} size="small" />;
+        },
       },
-
 
       // -----------------------------------------------
       // ACTION
       // -----------------------------------------------
 
       {
-
-        field:
-          "action",
-
-        headerName:
-          "Action",
-
-        width:
-          220,
-
-        sortable:
-          false,
-
-        renderCell:
-          (params) => {
-
-
-            const process =
-              getCurrentProcess(
-                params.row
-              );
-
-
-            // ALL COMPLETED
-
-            if (
-
-              process.status ===
-              "Completed"
-
-            ) {
-
-              return (
-
-                <Chip
-
-                  label="Production Completed"
-
-                  color="success"
-
-                  size="small"
-
-                />
-
-              );
-
-            }
-
-
-            // PENDING
-
-            if (
-
-              process.status ===
-              "Pending"
-
-            ) {
-
-              return (
-
-                <Button
-
-                  variant="contained"
-
-                  color="primary"
-
-                  size="small"
-
-                  onClick={() =>
-
-                    handleProcessAction(
-
-                      params.row,
-
-                      "start",
-
-                      process.key,
-
-                    )
-
-                  }
-
-                >
-
-                  Start{" "}
-
-                  {
-                    process.label
-                  }
-
-                </Button>
-
-              );
-
-            }
-
-
-            // IN PROGRESS
-
-            if (
-
-              process.status ===
-              "In Progress"
-
-            ) {
-
-              return (
-
-                <Button
-
-                  variant="contained"
-
-                  color="success"
-
-                  size="small"
-
-                  onClick={() =>
-
-                    handleProcessAction(
-
-                      params.row,
-
-                      "complete",
-
-                      process.key,
-
-                    )
-
-                  }
-
-                >
-
-                  Complete{" "}
-
-                  {
-                    process.label
-                  }
-
-                </Button>
-
-              );
-
-            }
-
-
-            return null;
-
-          },
-
+        field: "action",
+
+        headerName: "Action",
+
+        width: 220,
+
+        sortable: false,
+
+        renderCell: (params) => {
+          const process = getCurrentProcess(params.row);
+
+          // ALL COMPLETED
+
+          if (process.status === "Completed") {
+            return (
+              <Chip label="Production Completed" color="success" size="small" />
+            );
+          }
+
+          // PENDING
+
+          if (process.status === "Pending") {
+            return (
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={() =>
+                  handleProcessAction(
+                    params.row,
+
+                    "start",
+
+                    process.key,
+                  )
+                }
+              >
+                Start {process.label}
+              </Button>
+            );
+          }
+
+          // IN PROGRESS
+
+          if (process.status === "In Progress") {
+            return (
+              <Button
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={() =>
+                  handleProcessAction(
+                    params.row,
+
+                    "complete",
+
+                    process.key,
+                  )
+                }
+              >
+                Complete {process.label}
+              </Button>
+            );
+          }
+
+          return null;
+        },
       },
-
     ],
 
-    []
-
+    [],
   );
 
-
   return (
-
     <>
-
       <Box
-
         sx={{
+          width: "100%",
 
-          width:
-            "100%",
-
-          height:
-            "calc(100vh - 280px)",
-
+          height: "calc(100vh - 280px)",
         }}
-
       >
-
         <DataGrid
-
-          rows={
-            rows
-          }
-
-          columns={
-            columns
-          }
-
-          loading={
-            loading
-          }
-
-          getRowId={
-            (row) =>
-
-             row.id
-
-          }
-
+          rows={activeRows}
+          columns={columns}
+          loading={loading}
+          getRowId={(row) => row.id}
           disableRowSelectionOnClick
-
           density="compact"
-
           pageSizeOptions={[
-
             10,
 
             20,
 
             50,
-
           ]}
-
           initialState={{
-
             pagination: {
-
               paginationModel: {
-
-                pageSize:
-                  10,
-
+                pageSize: 10,
               },
-
             },
-
           }}
-
           sx={{
-
-            borderRadius:
-              2,
+            borderRadius: 2,
 
             "& .MuiDataGrid-columnHeaders": {
+              backgroundColor: "#f5f5f5",
 
-              backgroundColor:
-                "#f5f5f5",
-
-              fontWeight:
-                700,
-
+              fontWeight: 700,
             },
 
             "& .MuiDataGrid-columnHeaderTitle": {
-
-              fontWeight:
-                700,
-
+              fontWeight: 700,
             },
 
             "& .MuiDataGrid-row:hover": {
-
-              backgroundColor:
-                "#f1f8ff",
-
+              backgroundColor: "#f1f8ff",
             },
-
           }}
-
         />
-
       </Box>
-
 
       {/* PROCESS DIALOG */}
 
       <UpdateProductionDialog
-
-        open={
-          open
-        }
-
-        onClose={
-          handleClose
-        }
-
-        order={
-          selectedOrder
-        }
-
-        process={
-          selectedOrder?.currentProcess
-        }
-
-        action={
-          selectedAction
-        }
-
+        open={open}
+        onClose={handleClose}
+        order={selectedOrder}
+        process={selectedOrder?.currentProcess}
+        action={selectedAction}
       />
-
     </>
-
   );
-
 };
-
 
 export default ProductionTable;

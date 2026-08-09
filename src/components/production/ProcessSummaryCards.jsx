@@ -44,12 +44,14 @@ const ProcessSummaryCards = ({
     rows.filter(
 
       (row) =>
-        row.status ===
-        "Completed"
+        row.status === "Completed" 
 
     ).length;
 
+const completedCycleOrders =rows.filter((row) =>
+        row.status === "Completed"  || row.status === "Cycle Completed"
 
+    ).length;
   // =========================
   // TARGET QTY
   // =========================

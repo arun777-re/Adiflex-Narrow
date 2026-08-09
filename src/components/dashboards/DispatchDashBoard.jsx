@@ -1,9 +1,18 @@
-import React from 'react'
+import React from "react";
+import { useSelector } from "react-redux";
+
+import DispatchSummaryCards from "../dispatch/DispatchSummaryCards";
 
 const DispatchDashBoard = () => {
-  return (
-    <div>DispatchDashBoard</div>
-  )
-}
+  const { dispatchOrders = [] } = useSelector(
+    (state) => state.dispatch
+  );
 
-export default DispatchDashBoard
+  return (
+    <div>
+      <DispatchSummaryCards rows={dispatchOrders} />
+    </div>
+  );
+};
+
+export default DispatchDashBoard;

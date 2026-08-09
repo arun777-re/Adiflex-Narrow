@@ -14,6 +14,7 @@ const DispatchTable = ({
   const [open, setOpen] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const activeRows = Array.isArray(rows) ? rows.filter((row) => row.status !== "Fully Dispatched") : [];
 
   const handleOpen = (row) => {
     setSelectedOrder(row);
@@ -26,7 +27,12 @@ const DispatchTable = ({
 
     setSelectedOrder(null);
   };
+console.log(
+  "DATAGRID ROW COUNT:",
+  rows.length
+);
 
+console.table(rows);
   const columns = useMemo(
     () => [
       {
@@ -95,13 +101,6 @@ const DispatchTable = ({
         field: "wastageQty",
         headerName: "Wastage Qty",
         width: 130,
-        type: "number",
-      },
-
-      {
-        field: "nettQtyRTD",
-        headerName: "Nett Qty RTD",
-        width: 140,
         type: "number",
       },
 
@@ -183,10 +182,10 @@ const DispatchTable = ({
         }}
       >
         <DataGrid
-          rows={rows}
+          rows={activeRows}
           columns={columns}
           loading={loading}
-          getRowId={(row) => row.id}
+          getRowId={(row) => row.cycleID}
           disableRowSelectionOnClick
           density="compact"
           pageSizeOptions={[
