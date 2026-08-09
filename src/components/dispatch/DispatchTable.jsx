@@ -181,28 +181,26 @@ console.table(rows);
           height: "calc(100vh - 250px)",
         }}
       >
-        <DataGrid
-          rows={activeRows}
-          columns={columns}
-          loading={loading}
-          getRowId={(row) => row.cycleID}
-          disableRowSelectionOnClick
-          density="compact"
-          pageSizeOptions={[
-            10,
-
-            20,
-
-            50,
-          ]}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 10,
-              },
-            },
-          }}
-        />
+     <DataGrid
+  rows={activeRows}
+  columns={columns}
+  loading={loading}
+  getRowId={(row) =>
+    row.cycleID ||
+    row.id ||
+    `${row.soNo}-${row.skuCode}-${row.rowNumber}`
+  }
+  disableRowSelectionOnClick
+  density="compact"
+  pageSizeOptions={[10, 20, 50]}
+  initialState={{
+    pagination: {
+      paginationModel: {
+        pageSize: 10,
+      },
+    },
+  }}
+/>
       </Box>
 
       <DispatchDialog open={open} onClose={handleClose} order={selectedOrder} />
