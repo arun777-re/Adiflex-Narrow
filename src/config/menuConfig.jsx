@@ -278,6 +278,17 @@ export const menuConfig = {
       icon:
         <AddShoppingCartRoundedIcon />,
     },
+    {
+      id: 6,
+
+      title: "FG Inventory",
+
+      path: "/inventory",
+
+      icon:
+        <AddShoppingCartRoundedIcon />,
+    },
+ 
 
   ],
 
