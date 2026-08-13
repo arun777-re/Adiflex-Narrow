@@ -1,6 +1,13 @@
 import { useMemo, useState } from "react";
 
-import { Button, Chip, Box } from "@mui/material";
+import { Button, Chip, Box,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack
+ } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -12,9 +19,73 @@ const DispatchTable = ({
   loading = false,
 }) => {
   const [open, setOpen] = useState(false);
+  const [routeFilter, setRouteFilter] = useState("");
+const [customerFilter, setCustomerFilter] = useState("");
+const [soFilter, setSoFilter] = useState("");
 
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const activeRows = Array.isArray(rows) ? rows.filter((row) => row.status !== "Fully Dispatched") : [];
+
+  // filtered values for route
+const routes = useMemo(() => {
+  return [
+    ...new Set(
+      rows
+        .map((row) => String(row.route || "").trim())
+        .filter(Boolean)
+    ),
+  ].sort();
+}, [rows]);
+
+// filtered values for customers
+const customers = useMemo(() => {
+  return [
+    ...new Set(
+      rows
+        .map((row) => String(row.customer || "").trim())
+        .filter(Boolean)
+    ),
+  ].sort();
+}, [rows]);
+const activeRows = useMemo(() => {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  return rows.filter((row) => {
+    // Fully dispatched orders hide
+    if (row.status === "Fully Dispatched") {
+      return false;
+    }
+
+    // Route filter
+    if (
+      routeFilter &&
+      String(row.route || "").trim() !== routeFilter
+    ) {
+      return false;
+    }
+
+    // Customer filter
+    if (
+      customerFilter &&
+      String(row.customer || "").trim() !== customerFilter
+    ) {
+      return false;
+    }
+
+    // SO No filter
+    if (
+      soFilter &&
+      !String(row.soNo || "")
+        .toLowerCase()
+        .includes(soFilter.toLowerCase())
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}, [rows, routeFilter, customerFilter, soFilter]);
 
   const handleOpen = (row) => {
     setSelectedOrder(row);
@@ -32,7 +103,9 @@ console.log(
   rows.length
 );
 
-console.table(rows);
+
+
+// column for table
   const columns = useMemo(
     () => [
       {
@@ -56,6 +129,11 @@ console.table(rows);
       {
         field: "division",
         headerName: "Division",
+        width: 120,
+      },
+      {
+        field: "route",
+        headerName: "Route",
         width: 120,
       },
 
@@ -176,6 +254,95 @@ console.table(rows);
 
   return (
     <>
+    <Stack
+  direction={{ xs: "column", md: "row" }}
+  spacing={2}
+  sx={{ mb: 2 }}
+>
+  {/* ROUTE */}
+
+  <FormControl
+    size="small"
+    sx={{ minWidth: 180 }}
+  >
+    <InputLabel>Route</InputLabel>
+
+    <Select
+      value={routeFilter}
+      label="Route"
+      onChange={(e) =>
+        setRouteFilter(e.target.value)
+      }
+    >
+      <MenuItem value="">
+        All Routes
+      </MenuItem>
+
+      {routes.map((route) => (
+        <MenuItem
+          key={route}
+          value={route}
+        >
+          {route}
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+
+  {/* CUSTOMER */}
+
+  <FormControl
+    size="small"
+    sx={{ minWidth: 180 }}
+  >
+    <InputLabel>Customer</InputLabel>
+
+    <Select
+      value={customerFilter}
+      label="Customer"
+      onChange={(e) =>
+        setCustomerFilter(e.target.value)
+      }
+    >
+      <MenuItem value="">
+        All Customers
+      </MenuItem>
+
+      {customers.map((customer) => (
+        <MenuItem
+          key={customer}
+          value={customer}
+        >
+          {customer}
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+
+  {/* SO NO */}
+
+  <TextField
+    size="small"
+    label="Search SO No"
+    value={soFilter}
+    onChange={(e) =>
+      setSoFilter(e.target.value)
+    }
+  />
+
+  {/* CLEAR */}
+
+  <Button
+    variant="outlined"
+    onClick={() => {
+      setRouteFilter("");
+      setCustomerFilter("");
+      setSoFilter("");
+    }}
+  >
+    Clear
+  </Button>
+</Stack>
       <Box
         sx={{
           width: "100%",

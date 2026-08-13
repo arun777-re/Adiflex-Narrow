@@ -46,12 +46,29 @@ export const dispatchOrder = createAsyncThunk(
   },
 );
 
+export const getAllCompletedDispatchOrders = createAsyncThunk('/completed-dispatch',async(_,thunkAPI)=>{
+  try {
+      const response = await api.get(
+        "/dispatch/completed",
+
+        payload,
+      );
+
+      return response.data;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message,
+      );
+  }
+})
+
 // =====================================================
 // INITIAL STATE
 // =====================================================
 
 const initialState = {
   dispatchOrders: [],
+  completedDispatch:[],
 
   loading: false,
 
@@ -154,7 +171,37 @@ const dispatchSlice = createSlice({
 
           state.error = action.payload;
         },
-      );
+      )
+     // ==========================================
+// GET COMPLETED DISPATCH ORDERS
+// ==========================================
+
+
+  .addCase(
+    getAllCompletedDispatchOrders.pending,
+    (state) => {
+      state.loading = true;
+      state.error = null;
+    }
+  )
+
+  .addCase(
+    getAllCompletedDispatchOrders.fulfilled,
+    (state, action) => {
+      state.loading = false;
+
+      state.completedDispatchOrders =
+        action.payload?.completedDispatchOrders || [];
+    }
+  )
+
+  .addCase(
+    getAllCompletedDispatchOrders.rejected,
+    (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    }
+  );
   },
 });
 

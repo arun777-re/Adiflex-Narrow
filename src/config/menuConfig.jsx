@@ -216,6 +216,17 @@ export const menuConfig = {
         <InventoryRoundedIcon />,
     },
 
+    {
+      id: 4,
+
+      title: "Complete Dispatch Orders",
+
+      path: "/complete-dispatch",
+
+      icon:
+        <InventoryRoundedIcon />,
+    },
+
   ],
 
 

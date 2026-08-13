@@ -49,9 +49,11 @@ const DispatchDialog = ({
         soNo: order.soNo,
         cycleID: order.cycleID,
         product: order.product,
-
+        vehicleNo: data.vehicleNo.trim(),
+        driverName: data.driverName.trim(),
+        partyPO:order.partyPO,
         freight,
-
+        customer:order.customer,
         freightRs: freight ? Number(data.freightRs) : 0,
 
         dispatchQty: Number(data.dispatchQty),
@@ -145,6 +147,30 @@ const DispatchDialog = ({
                 },
               },
             )}
+          />
+          <TextField
+            fullWidth
+            label="Driver Name"
+            margin="normal"
+            error={!!errors.driverName}
+            helperText={errors.driverName?.message}
+            {...register("driverName", {
+              required: "Driver Name is required",
+              validate: (value) =>
+                value.trim() !== "" || "Driver Name is required",
+            })}
+          />
+          <TextField
+            fullWidth
+            label="Vehicle No"
+            margin="normal"
+            error={!!errors.vehicleNo}
+            helperText={errors.vehicleNo?.message}
+            {...register("vehicleNo", {
+              required: "Vehicle No is required",
+              validate: (value) =>
+                value.trim() !== "" || "Vehicle No is required",
+            })}
           />
           {(String(order.freight).trim().toLowerCase() === "true" ||
             order.freight === true) && (
