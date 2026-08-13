@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
+import toast from "react-hot-toast";
 
 import {
   Box,
@@ -37,8 +38,6 @@ const SalesOrderForm = () => {
 
   const { allproducts } = useSelector((state) => state.product);
 
-
-
   const {
     control,
     register,
@@ -56,15 +55,16 @@ const SalesOrderForm = () => {
       billinglocation: "",
       freight: false,
       jobWork: false,
+      orderReceivedBy: user?.user?.name || "",
+      route: "",
+      partyPO: "",
       products: [
         {
           product: "",
 
           skucode: "",
           division: "",
-
           qty: "",
-
           rate: "",
           rateadjustment: 0,
           finalrate: 0,
@@ -87,8 +87,6 @@ const SalesOrderForm = () => {
 
   const products = watch("products");
 
-
-
   // PRODUCTION QTY CALCULATION
 
   useEffect(() => {
@@ -104,13 +102,11 @@ const SalesOrderForm = () => {
     });
   }, [products, setValue]);
 
-
-
   const onSubmit = async (data) => {
     const payload = {
       ...data,
 
-      orderReceivedBy: user?.user?.name,
+      orderReceivedBy: data.orderReceivedBy,
 
       products: data.products.map((item) => ({
         ...item,
@@ -119,7 +115,8 @@ const SalesOrderForm = () => {
 
         rate: Number(item.rate),
         rateadjustment: Number(item.rateadjustment),
-        finalrate: (Number(item.rate) || 0) + (Number(item.rateadjustment) || 0),
+        finalrate:
+          (Number(item.rate) || 0) + (Number(item.rateadjustment) || 0),
 
         openingFgQty: Number(item.openingFgQty) || 0,
 
@@ -130,7 +127,7 @@ const SalesOrderForm = () => {
     const res = await dispatch(addSalesOrder(payload));
 
     if (res?.payload?.success) {
-      alert("Sales Order Created");
+      toast.success("Sales Order Created");
 
       reset({
         date: new Date().toISOString().slice(0, 10),
@@ -138,7 +135,8 @@ const SalesOrderForm = () => {
         customer: "",
 
         ordertype: "",
-
+        route: "",
+        partyPO: "",
         shippinglocation: "",
         billinglocation: "",
         jobWork: false,
@@ -234,7 +232,9 @@ const SalesOrderForm = () => {
               fullWidth
               label="Billing Location"
               error={!!errors.billinglocation}
-              helperText={errors.billinglocation ? "Billing Location is required" : ""}
+              helperText={
+                errors.billinglocation ? "Billing Location is required" : ""
+              }
               {...register("billinglocation", {
                 required: true,
               })}
@@ -254,6 +254,23 @@ const SalesOrderForm = () => {
                 required: true,
               })}
             />
+          </Grid>
+          {/* ROUTE */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              fullWidth
+              label="Route"
+              error={!!errors.route}
+              helperText={errors.route ? "Route is required" : ""}
+              {...register("route", {
+                required: "Route is required",
+              })}
+            />
+          </Grid>
+
+          {/* PARTY PO */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField fullWidth label="Party PO" {...register("partyPO")} />
           </Grid>
 
           {/* JOB WORK */}
@@ -280,224 +297,227 @@ const SalesOrderForm = () => {
           </Grid>
 
           {fields.map((field, index) => {
-             const rate = watch(`products.${index}.rate`)
-  const adjustment = watch(`products.${index}.rateadjustment`);
-  return (
-
-            <Grid
-              container
-              spacing={2}
-              key={field.id}
-              sx={{
-                mb: 2,
-                border: "1px solid #ddd",
-                borderRadius: 2,
-                p: 2,
-              }}
-            >
-              {/* PRODUCT */}
-
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  fullWidth
-                  label="Product"
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                  {...register(`products.${index}.product`, {
-                    required: true,
-                  })}
-                />
-              </Grid>
-
-              {/* DIVISION */}
-              <Grid size={{ xs: 12, md: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Division"
-                  value={watch(`products.${index}.division`) || ""}
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                />
-              </Grid>
-
-              {/* SKU */}
-
-              <Grid size={{ xs: 12, md: 3 }}>
-                <Autocomplete
-                  options={allproducts || []}
-                  getOptionLabel={(option) => option?.sku || ""}
-                  onChange={(event, newValue) => {
-                    console.log("Selected:hellooooooooooooooooooooooooooooooooooooooooooooo............", newValue);
-                    if (newValue) {
-                      setValue(`products.${index}.skucode`, newValue.sku);
-                      setValue(
-                        `products.${index}.product`,
-                        newValue.productName,
-                      );
-                      setValue(`products.${index}.rate`, newValue.rate);
-                      setValue(`products.${index}.division`, newValue.division);
-                      setValue(`products.${index}.unit`, newValue.unit);
-                     
-                    } else {
-                      setValue(`products.${index}.skucode`, "");
-                      setValue(`products.${index}.product`, "");
-                      setValue(`products.${index}.rate`, "");
-                      setValue(`products.${index}.rateadjustment`, 0);
-                      setValue(`products.${index}.finalrate`, 0);
-                      setValue(`products.${index}.division`, "");
-                      setValue(`products.${index}.unit`, "Meter");
-                    }
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="SKU Code"
-                      error={!!errors.products?.[index]?.skucode}
-                      helperText={
-                        errors.products?.[index]?.skucode ? "SKU Required" : ""
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-
-              {/* QTY */}
-
-              <Grid size={{ xs: 12, md: 1.5 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="SO Qty"
-                  error={!!errors.products?.[index]?.qty}
-                  {...register(`products.${index}.qty`, {
-                    required: true,
-                    min: 1,
-                  })}
-                />
-              </Grid>
-
-              {/* RATE */}
-
-              <Grid size={{ xs: 12, md: 1.5 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Rate"
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                  {...register(`products.${index}.rate`, {
-                    required: true,
-                  })}
-                />
-              </Grid>
-              {/* RATE Adjustment */}
-
-              <Grid size={{ xs: 12, md: 1.5 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Adjustment(+/-)"
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  {...register(`products.${index}.rateadjustment`, {
-                    valueAsNumber: true,
-                  })}
-                />
-              </Grid>
-
-              {/* final rate */}
-              <Grid size={{ xs: 12, md: 1.5 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Final Rate"
-                  value={(Number(rate) || 0) + (Number(adjustment) || 0)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                 
-                />
-              </Grid>
-
-              {/* OPENING FG */}
-
-              <Grid size={{ xs: 12, md: 2 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Opening FG Qty"
-                  disabled={watch("ordertype") === 'Internal'}
-                  {...register(`products.${index}.openingFgQty`)}
-                />
-              </Grid>
-
-              {/* PRODUCTION */}
-
-              <Grid size={{ xs: 12, md: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Production Qty"
-                  value={Math.max(
-                    (Number(watch(`products.${index}.qty`)) || 0) -
-                      (Number(watch(`products.${index}.openingFgQty`)) || 0),
-
-                    0,
-                  )}
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                />
-              </Grid>
-
-              {/* UNIT */}
-
-              <Grid size={{ xs: 12, md: 1.5 }}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Unit"
-                  {...register(`products.${index}.unit`)}
-                >
-                  <MenuItem value="Meter">Meter</MenuItem>
-
-                  <MenuItem value="Roll">Roll</MenuItem>
-                </TextField>
-              </Grid>
-
-              {/* DELETE */}
-
+            const rate = watch(`products.${index}.rate`);
+            const adjustment = watch(`products.${index}.rateadjustment`);
+            return (
               <Grid
-                size={{ xs: 12, md: 1 }}
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
+                container
+                spacing={2}
+                key={field.id}
+                sx={{
+                  mb: 2,
+                  border: "1px solid #ddd",
+                  borderRadius: 2,
+                  p: 2,
+                }}
               >
-                <IconButton
-                  color="error"
-                  disabled={fields.length === 1}
-                  onClick={() => remove(index)}
+                {/* PRODUCT */}
+
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <TextField
+                    fullWidth
+                    label="Product"
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                    {...register(`products.${index}.product`, {
+                      required: true,
+                    })}
+                  />
+                </Grid>
+
+                {/* DIVISION */}
+                <Grid size={{ xs: 12, md: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Division"
+                    value={watch(`products.${index}.division`) || ""}
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                  />
+                </Grid>
+
+                {/* SKU */}
+
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <Autocomplete
+                    options={allproducts || []}
+                    getOptionLabel={(option) => option?.sku || ""}
+                    onChange={(event, newValue) => {
+                      console.log(
+                        "Selected:hellooooooooooooooooooooooooooooooooooooooooooooo............",
+                        newValue,
+                      );
+                      if (newValue) {
+                        setValue(`products.${index}.skucode`, newValue.sku);
+                        setValue(
+                          `products.${index}.product`,
+                          newValue.productName,
+                        );
+                        setValue(`products.${index}.rate`, newValue.rate);
+                        setValue(
+                          `products.${index}.division`,
+                          newValue.division,
+                        );
+                        setValue(`products.${index}.unit`, newValue.unit);
+                      } else {
+                        setValue(`products.${index}.skucode`, "");
+                        setValue(`products.${index}.product`, "");
+                        setValue(`products.${index}.rate`, "");
+                        setValue(`products.${index}.rateadjustment`, 0);
+                        setValue(`products.${index}.finalrate`, 0);
+                        setValue(`products.${index}.division`, "");
+                        setValue(`products.${index}.unit`, "Meter");
+                      }
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="SKU Code"
+                        error={!!errors.products?.[index]?.skucode}
+                        helperText={
+                          errors.products?.[index]?.skucode
+                            ? "SKU Required"
+                            : ""
+                        }
+                      />
+                    )}
+                  />
+                </Grid>
+
+                {/* QTY */}
+
+                <Grid size={{ xs: 12, md: 1.5 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="SO Qty"
+                    error={!!errors.products?.[index]?.qty}
+                    {...register(`products.${index}.qty`, {
+                      required: true,
+                      min: 1,
+                    })}
+                  />
+                </Grid>
+
+                {/* RATE */}
+
+                <Grid size={{ xs: 12, md: 1.5 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Rate"
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                    {...register(`products.${index}.rate`, {
+                      required: true,
+                    })}
+                  />
+                </Grid>
+                {/* RATE Adjustment */}
+
+                <Grid size={{ xs: 12, md: 1.5 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Adjustment(+/-)"
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    {...register(`products.${index}.rateadjustment`, {
+                      valueAsNumber: true,
+                    })}
+                  />
+                </Grid>
+
+                {/* final rate */}
+                <Grid size={{ xs: 12, md: 1.5 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Final Rate"
+                    value={(Number(rate) || 0) + (Number(adjustment) || 0)}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                  />
+                </Grid>
+
+                {/* OPENING FG */}
+
+                <Grid size={{ xs: 12, md: 2 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Opening FG Qty"
+                    disabled={watch("ordertype") === "Internal"}
+                    {...register(`products.${index}.openingFgQty`)}
+                  />
+                </Grid>
+
+                {/* PRODUCTION */}
+
+                <Grid size={{ xs: 12, md: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Production Qty"
+                    value={Math.max(
+                      (Number(watch(`products.${index}.qty`)) || 0) -
+                        (Number(watch(`products.${index}.openingFgQty`)) || 0),
+
+                      0,
+                    )}
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                  />
+                </Grid>
+
+                {/* UNIT */}
+
+                <Grid size={{ xs: 12, md: 1.5 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Unit"
+                    {...register(`products.${index}.unit`)}
+                  >
+                    <MenuItem value="Meter">Meter</MenuItem>
+
+                    <MenuItem value="Roll">Roll</MenuItem>
+                  </TextField>
+                </Grid>
+
+                {/* DELETE */}
+
+                <Grid
+                  size={{ xs: 12, md: 1 }}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
                 >
-                  <DeleteIcon />
-                </IconButton>
+                  <IconButton
+                    color="error"
+                    disabled={fields.length === 1}
+                    onClick={() => remove(index)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Grid>
               </Grid>
-            </Grid>
-  );
-
-})}
-
+            );
+          })}
 
           <Grid size={12}>
             <Button
@@ -513,7 +533,7 @@ const SalesOrderForm = () => {
                   qty: "",
 
                   rate: "",
-                  rateadjustment:0,
+                  rateadjustment: 0,
                   finalrate: 0,
 
                   unit: "Meter",
@@ -534,10 +554,13 @@ const SalesOrderForm = () => {
             <TextField
               fullWidth
               label="Order Received By"
-              value={user?.user?.name || ""}
-              InputProps={{
-                readOnly: true,
-              }}
+              error={!!errors.orderReceivedBy}
+              helperText={
+                errors.orderReceivedBy ? "Order Receivrd By is required" : ""
+              }
+              {...register("orderReceivedBy", {
+                required: "Order Received By is required",
+              })}
             />
           </Grid>
         </Grid>

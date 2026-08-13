@@ -172,6 +172,8 @@ console.table(rows);
     [],
   );
 
+  console.log("DispatchTable Rendered",activeRows);
+
   return (
     <>
       <Box

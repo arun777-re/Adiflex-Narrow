@@ -40,11 +40,19 @@ const DispatchDialog = ({
   } = useForm();
 
   const onSubmit = async (data) => {
+    const freight =
+      String(order.freight).trim().toLowerCase() === "true" ||
+      order.freight === true;
+
     const result = await dispatch(
       dispatchOrder({
         soNo: order.soNo,
         cycleID: order.cycleID,
         product: order.product,
+
+        freight,
+
+        freightRs: freight ? Number(data.freightRs) : 0,
 
         dispatchQty: Number(data.dispatchQty),
       }),
@@ -54,7 +62,6 @@ const DispatchDialog = ({
       await dispatch(getAllDispatch());
 
       reset();
-
       onClose();
     }
   };
@@ -97,6 +104,13 @@ const DispatchDialog = ({
               <strong>Available Qty:</strong>{" "}
               {Number(order.availableQty).toLocaleString()}
             </Typography>
+            <Typography>
+              <strong>Freight:</strong>{" "}
+              {String(order.freight).trim().toLowerCase() === "true" ||
+              order.freight === true
+                ? "Yes"
+                : "No"}
+            </Typography>
           </Box>
 
           <TextField
@@ -132,6 +146,43 @@ const DispatchDialog = ({
               },
             )}
           />
+          {(String(order.freight).trim().toLowerCase() === "true" ||
+            order.freight === true) && (
+            <TextField
+              fullWidth
+              type="number"
+              label="Freight Rs"
+              margin="normal"
+              inputProps={{
+                min: 1,
+                step: "0.01",
+              }}
+              error={!!errors.freightRs}
+              helperText={errors.freightRs?.message}
+              {...register("freightRs", {
+                required: "Freight Rs is required when Freight is Yes",
+
+                valueAsNumber: true,
+
+                min: {
+                  value: 0.01,
+                  message: "Freight Rs must be greater than 0",
+                },
+
+                validate: (value) => {
+                  if (
+                    value === undefined ||
+                    value === null ||
+                    Number.isNaN(Number(value))
+                  ) {
+                    return "Please enter valid Freight Rs";
+                  }
+
+                  return true;
+                },
+              })}
+            />
+          )}
         </DialogContent>
 
         <DialogActions>
