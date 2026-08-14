@@ -117,4 +117,8 @@ export const routeConfig = {
 
   ],
 
+  '/billing':[
+    ROLES.BILLING
+  ]
+
 };

@@ -15,6 +15,7 @@ import CreateProduct from "./pages/CreateProduct";
 import ActivityLog from "./pages/ActivityLog";
 import Reports from "./pages/Reports";
 import CompleteDispatch from "./pages/CompleteDispatch";
+import BillingPage from "./pages/BillingPage";
 
 function App() {
 
@@ -78,6 +79,10 @@ function App() {
           <Route
           path="/complete-dispatch"
           element={<CompleteDispatch/>}
+        />
+          <Route
+          path="/billing"
+          element={<BillingPage/>}
         />
 
       </Route>

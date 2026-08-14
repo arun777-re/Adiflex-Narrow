@@ -26,4 +26,10 @@ export const loginData = [
     name: "Supervisor",
     divisions: ["all"],
   },
+  {
+    id: 5,
+    value: "billing",
+    name: "Billing",
+    divisions: ["all"],
+  },
 ];

@@ -1,12 +1,10 @@
 export const ROLES = {
   ADMIN: "admin",
 
-  PRODUCTION_SUPERVISOR:
-    "productionSupervisor",
+  PRODUCTION_SUPERVISOR: "productionSupervisor",
 
-  DISPATCH:
-    "dispatch",
+  DISPATCH: "dispatch",
 
-  SUPERVISOR:
-    "supervisor",
+  SUPERVISOR: "supervisor",
+  BILLING: "billing",
 };

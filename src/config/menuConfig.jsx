@@ -303,4 +303,18 @@ export const menuConfig = {
 
   ],
 
+
+  [ROLES.BILLING] :[
+        {
+      id: 1,
+
+      title: "Billing",
+
+      path: "/billing",
+
+      icon:
+        <DashboardRoundedIcon />,
+    },
+  ]
+
 };

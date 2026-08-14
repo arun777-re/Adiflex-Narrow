@@ -61,16 +61,40 @@ export const getAllCompletedDispatchOrders = createAsyncThunk('/dispatch/complet
 })
 
 // =====================================================
+// BILLING DONE
+// =====================================================
+
+export const billingDone = createAsyncThunk(
+  "dispatch/billingDone",
+
+  async (payload, thunkAPI) => {
+    try {
+      const response = await api.post(
+        "/dispatch/billing",
+        payload
+      );
+
+      return response.data;
+
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message
+      );
+    }
+  }
+);
+// =====================================================
 // INITIAL STATE
 // =====================================================
 
 const initialState = {
   dispatchOrders: [],
-  completedDispatch:[],
+  completedDispatchOrders:[],
 
   loading: false,
 
   dispatching: false,
+  billing:false,
 
   error: null,
 
@@ -197,6 +221,41 @@ const dispatchSlice = createSlice({
     getAllCompletedDispatchOrders.rejected,
     (state, action) => {
       state.loading = false;
+      state.error = action.payload;
+    }
+  )  .addCase(
+    billingDone.pending,
+    (state) => {
+      state.billing = true;
+      state.error = null;
+    }
+  )
+
+  .addCase(
+    billingDone.fulfilled,
+    (state, action) => {
+      state.billing = false;
+      state.success = true;
+
+      const { soNo, skuCode, cycleID } = action.meta.arg;
+
+      const index = state.completedDispatchOrders.findIndex(
+        (order) =>
+          String(order.soNo).trim() === String(soNo).trim() &&
+          String(order.skuCode).trim() === String(skuCode).trim() &&
+          String(order.cycleID || "").trim() === String(cycleID || "").trim()
+      );
+
+      if (index !== -1) {
+        state.completedDispatchOrders[index].billing = "Done";
+      }
+    }
+  )
+
+  .addCase(
+    billingDone.rejected,
+    (state, action) => {
+      state.billing = false;
       state.error = action.payload;
     }
   );
