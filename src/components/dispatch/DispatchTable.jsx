@@ -103,7 +103,15 @@ console.log(
   rows.length
 );
 
-
+console.table(
+  rows.map((row) => ({
+    soNo: row.soNo,
+    skuCode: row.skuCode,
+    status: row.status,
+    availableQty: row.availableQty,
+    dispatchQty: row.dispatchQty,
+  }))
+);
 
 // column for table
   const columns = useMemo(

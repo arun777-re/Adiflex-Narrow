@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import api from "../../services/api";
+import { getAllcompletedDispatch } from "../../services/dispatchApi";
 
 // =====================================================
 // GET ALL DISPATCH
@@ -46,15 +47,12 @@ export const dispatchOrder = createAsyncThunk(
   },
 );
 
-export const getAllCompletedDispatchOrders = createAsyncThunk('/completed-dispatch',async(_,thunkAPI)=>{
+export const getAllCompletedDispatchOrders = createAsyncThunk('/dispatch/complete',async(_,thunkAPI)=>{
   try {
-      const response = await api.get(
-        "/dispatch/completed",
+      const response = await getAllcompletedDispatch();
+       
 
-        payload,
-      );
-
-      return response.data;
+      return response;
   } catch (error) {
     return thunkAPI.rejectWithValue(
         error.response?.data?.message || error.message,

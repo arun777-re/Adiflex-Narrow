@@ -20,6 +20,8 @@ const CompleteDispatch = () => {
   } = useSelector((state) => state.dispatch);
 
   useEffect(() => {
+      console.log("🔥 COMPLETED DISPATCH API CALL");
+    console.log("heeeeeeeeeeeeeeeeeeeeeeeeehehehehehhehehehehheeeeeeeeeeeeeeeeeeeeeeeeeeeee")
     dispatch(getAllCompletedDispatchOrders());
   }, [dispatch]);
 
