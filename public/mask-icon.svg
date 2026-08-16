@@ -1,0 +1,9 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 100 100"
+>
+  <path
+    fill="black"
+    d="M50 5a45 45 0 1 0 0 90 45 45 0 0 0 0-90Zm-8 20h16v30H42V25Zm0 38h16v12H42V63Z"
+  />
+</svg>
