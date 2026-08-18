@@ -16,11 +16,20 @@ export const fetchFGAvailableQty = createAsyncThunk(
   async (sku, { rejectWithValue }) => {
     try {
       const response = await getFGAvailableQty(sku);
-      return response.data;
+
+      console.log("🔥 THUNK RAW RESPONSE:", response);
+      console.log("🔥 THUNK RESPONSE DATA:", response?.data);
+
+      return response;
+
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+      console.error("❌ THUNK ERROR:", error);
+
+      return rejectWithValue(
+        error.response?.data?.message || error.message
+      );
     }
-  },
+  }
 );
 
 export const fetchAllFG = createAsyncThunk(

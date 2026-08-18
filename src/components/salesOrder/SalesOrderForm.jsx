@@ -19,13 +19,15 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 
 import { useDispatch, useSelector } from "react-redux";
 
 import { addSalesOrder } from "../../redux/slices/salesOrderSlice";
 
 import { fetchProducts } from "../../redux/slices/productSlice";
+
+import { fetchFGAvailableQty } from "../../redux/slices/fgSlice";
 
 const SalesOrderForm = () => {
   const dispatch = useDispatch();
@@ -86,6 +88,7 @@ const SalesOrderForm = () => {
   });
 
   const products = watch("products");
+  const orderType = watch("ordertype");
 
   // PRODUCTION QTY CALCULATION
 
@@ -342,29 +345,22 @@ const SalesOrderForm = () => {
                 </Grid>
 
                 {/* SKU */}
-
                 <Grid size={{ xs: 12, md: 3 }}>
                   <Autocomplete
                     options={allproducts || []}
                     getOptionLabel={(option) => option?.sku || ""}
-                    onChange={(event, newValue) => {
-                      console.log(
-                        "Selected:hellooooooooooooooooooooooooooooooooooooooooooooo............",
-                        newValue,
-                      );
-                      if (newValue) {
-                        setValue(`products.${index}.skucode`, newValue.sku);
-                        setValue(
-                          `products.${index}.product`,
-                          newValue.productName,
-                        );
-                        setValue(`products.${index}.rate`, newValue.rate);
-                        setValue(
-                          `products.${index}.division`,
-                          newValue.division,
-                        );
-                        setValue(`products.${index}.unit`, newValue.unit);
-                      } else {
+                    isOptionEqualToValue={(option, value) =>
+                      option?.sku === value?.sku
+                    }
+                    onChange={async (event, newValue) => {
+                      console.log("🔥 SKU CHANGED:", newValue);
+                      console.log("🔥 ORDER TYPE:", orderType);
+
+                      // ==========================================
+                      // SKU CLEAR
+                      // ==========================================
+
+                      if (!newValue) {
                         setValue(`products.${index}.skucode`, "");
                         setValue(`products.${index}.product`, "");
                         setValue(`products.${index}.rate`, "");
@@ -372,6 +368,79 @@ const SalesOrderForm = () => {
                         setValue(`products.${index}.finalrate`, 0);
                         setValue(`products.${index}.division`, "");
                         setValue(`products.${index}.unit`, "Meter");
+                        setValue(`products.${index}.openingFgQty`, 0);
+
+                        return;
+                      }
+
+                      // ==========================================
+                      // PRODUCT MASTER DATA
+                      // ==========================================
+
+                      setValue(`products.${index}.skucode`, newValue.sku);
+
+                      setValue(
+                        `products.${index}.product`,
+                        newValue.productName,
+                      );
+
+                      setValue(`products.${index}.rate`, newValue.rate);
+
+                      setValue(`products.${index}.division`, newValue.division);
+
+                      // DEFAULT UNIT
+                      setValue(
+                        `products.${index}.unit`,
+                        newValue.unit || "METER",
+                        {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        },
+                      );
+
+                      // ==========================================
+                      // FG CHECK
+                      // ONLY CUSTOMER
+                      // ==========================================
+
+                      if (orderType === "Customer") {
+                        console.log("🚀 CALLING FG API FOR:", newValue.sku);
+
+                        try {
+                          const result = await dispatch(
+                            fetchFGAvailableQty(newValue.sku),
+                          ).unwrap();
+
+                          console.log("✅ FG API RESPONSE:", result);
+
+                          const availableQty =
+                            Number(result?.availableQty) || 0;
+
+                          console.log("📦 AVAILABLE FG:", availableQty);
+
+                          setValue(
+                            `products.${index}.openingFgQty`,
+                            availableQty,
+                            {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            },
+                          );
+                        } catch (error) {
+                          console.error("❌ FG FETCH FAILED:", error);
+
+                          setValue(`products.${index}.openingFgQty`, 0);
+
+                          toast.error(
+                            typeof error === "string"
+                              ? error
+                              : "Unable to fetch FG stock",
+                          );
+                        }
+                      } else {
+                        console.log("ℹ️ INTERNAL ORDER - FG API SKIPPED");
+
+                        setValue(`products.${index}.openingFgQty`, 0);
                       }
                     }}
                     renderInput={(params) => (
@@ -455,14 +524,22 @@ const SalesOrderForm = () => {
                 </Grid>
 
                 {/* OPENING FG */}
-
                 <Grid size={{ xs: 12, md: 2 }}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Opening FG Qty"
-                    disabled={watch("ordertype") === "Internal"}
-                    {...register(`products.${index}.openingFgQty`)}
+                  <Controller
+                    name={`products.${index}.openingFgQty`}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        type="number"
+                        label="Available FG (Meter)"
+                        value={field.value ?? 0}
+                        InputProps={{
+                          readOnly: true,
+                        }}
+                      />
+                    )}
                   />
                 </Grid>
 
@@ -493,9 +570,11 @@ const SalesOrderForm = () => {
                     label="Unit"
                     {...register(`products.${index}.unit`)}
                   >
-                    <MenuItem value="Meter">Meter</MenuItem>
-
-                    <MenuItem value="Roll">Roll</MenuItem>
+                    {["METER", "ROLL", "KG"].map((item, index) => (
+                      <MenuItem id={index} value={item}>
+                        {item}
+                      </MenuItem>
+                    ))}
                   </TextField>
                 </Grid>
 
