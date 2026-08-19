@@ -24,7 +24,7 @@ const DispatchPage = () => {
 
   
   useNotification({
-    event: "new-dispatch-notification",
+    event: "new-notification",
     refetch:getAllDispatch,
   });
 
