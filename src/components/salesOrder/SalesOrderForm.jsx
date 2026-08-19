@@ -211,21 +211,30 @@ const SalesOrderForm = () => {
           {/* ORDER TYPE */}
 
           <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              select
-              fullWidth
-              label="Order Type"
-              defaultValue=""
-              {...register("ordertype", {
-                required: true,
-              })}
-            >
-              <MenuItem value="">Select Order Type</MenuItem>
+            <Controller
+              name="ordertype"
+              control={control}
+              rules={{
+                required: "Order Type is required",
+              }}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  select
+                  fullWidth
+                  label="Order Type"
+                  value={field.value || ""}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message || ""}
+                >
+                  <MenuItem value="">Select Order Type</MenuItem>
 
-              <MenuItem value="Customer">Customer</MenuItem>
+                  <MenuItem value="Customer">Customer</MenuItem>
 
-              <MenuItem value="Internal">Internal</MenuItem>
-            </TextField>
+                  <MenuItem value="Internal">Internal</MenuItem>
+                </TextField>
+              )}
+            />
           </Grid>
 
           {/*Billing LOCATION */}
@@ -280,7 +289,18 @@ const SalesOrderForm = () => {
 
           <Grid size={{ xs: 12, md: 6 }}>
             <FormControlLabel
-              control={<Checkbox {...register("jobWork")} />}
+              control={
+                <Controller
+                  name="jobWork"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  )}
+                />
+              }
               label="Job Work Required"
             />
           </Grid>
@@ -288,8 +308,19 @@ const SalesOrderForm = () => {
 
           <Grid size={{ xs: 12, md: 6 }}>
             <FormControlLabel
-              control={<Checkbox {...register("freight")} />}
-              label="Freight(Optional)"
+              control={
+                <Controller
+                  name="freight"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  )}
+                />
+              }
+              label="Freight (Optional)"
             />
           </Grid>
 
@@ -500,6 +531,9 @@ const SalesOrderForm = () => {
                     label="Adjustment(+/-)"
                     InputLabelProps={{
                       shrink: true,
+                    }}
+                    inputProps={{
+                      step: "0.01",
                     }}
                     {...register(`products.${index}.rateadjustment`, {
                       valueAsNumber: true,
