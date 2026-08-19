@@ -8,6 +8,7 @@ import dispatchReducer from '../slices/dispatchSlice.jsx';
 import productReducer from '../slices/productSlice.jsx';
 import fgReducer from '../slices/fgSlice.jsx';
 import dashboardReducer from '../slices/dashboardSlice.jsx';
+import billingReducer from '../slices/billingSlice.jsx';
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -16,5 +17,6 @@ export const rootReducer = combineReducers({
   dispatch:dispatchReducer,
   product:productReducer,
   fginventory:fgReducer,
-  dashboard:dashboardReducer
+  dashboard:dashboardReducer,
+  billing:billingReducer
 });

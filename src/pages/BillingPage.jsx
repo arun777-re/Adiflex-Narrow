@@ -8,9 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import {
-  DataGrid,
-} from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
 
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 
@@ -22,77 +20,68 @@ import {
 import toast from "react-hot-toast";
 
 import {
-  billingDone,
-  getAllCompletedDispatchOrders,
-} from "../redux/slices/dispatchSlice";
-
+  getBillingOrders,
+  updateBillingStatus,
+} from "../redux/slices/billingSlice";
 
 const BillingPage = () => {
-
   const dispatch = useDispatch();
 
   const {
-    completedDispatchOrders = [],
+    orders = [],
     loading,
-    billingLoading,
-  } = useSelector(
-    (state) => state.dispatch
-  );
+    updating,
+  } = useSelector((state) => state.billing);
 
   const [billingRow, setBillingRow] = useState(null);
 
+  // =====================================================
+  // PENDING BILLING ORDERS
+  // =====================================================
 
-  const billingPendingOrders = completedDispatchOrders.filter((item) => String(item.billing || "").trim().toLowerCase()
-   !== "done")
+  const billingPendingOrders = useMemo(
+    () =>
+      orders.filter(
+        (item) =>
+          String(item.billing || "")
+            .trim()
+            .toLowerCase() !== "done"
+      ),
+    [orders]
+  );
 
   // =====================================================
-  // GET DISPATCHED ORDERS
+  // GET BILLING ORDERS
   // =====================================================
 
   useEffect(() => {
-
-    dispatch(
-      getAllCompletedDispatchOrders()
-    );
-
+    dispatch(getBillingOrders());
   }, [dispatch]);
-
 
   // =====================================================
   // BILLING DONE
   // =====================================================
 
   const handleBillingDone = async (row) => {
-
     try {
-
       setBillingRow(row);
 
       await dispatch(
-        billingDone({
+        updateBillingStatus({
           soNo: row.soNo,
           skuCode: row.skuCode,
           cycleID: row.cycleID || "",
+          status: "Done",
         })
       ).unwrap();
 
-      toast.success(
-        `Billing done for ${row.soNo}`
-      );
-
+      toast.success(`Billing done for ${row.soNo}`);
     } catch (error) {
-
-      toast.error(
-        error || "Billing failed"
-      );
-
+      toast.error(error || "Billing failed");
     } finally {
-
       setBillingRow(null);
-
     }
   };
-
 
   // =====================================================
   // COLUMNS
@@ -100,7 +89,6 @@ const BillingPage = () => {
 
   const columns = useMemo(
     () => [
-
       {
         field: "soNo",
         headerName: "SO No",
@@ -117,9 +105,7 @@ const BillingPage = () => {
         field: "cycleID",
         headerName: "Cycle ID",
         width: 150,
-
-        valueGetter: (value) =>
-          value || "-",
+        valueGetter: (value) => value || "-",
       },
 
       {
@@ -154,13 +140,6 @@ const BillingPage = () => {
       },
 
       {
-        field: "productionQty",
-        headerName: "Production Qty",
-        width: 130,
-        type: "number",
-      },
-
-      {
         field: "dispatchQty",
         headerName: "Dispatch Qty",
         width: 120,
@@ -168,69 +147,19 @@ const BillingPage = () => {
       },
 
       {
-        field: "availableQty",
-        headerName: "Available Qty",
-        width: 120,
-        type: "number",
-      },
-
-      {
-        field: "rate",
-        headerName: "Rate",
-        width: 100,
-        type: "number",
-      },
-
-      {
-        field: "wastageQty",
-        headerName: "Wastage",
-        width: 100,
-        type: "number",
-      },
-
-      {
-        field: "freightRs",
-        headerName: "Freight Rs",
-        width: 110,
-        type: "number",
-      },
-
-      {
-        field: "status",
-        headerName: "Dispatch Status",
-        width: 170,
-
-        renderCell: (params) => {
-
-          const status =
-            String(params.value || "")
-              .toLowerCase();
-
-          return (
-            <Chip
-              label={params.value}
-              size="small"
-              color={
-                status === "fully dispatched"
-                  ? "success"
-                  : "warning"
-              }
-            />
-          );
-        },
-      },
-
-      {
         field: "billing",
         headerName: "Billing",
-        width: 140,
+        width: 160,
 
         renderCell: (params) => {
-
           const isDone =
             String(params.row.billing || "")
               .trim()
               .toLowerCase() === "done";
+
+          const isUpdating =
+            updating &&
+            billingRow?.rowNumber === params.row.rowNumber;
 
           return isDone ? (
             <Chip
@@ -242,21 +171,13 @@ const BillingPage = () => {
             <Button
               variant="contained"
               size="small"
-              startIcon={
-                <ReceiptLongIcon />
-              }
-              disabled={
-                billingLoading &&
-                billingRow?.rowNumber ===
-                  params.row.rowNumber
-              }
+              startIcon={<ReceiptLongIcon />}
+              disabled={isUpdating}
               onClick={() =>
                 handleBillingDone(params.row)
               }
             >
-              {billingLoading &&
-              billingRow?.rowNumber ===
-                params.row.rowNumber
+              {isUpdating
                 ? "Saving..."
                 : "Billing Done"}
             </Button>
@@ -264,27 +185,26 @@ const BillingPage = () => {
         },
       },
 
+      {
+        field: "createdAt",
+        headerName: "Created At",
+        width: 180,
+      },
     ],
-    [
-      billingLoading,
-      billingRow
-    ]
+    [updating, billingRow]
   );
-
 
   // =====================================================
   // UI
   // =====================================================
 
   return (
-
     <Box
       sx={{
         width: "100%",
         p: 2,
       }}
     >
-
       {/* HEADER */}
 
       <Paper
@@ -295,7 +215,6 @@ const BillingPage = () => {
           borderRadius: 2,
         }}
       >
-
         <Typography
           variant="h5"
           fontWeight={700}
@@ -311,9 +230,7 @@ const BillingPage = () => {
           Fully and partially dispatched orders
           pending for billing.
         </Typography>
-
       </Paper>
-
 
       {/* TABLE */}
 
@@ -326,27 +243,16 @@ const BillingPage = () => {
           overflow: "hidden",
         }}
       >
-
         <DataGrid
           rows={billingPendingOrders}
           columns={columns}
           loading={loading}
-
           getRowId={(row) =>
             `${row.soNo}-${row.skuCode}-${row.cycleID || "NO-CYCLE"}-${row.rowNumber}`
           }
-
           disableRowSelectionOnClick
-
           density="compact"
-
-          pageSizeOptions={[
-            10,
-            20,
-            50,
-            100,
-          ]}
-
+          pageSizeOptions={[10, 20, 50, 100]}
           initialState={{
             pagination: {
               paginationModel: {
@@ -354,7 +260,6 @@ const BillingPage = () => {
               },
             },
           }}
-
           sx={{
             border: 0,
 
@@ -368,12 +273,9 @@ const BillingPage = () => {
             },
           }}
         />
-
       </Paper>
-
     </Box>
   );
 };
-
 
 export default BillingPage;

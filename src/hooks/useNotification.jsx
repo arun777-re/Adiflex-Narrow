@@ -1,45 +1,101 @@
 import { useEffect } from "react";
-import { useSelector,useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import { socket } from "../socket/socket";
 import { notificationAudio } from "../utils/audio.js";
 
 const useNotification = ({
   event = "new-notification",
-  refetch= null
+  refetch = null,
 }) => {
-  const { user } = useSelector((state) => state?.auth?.user);
   const dispatch = useDispatch();
 
+  // ✅ Correct path
+  const authUser = useSelector((state) => state.auth?.user?.user);
+
   useEffect(() => {
-    if (!user) return;
-    console.log("Joining Room...", user);
-    socket.emit("join-room", {
-      role: user.role,
-      division: user.division,
-    });
+    if (!authUser) {
+      console.log("❌ Notification: User not found");
+      return;
+    }
+
+    console.log("🔥 Notification Hook Started");
+    console.log("👤 User:", authUser);
+
+    const joinRoom = () => {
+      console.log(
+        "🚪 Joining Room:",
+        authUser.role,
+        authUser.division
+      );
+
+      socket.emit("join-room", {
+        role: authUser.role,
+        division: authUser.division,
+      });
+    };
+
+    // Socket already connected
+    if (socket.connected) {
+      joinRoom();
+    }
+
+    // Socket connects later
+    socket.on("connect", joinRoom);
+
+    // ==========================================
+    // NOTIFICATION
+    // ==========================================
 
     const handleNotification = (notification) => {
-        console.log("🔥 Notification Received:", notification);
+      console.log("🔥🔥 NOTIFICATION RECEIVED:", notification);
 
-      toast.success(notification.title);
+      // Toast
+      toast.success(
+        notification?.title || "New Notification"
+      );
 
-      notificationAudio.currentTime = 0;
+      // Bell / Audio
+      try {
+        notificationAudio.currentTime = 0;
 
-      notificationAudio.play().catch((err) => {
-        console.log("Audio Error:", err);
-      });
-      if(refetch && typeof refetch === "function"){
+        const playPromise = notificationAudio.play();
+
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.log("🔇 Audio blocked:", err);
+          });
+        }
+      } catch (error) {
+        console.log("🔇 Audio Error:", error);
+      }
+
+      // ==========================================
+      // REFRESH REDUX DATA
+      // ==========================================
+
+      if (typeof refetch === "function") {
+        console.log("🔄 Refetching data...");
+
         dispatch(refetch());
       }
     };
 
+    console.log(`👂 Listening for event: ${event}`);
+
     socket.on(event, handleNotification);
 
+    // ==========================================
+    // CLEANUP
+    // ==========================================
+
     return () => {
+      console.log("🧹 Cleaning notification listener");
+
+      socket.off("connect", joinRoom);
       socket.off(event, handleNotification);
     };
-  }, [user,event,refetch,dispatch]);
+  }, [authUser, event, refetch, dispatch]);
 };
 
 export default useNotification;
