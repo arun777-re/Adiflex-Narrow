@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import api from "../../services/api";
 
 // ==========================================
 // GET BILLING ORDERS
@@ -8,8 +9,8 @@ export const getBillingOrders = createAsyncThunk(
   "billing/getBillingOrders",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get("/billing");
-console.log("response from billing slice",response)
+      const response = await api.get("/billing");
+console.log("response from billing slice",response);
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -30,7 +31,7 @@ export const updateBillingStatus = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const response = await axios.patch("/billing/status", {
+      const response = await api.patch("/billing/status", {
         soNo,
         skuCode,
         cycleID,
