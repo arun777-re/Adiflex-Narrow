@@ -8,6 +8,12 @@ export default defineConfig({
 
     VitePWA({
       registerType: "autoUpdate",
+      strategies:"injectManifest",
+      srcDir:"src",
+      filename:"sw.js",
+      devOptions:{
+        enabled:true
+      },
 
       includeAssets: [
         "favicon.ico",

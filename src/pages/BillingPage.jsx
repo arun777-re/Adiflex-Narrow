@@ -23,6 +23,8 @@ import {
   getBillingOrders,
   updateBillingStatus,
 } from "../redux/slices/billingSlice";
+import useNotification from "../hooks/useNotification";
+import { subscribeToPush } from "../service-worker/webpushworker";
 
 const BillingPage = () => {
   const dispatch = useDispatch();
@@ -58,8 +60,44 @@ const BillingPage = () => {
     dispatch(getBillingOrders());
   }, [dispatch]);
 
+useNotification({
+  event:"new-notification",
+  refetch:getBillingOrders
+});
 
+ useEffect(() => {
+  console.log("hello i am in push barrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr")
+    subscribeToPush()
+      .then(() => {
+        console.log("✅ Push subscription ready");
+      })
+      .catch((error) => {
+        console.error("❌ Push setup failed:", error);
+      });
+  }, []);
   console.log("billing Orders.......",orders);
+  const handleTestPush = async () => {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/notifications/test`,
+      {
+        method: "POST",
+        credentials: "include",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Push test failed");
+    }
+
+    console.log("✅ TEST PUSH:", data);
+
+  } catch (error) {
+    console.error("❌ TEST PUSH ERROR:", error);
+  }
+};
   // =====================================================
   // BILLING DONE
   // =====================================================
@@ -207,6 +245,12 @@ const BillingPage = () => {
         p: 2,
       }}
     >
+           <Button
+  variant="contained"
+  onClick={handleTestPush}
+>
+  🔔 Test Push
+</Button>
       {/* HEADER */}
 
       <Paper
@@ -276,6 +320,7 @@ const BillingPage = () => {
           }}
         />
       </Paper>
+ 
     </Box>
   );
 };
