@@ -58,6 +58,8 @@ const BillingPage = () => {
     dispatch(getBillingOrders());
   }, [dispatch]);
 
+
+  console.log("billing Orders.......",orders);
   // =====================================================
   // BILLING DONE
   // =====================================================

@@ -9,7 +9,7 @@ export const getBillingOrders = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get("/billing");
-
+console.log("response from billing slice",response)
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
