@@ -19,8 +19,9 @@ const WovenDashBoard = () => {
 
   // notification hook
     useNotification({
-        event: "new-woven-notification",
-        refetch: ()=>getAllProductions(currentDivision),
+        event: "new-notification",
+        refetch: ()=>getAllProductions(),
+        refetchArg:`${currentDivision}`,
     });
 
     // get data from redux store

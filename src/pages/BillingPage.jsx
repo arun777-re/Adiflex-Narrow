@@ -1,22 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import {
-  Box,
-  Button,
-  Chip,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Chip, Paper, TextField, Typography } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
 
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 
-import {
-  useDispatch,
-  useSelector,
-} from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import toast from "react-hot-toast";
 
@@ -29,9 +19,7 @@ import useNotification from "../hooks/useNotification";
 
 import { subscribeToPush } from "../service-worker/webpushworker";
 
-
 const BillingPage = () => {
-
   const dispatch = useDispatch();
 
   const {
@@ -48,23 +36,19 @@ const BillingPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-
   // =====================================================
   // PENDING BILLING ORDERS
   // =====================================================
 
   const billingPendingOrders = useMemo(() => {
-
     const pendingOrders = orders.filter(
       (item) =>
         String(item.billing || "")
           .trim()
-          .toLowerCase() !== "done"
+          .toLowerCase() !== "done",
     );
 
-    const search = searchTerm
-      .trim()
-      .toLowerCase();
+    const search = searchTerm.trim().toLowerCase();
 
     // No search
     if (!search) {
@@ -73,37 +57,21 @@ const BillingPage = () => {
 
     // Search Customer OR SO No
     return pendingOrders.filter((item) => {
+      const customer = String(item.customer || "").toLowerCase();
 
-      const customer = String(
-        item.customer || ""
-      ).toLowerCase();
+      const soNo = String(item.soNo || "").toLowerCase();
 
-      const soNo = String(
-        item.soNo || ""
-      ).toLowerCase();
-
-      return (
-        customer.includes(search) ||
-        soNo.includes(search)
-      );
-
+      return customer.includes(search) || soNo.includes(search);
     });
-
   }, [orders, searchTerm]);
-
 
   // =====================================================
   // GET BILLING ORDERS
   // =====================================================
 
   useEffect(() => {
-
-    dispatch(
-      getBillingOrders()
-    );
-
+    dispatch(getBillingOrders());
   }, [dispatch]);
-
 
   // =====================================================
   // SOCKET NOTIFICATION
@@ -114,109 +82,67 @@ const BillingPage = () => {
     refetch: getBillingOrders,
   });
 
-
   // =====================================================
   // PUSH NOTIFICATION SUBSCRIPTION
   // =====================================================
 
   useEffect(() => {
-
-    console.log(
-      "hello i am in push barrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
-    );
+    console.log("hello i am in push barrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
 
     subscribeToPush()
-
       .then(() => {
-
-        console.log(
-          "✅ Push subscription ready"
-        );
-
+        console.log("✅ Push subscription ready");
       })
 
       .catch((error) => {
-
-        console.error(
-          "❌ Push setup failed:",
-          error
-        );
-
+        console.error("❌ Push setup failed:", error);
       });
-
   }, []);
-
 
   // =====================================================
   // DEBUG
   // =====================================================
 
-  console.log(
-    "billing Orders.......",
-    orders
-  );
-
+  console.log("billing Orders.......", orders);
 
   // =====================================================
   // BILLING DONE
   // =====================================================
 
   const handleBillingDone = async (row) => {
-
     try {
-
       setBillingRow(row);
 
       await dispatch(
         updateBillingStatus({
-
           soNo: row.soNo,
 
           skuCode: row.skuCode,
 
-          cycleID:
-            row.cycleID || "",
+          cycleID: row.cycleID || "",
 
           status: "Done",
-
-        })
+        }),
       ).unwrap();
 
-
-      toast.success(
-        `Billing done for ${row.soNo}`
-      );
+      toast.success(`Billing done for ${row.soNo}`);
 
       // Refresh billing orders
-      dispatch(
-        getBillingOrders()
-      );
-
+      dispatch(getBillingOrders());
     } catch (error) {
-
-      toast.error(
-        error || "Billing failed"
-      );
-
+      toast.error(error || "Billing failed");
     } finally {
-
       setBillingRow(null);
-
     }
-
   };
-
 
   // =====================================================
   // CLEAR SEARCH
   // =====================================================
 
   const handleClearSearch = () => {
-
     setSearchTerm("");
-
   };
-
 
   // =====================================================
   // COLUMNS
@@ -224,13 +150,11 @@ const BillingPage = () => {
 
   const columns = useMemo(
     () => [
-
       {
         field: "soNo",
         headerName: "SO No",
         width: 130,
       },
-
 
       {
         field: "skuCode",
@@ -238,17 +162,13 @@ const BillingPage = () => {
         width: 120,
       },
 
-
       {
         field: "cycleID",
         headerName: "Cycle ID",
         width: 150,
 
-        valueGetter: (value) =>
-          value || "-",
-
+        valueGetter: (value) => value || "-",
       },
-
 
       {
         field: "product",
@@ -257,13 +177,11 @@ const BillingPage = () => {
         flex: 1,
       },
 
-
       {
         field: "customer",
         headerName: "Customer",
         width: 180,
       },
-
 
       {
         field: "partyPO",
@@ -271,20 +189,17 @@ const BillingPage = () => {
         width: 120,
       },
 
-
       {
         field: "route",
         headerName: "Route",
         width: 120,
       },
 
-
       {
         field: "division",
         headerName: "Division",
         width: 110,
       },
-
 
       {
         field: "dispatchQty",
@@ -293,97 +208,57 @@ const BillingPage = () => {
         type: "number",
       },
 
-
       {
         field: "billing",
         headerName: "Billing",
         width: 160,
 
         renderCell: (params) => {
-
           const isDone =
-            String(
-              params.row.billing || ""
-            )
+            String(params.row.billing || "")
               .trim()
               .toLowerCase() === "done";
 
-
           const isUpdating =
-            updating &&
-            billingRow?.rowNumber ===
-              params.row.rowNumber;
-
+            updating && billingRow?.rowNumber === params.row.rowNumber;
 
           return isDone ? (
-
-            <Chip
-              label="Done"
-              color="success"
-              size="small"
-            />
-
+            <Chip label="Done" color="success" size="small" />
           ) : (
-
             <Button
               variant="contained"
               size="small"
-
-              startIcon={
-                <ReceiptLongIcon />
-              }
-
+              startIcon={<ReceiptLongIcon />}
               disabled={isUpdating}
-
-              onClick={() =>
-                handleBillingDone(
-                  params.row
-                )
-              }
+              onClick={() => handleBillingDone(params.row)}
             >
-
-              {isUpdating
-                ? "Saving..."
-                : "Billing Done"}
-
+              {isUpdating ? "Saving..." : "Billing Done"}
             </Button>
-
           );
-
         },
-
       },
-
 
       {
         field: "createdAt",
         headerName: "Created At",
         width: 180,
       },
-
     ],
 
-    [
-      updating,
-      billingRow,
-    ]
-
+    [updating, billingRow],
   );
-
 
   // =====================================================
   // UI
   // =====================================================
 
   return (
-
     <Box
       sx={{
         width: "100%",
         p: 2,
       }}
     >
-
       {/* =================================================
           HEADER
       ================================================= */}
@@ -396,14 +271,9 @@ const BillingPage = () => {
           borderRadius: 2,
         }}
       >
-
-        <Typography
-          variant="h5"
-          fontWeight={700}
-        >
+        <Typography variant="h5" fontWeight={700}>
           Billing
         </Typography>
-
 
         <Typography
           variant="body2"
@@ -412,10 +282,8 @@ const BillingPage = () => {
             mt: 0.5,
           }}
         >
-          Fully and partially dispatched
-          orders pending for billing.
+          Fully and partially dispatched orders pending for billing.
         </Typography>
-
 
         {/* =================================================
             SEARCH
@@ -434,61 +302,31 @@ const BillingPage = () => {
             flexWrap: "wrap",
           }}
         >
-
           <TextField
             size="small"
-
             label="Search Customer / SO No"
-
             placeholder="Enter customer or SO number..."
-
             value={searchTerm}
-
-            onChange={(e) =>
-              setSearchTerm(
-                e.target.value
-              )
-            }
-
+            onChange={(e) => setSearchTerm(e.target.value)}
             sx={{
               minWidth: 320,
             }}
           />
 
-
           {searchTerm && (
-
-            <Button
-              variant="outlined"
-              onClick={
-                handleClearSearch
-              }
-            >
+            <Button variant="outlined" onClick={handleClearSearch}>
               Clear
             </Button>
-
           )}
-
 
           {/* RESULT COUNT */}
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-
-            Showing{" "}
-            <strong>
-              {billingPendingOrders.length}
-            </strong>{" "}
-            pending orders
-
+          <Typography variant="body2" color="text.secondary">
+            Showing <strong>{billingPendingOrders.length}</strong> pending
+            orders
           </Typography>
-
         </Box>
-
       </Paper>
-
 
       {/* =================================================
           TABLE
@@ -499,45 +337,23 @@ const BillingPage = () => {
         sx={{
           width: "100%",
 
-          height:
-            "calc(100vh - 220px)",
+          height: "calc(100vh - 220px)",
 
           borderRadius: 2,
 
           overflow: "hidden",
         }}
       >
-
         <DataGrid
-
-          rows={
-            billingPendingOrders
-          }
-
+          rows={billingPendingOrders}
           columns={columns}
-
           loading={loading}
-
-
           getRowId={(row) =>
             `${row.soNo}-${row.skuCode}-${row.cycleID || "NO-CYCLE"}-${row.rowNumber}`
           }
-
-
           disableRowSelectionOnClick
-
-
           density="compact"
-
-
-          pageSizeOptions={[
-            10,
-            20,
-            50,
-            100,
-          ]}
-
-
+          pageSizeOptions={[10, 20, 50, 100]}
           initialState={{
             pagination: {
               paginationModel: {
@@ -545,36 +361,23 @@ const BillingPage = () => {
               },
             },
           }}
-
-
           sx={{
-
             border: 0,
 
-            "& .MuiDataGrid-columnHeaders":
-              {
-                fontWeight: 700,
-              },
+            "& .MuiDataGrid-columnHeaders": {
+              fontWeight: 700,
+            },
 
-            "& .MuiDataGrid-cell":
-              {
-                display: "flex",
+            "& .MuiDataGrid-cell": {
+              display: "flex",
 
-                alignItems:
-                  "center",
-              },
-
+              alignItems: "center",
+            },
           }}
-
         />
-
       </Paper>
-
     </Box>
-
   );
-
 };
-
 
 export default BillingPage;

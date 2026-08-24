@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import loginPic from "../assets/SR.Tech.png";
-
+import toast from "react-hot-toast";
 import {
   Box,
   Button,
@@ -22,6 +22,7 @@ import { login } from "../redux/slices/authSlices";
 import { loginData } from "../utils/loginRoleData";
 import { companyData } from "../utils/companyInfo";
 import { notificationAudio } from "../utils/audio";
+import { subscribeToPush } from "../service-worker/webpushworker";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -92,19 +93,37 @@ const Login = () => {
       console.log("Login response:", data);
 
       if (!data.success) {
-        alert(data.message);
-
+        toast.error("Either Role/Division/Password is incorrect");
         return;
       }
 
+      // =========================================
+      // 🔔 SETUP WEB PUSH
+      // =========================================
+
+      try {
+        await subscribeToPush({ userId: data?.user?.userID });
+
+        console.log("🔔 Push notification subscription completed");
+      } catch (error) {
+        // Push fail hone par LOGIN fail nahi hoga
+        console.error("❌ Push subscription failed:", error);
+      }
+
+      // =========================================
+      // 🔊 EXISTING AUDIO
+      // =========================================
+
       await notificationAudio.play();
+
       notificationAudio.pause();
       notificationAudio.currentTime = 0;
+
       navigate("/dashboard");
     } catch (error) {
       console.error(error);
 
-      alert(error?.message || "Server Error");
+      toast.error("Either Role/Division/Password is incorrect");
     }
   };
 

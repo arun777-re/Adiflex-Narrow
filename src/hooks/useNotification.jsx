@@ -7,6 +7,7 @@ import { notificationAudio } from "../utils/audio.js";
 const useNotification = ({
   event = "new-notification",
   refetch = null,
+  refetchArg = null,
 }) => {
   const dispatch = useDispatch();
 
@@ -23,11 +24,7 @@ const useNotification = ({
     console.log("👤 User:", authUser);
 
     const joinRoom = () => {
-      console.log(
-        "🚪 Joining Room:",
-        authUser.role,
-        authUser.division
-      );
+      console.log("🚪 Joining Room:", authUser.role, authUser.division);
 
       socket.emit("join-room", {
         role: authUser.role,
@@ -51,9 +48,7 @@ const useNotification = ({
       console.log("🔥🔥 NOTIFICATION RECEIVED:", notification);
 
       // Toast
-      toast.success(
-        notification?.title || "New Notification"
-      );
+      toast.success(notification?.title || "New Notification");
 
       // Bell / Audio
       try {
@@ -75,9 +70,10 @@ const useNotification = ({
       // ==========================================
 
       if (typeof refetch === "function") {
-        console.log("🔄 Refetching data...");
+        console.log("🔥 REFECTH FUNCTION:", refetch);
+        console.log("🔥 REFECTH ARG:", refetchArg);
 
-        dispatch(refetch());
+        dispatch(refetch(refetchArg));
       }
     };
 
@@ -95,7 +91,7 @@ const useNotification = ({
       socket.off("connect", joinRoom);
       socket.off(event, handleNotification);
     };
-  }, [authUser, event, refetch, dispatch]);
+  }, [authUser, event, refetch, dispatch, refetchArg]);
 };
 
 export default useNotification;

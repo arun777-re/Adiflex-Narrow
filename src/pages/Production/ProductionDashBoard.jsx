@@ -4,7 +4,6 @@ import { Paper, Box, Typography } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 
-import ProcessSummaryCards from "../../components/production/ProcessSummaryCards";
 
 import ProductionTable from "../../components/production/ProductionTable";
 

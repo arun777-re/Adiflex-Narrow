@@ -69,15 +69,22 @@ export const startProduction = createAsyncThunk(
 export const getAllProductions = createAsyncThunk(
   "/get-all",
   async (division, thunkAPI) => {
+    if(!division){
+      throw Error("Division required");
+    }
     try {
+
+      console.log("🔥 THUNK DIVISION:", division);
+
       const data = await getAllProduction(division);
+
       return data.productionOrders;
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || error.message,
+        error.response?.data?.message || error.message
       );
     }
-  },
+  }
 );
 
 // complete production process
