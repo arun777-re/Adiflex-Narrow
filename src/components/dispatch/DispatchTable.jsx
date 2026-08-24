@@ -261,127 +261,128 @@ console.table(
   console.log("DispatchTable Rendered",activeRows);
 
   return (
-    <>
-    <Stack
-  direction={{ xs: "column", md: "row" }}
-  spacing={2}
-  sx={{ mb: 2 }}
->
-  {/* ROUTE */}
-
-  <FormControl
-    size="small"
-    sx={{ minWidth: 180 }}
-  >
-    <InputLabel>Route</InputLabel>
-
-    <Select
-      value={routeFilter}
-      label="Route"
-      onChange={(e) =>
-        setRouteFilter(e.target.value)
-      }
-    >
-      <MenuItem value="">
-        All Routes
-      </MenuItem>
-
-      {routes.map((route) => (
-        <MenuItem
-          key={route}
-          value={route}
-        >
-          {route}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-
-  {/* CUSTOMER */}
-
-  <FormControl
-    size="small"
-    sx={{ minWidth: 180 }}
-  >
-    <InputLabel>Customer</InputLabel>
-
-    <Select
-      value={customerFilter}
-      label="Customer"
-      onChange={(e) =>
-        setCustomerFilter(e.target.value)
-      }
-    >
-      <MenuItem value="">
-        All Customers
-      </MenuItem>
-
-      {customers.map((customer) => (
-        <MenuItem
-          key={customer}
-          value={customer}
-        >
-          {customer}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-
-  {/* SO NO */}
-
-  <TextField
-    size="small"
-    label="Search SO No"
-    value={soFilter}
-    onChange={(e) =>
-      setSoFilter(e.target.value)
-    }
-  />
-
-  {/* CLEAR */}
-
-  <Button
-    variant="outlined"
-    onClick={() => {
-      setRouteFilter("");
-      setCustomerFilter("");
-      setSoFilter("");
+ <>
+  <Stack
+    direction={{ xs: "column", md: "row" }}
+    spacing={1}
+    sx={{
+      mb: 2,
+      px: { xs: 0.5, sm: 1, md: 0 },
+      width: "100%",
     }}
   >
-    Clear
-  </Button>
-</Stack>
-      <Box
-        sx={{
-          width: "100%",
+    {/* ROUTE */}
+    <FormControl
+      size="small"
+      sx={{
+        minWidth: { xs: 0, md: 180 },
+        width: { xs: "100%", md: "auto" },
+      }}
+    >
+      <InputLabel>Route</InputLabel>
 
-          height: "calc(100vh - 250px)",
-        }}
+      <Select
+        value={routeFilter}
+        label="Route"
+        onChange={(e) => setRouteFilter(e.target.value)}
       >
-     <DataGrid
-  rows={activeRows}
-  columns={columns}
-  loading={loading}
-  getRowId={(row) =>
-    row.cycleID ||
-    row.id ||
-    `${row.soNo}-${row.skuCode}-${row.rowNumber}`
-  }
-  disableRowSelectionOnClick
-  density="compact"
-  pageSizeOptions={[10, 20, 50]}
-  initialState={{
-    pagination: {
-      paginationModel: {
-        pageSize: 10,
-      },
-    },
-  }}
-/>
-      </Box>
+        <MenuItem value="">All Routes</MenuItem>
 
-      <DispatchDialog open={open} onClose={handleClose} order={selectedOrder} />
-    </>
+        {routes.map((route) => (
+          <MenuItem key={route} value={route}>
+            {route}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+
+    {/* CUSTOMER */}
+    <FormControl
+      size="small"
+      sx={{
+        minWidth: { xs: 0, md: 180 },
+        width: { xs: "100%", md: "auto" },
+      }}
+    >
+      <InputLabel>Customer</InputLabel>
+
+      <Select
+        value={customerFilter}
+        label="Customer"
+        onChange={(e) => setCustomerFilter(e.target.value)}
+      >
+        <MenuItem value="">All Customers</MenuItem>
+
+        {customers.map((customer) => (
+          <MenuItem key={customer} value={customer}>
+            {customer}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+
+    {/* SO NO */}
+    <TextField
+      size="small"
+      label="Search SO No"
+      value={soFilter}
+      onChange={(e) => setSoFilter(e.target.value)}
+      sx={{
+        width: { xs: "100%", md: "auto" },
+      }}
+    />
+
+    {/* CLEAR */}
+    <Button
+      variant="outlined"
+      onClick={() => {
+        setRouteFilter("");
+        setCustomerFilter("");
+        setSoFilter("");
+      }}
+      sx={{
+        width: { xs: "100%", md: "auto" },
+      }}
+    >
+      Clear
+    </Button>
+  </Stack>
+
+  <Box
+    sx={{
+      width: "100%",
+      height: "calc(100vh - 250px)",
+      px: { xs: 0, sm: 1, md: 0 },
+    }}
+  >
+    <DataGrid
+      rows={activeRows}
+      columns={columns}
+      loading={loading}
+      getRowId={(row) =>
+        row.cycleID ||
+        row.id ||
+        `${row.soNo}-${row.skuCode}-${row.rowNumber}`
+      }
+      disableRowSelectionOnClick
+      density="compact"
+      pageSizeOptions={[10, 20, 50]}
+      initialState={{
+        pagination: {
+          paginationModel: {
+            pageSize: 10,
+          },
+        },
+      }}
+    />
+  </Box>
+
+  <DispatchDialog
+    open={open}
+    onClose={handleClose}
+    order={selectedOrder}
+  />
+</>
   );
 };
 
