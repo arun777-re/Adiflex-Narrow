@@ -337,7 +337,7 @@ const BillingPage = () => {
         sx={{
           width: "100%",
 
-          height: "calc(100vh - 220px)",
+          height: "calc(100vh - 180px)",
 
           borderRadius: 2,
 

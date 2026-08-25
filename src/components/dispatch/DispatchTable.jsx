@@ -351,8 +351,28 @@ console.table(
   <Box
     sx={{
       width: "100%",
-      height: "calc(100vh - 250px)",
+      height: "calc(100vh - 150px)",
       px: { xs: 0, sm: 1, md: 0 },
+      boxSizing:"border-box"
+    }}
+  >
+<Box
+  sx={{
+    width: "100%",
+    height: "calc(100vh - 150px)",
+    px: { xs: 0, sm: 1, md: 0 },
+
+    // 👇 IMPORTANT
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+  }}
+>
+  <Box
+    sx={{
+      flex: 1,
+      minHeight: 0,
+      pb: 3, // 👈 bottom mein proper space
     }}
   >
     <DataGrid
@@ -360,9 +380,8 @@ console.table(
       columns={columns}
       loading={loading}
       getRowId={(row) =>
-        row.cycleID ||
-        row.id ||
-        `${row.soNo}-${row.skuCode}-${row.rowNumber}`
+ `${row.id || `${row.soNo}-${row.skuCode}`}-${row.rowNumber}`
+        
       }
       disableRowSelectionOnClick
       density="compact"
@@ -374,15 +393,33 @@ console.table(
           },
         },
       }}
+
+      // 👇 HEADER + GRID SCROLL CONTROL
+      sx={{
+        height: "100%",
+
+        "& .MuiDataGrid-columnHeaders": {
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          backgroundColor: "background.paper",
+        },
+
+        "& .MuiDataGrid-virtualScroller": {
+          overflowY: "auto",
+        },
+      }}
     />
   </Box>
+</Box>
+</Box>
 
   <DispatchDialog
     open={open}
     onClose={handleClose}
     order={selectedOrder}
   />
-</>
+  </>
   );
 };
 
