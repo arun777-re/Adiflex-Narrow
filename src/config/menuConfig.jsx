@@ -57,21 +57,8 @@ export const menuConfig = {
         <ShoppingCartRoundedIcon />,
     },
 
-
     {
       id: 3,
-
-      title: "Create Sales Order",
-
-      path: "/sales-order/create",
-
-      icon:
-        <AddShoppingCartRoundedIcon />,
-    },
-
-
-    {
-      id: 4,
 
       title: "Production",
 
@@ -83,7 +70,7 @@ export const menuConfig = {
 
 
     {
-      id: 5,
+      id: 4,
 
       title: "Inventory",
 
@@ -95,7 +82,7 @@ export const menuConfig = {
 
 
     {
-      id: 6,
+      id: 5,
 
       title: "Dispatch",
 
@@ -107,7 +94,7 @@ export const menuConfig = {
 
 
     {
-      id: 7,
+      id: 6,
 
       title: "Reports",
 
@@ -119,7 +106,7 @@ export const menuConfig = {
 
 
     {
-      id: 8,
+      id: 7,
 
       title: "Activity Log",
 
