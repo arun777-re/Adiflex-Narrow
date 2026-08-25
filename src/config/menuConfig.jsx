@@ -75,7 +75,7 @@ export const menuConfig = {
 
       title: "Production",
 
-      path: "/production",
+      path: "/admin-production",
 
       icon:
         <PrecisionManufacturingRoundedIcon />,
@@ -99,7 +99,7 @@ export const menuConfig = {
 
       title: "Dispatch",
 
-      path: "/dispatch",
+      path: "/billing-done",
 
       icon:
         <LocalShippingRoundedIcon />,

@@ -122,7 +122,8 @@ export const routeConfig = {
   ],
   '/billing-done':[
     ROLES.BILLING,
-    ROLES.SUPERVISOR
+    ROLES.SUPERVISOR,
+    ROLES.ADMIN
   ]
 
 

@@ -42,6 +42,8 @@ const ProductForm = () => {
       unit: "Meter",
       color: "",
       size: "",
+      meterPerRoll:"",
+      meterPerKg:"",
     },
   });
 
@@ -58,6 +60,8 @@ const ProductForm = () => {
         rate:product.rate,
         color: product.color,
         size: product.size,
+        meterPerKg:product.meterPerKg,
+        meterPerRoll:product.meterPerRoll,
       });
     }
   }, [product, reset]);
@@ -92,7 +96,10 @@ const ProductForm = () => {
         unit: "Meter",
         color: "",
         size: "",
-      });
+        meterPerKg:""
+,meterPerRoll:"",
+
+});
 
       // Refresh Product List
 
@@ -111,6 +118,9 @@ const ProductForm = () => {
       unit: "Meter",
       color: "",
       size: "",
+       meterPerKg:""
+,meterPerRoll:"",
+
     });
   };
     return (
@@ -179,15 +189,15 @@ const ProductForm = () => {
               Meter
             </MenuItem>
 
-            <MenuItem value="Roll">
+            <MenuItem value="Meter">
               Roll
             </MenuItem>
 
-            <MenuItem value="Piece">
+            <MenuItem value="Meter">
               Piece
             </MenuItem>
 
-            <MenuItem value="Kg">
+            <MenuItem value="Meter">
               Kg
             </MenuItem>
           </TextField>
@@ -210,6 +220,20 @@ const ProductForm = () => {
             fullWidth
             label="Size"
             {...register("size")}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <TextField
+            fullWidth
+            label="Meter in one Roll"
+            {...register("meterPerRoll")}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <TextField
+            fullWidth
+            label="Meter in One Kg"
+            {...register("meterPerKg")}
           />
         </Grid>
         {/* rate */}
