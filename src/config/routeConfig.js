@@ -119,6 +119,11 @@ export const routeConfig = {
 
   '/billing':[
     ROLES.BILLING
+  ],
+  '/billing-done':[
+    ROLES.BILLING,
+    ROLES.SUPERVISOR
   ]
+
 
 };

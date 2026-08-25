@@ -21,6 +21,7 @@ import InventoryRoundedIcon
 
 import AssessmentRoundedIcon
   from "@mui/icons-material/AssessmentRounded";
+  import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 
 import { ROLES } from "./roles";
 
@@ -314,6 +315,16 @@ export const menuConfig = {
 
       icon:
         <DashboardRoundedIcon />,
+    },
+        {
+      id: 1,
+
+      title: "Billing Done",
+
+      path: "/billing-done",
+
+      icon:
+        <TaskAltRoundedIcon />,
     },
   ]
 
