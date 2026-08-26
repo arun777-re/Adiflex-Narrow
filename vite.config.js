@@ -15,7 +15,7 @@ export default defineConfig({
       },
       filename:"sw.js",
       devOptions:{
-        enabled:true
+        enabled:false
       },
 
       includeAssets: [

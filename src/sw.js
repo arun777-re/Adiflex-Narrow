@@ -1,5 +1,11 @@
 import { precacheAndRoute } from "workbox-precaching";
+import { clientsClaim } from "workbox-core";
 
+// New service worker ko immediately activate karo
+self.skipWaiting();
+clientsClaim();
+
+// Vite PWA generated assets
 precacheAndRoute(self.__WB_MANIFEST);
 
 self.addEventListener("push", (event) => {
@@ -38,15 +44,17 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   event.waitUntil(
-    self.clients.matchAll({
-      type: "window",
-      includeUncontrolled: true,
-    }).then((clients) => {
-      if (clients.length > 0) {
-        return clients[0].focus();
-      }
+    self.clients
+      .matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      })
+      .then((clients) => {
+        if (clients.length > 0) {
+          return clients[0].focus();
+        }
 
-      return self.clients.openWindow("/");
-    })
+        return self.clients.openWindow("/");
+      })
   );
 });
