@@ -1,13 +1,6 @@
 import { useEffect } from "react";
 
-import {
-  Box,
-  Button,
-  Grid,
-  MenuItem,
-  Stack,
-  TextField,
-} from "@mui/material";
+import { Box, Button, Grid, MenuItem, Stack, TextField } from "@mui/material";
 
 import { useForm } from "react-hook-form";
 
@@ -22,12 +15,9 @@ import {
 const ProductForm = () => {
   const dispatch = useDispatch();
 
-  const { product, loading } =
-    useSelector((state) => state.product);
+  const { product, loading } = useSelector((state) => state.product);
 
-  const { user } = useSelector(
-    (state) => state.auth
-  );
+  const { user } = useSelector((state) => state.auth);
 
   const {
     register,
@@ -38,12 +28,12 @@ const ProductForm = () => {
     defaultValues: {
       productName: "",
       division: "",
-      rate:"",
+      rate: "",
       unit: "Meter",
       color: "",
       size: "",
-      meterPerRoll:"",
-      meterPerKg:"",
+      meterPerRoll: "",
+      meterPerKg: "",
     },
   });
 
@@ -57,11 +47,11 @@ const ProductForm = () => {
         productName: product.productName,
         division: product.division,
         unit: product.unit,
-        rate:product.rate,
+        rate: product.rate,
         color: product.color,
         size: product.size,
-        meterPerKg:product.meterPerKg,
-        meterPerRoll:product.meterPerRoll,
+        meterPerKg: product.meterPerKg,
+        meterPerRoll: product.meterPerRoll,
       });
     }
   }, [product, reset]);
@@ -76,14 +66,14 @@ const ProductForm = () => {
           sku: product.sku,
           ...data,
           updatedBy: user?.user?.name,
-        })
+        }),
       );
     } else {
       res = await dispatch(
         addProduct({
           ...data,
           createdBy: user?.user?.name,
-        })
+        }),
       );
     }
 
@@ -96,11 +86,10 @@ const ProductForm = () => {
         unit: "Meter",
         color: "",
         size: "",
-        rate:"",
-        meterPerKg:"",
-        meterPerRoll:"",
-
-});
+        rate: "",
+        meterPerKg: "",
+        meterPerRoll: "",
+      });
 
       // Refresh Product List
 
@@ -119,19 +108,13 @@ const ProductForm = () => {
       unit: "Meter",
       color: "",
       size: "",
-       meterPerKg:""
-,meterPerRoll:"",
-
+      meterPerKg: "",
+      meterPerRoll: "",
     });
   };
-    return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit(onSubmit)}
-      mb={4}
-    >
+  return (
+    <Box component="form" onSubmit={handleSubmit(onSubmit)} mb={4}>
       <Grid container spacing={2}>
-
         {/* PRODUCT NAME */}
 
         <Grid size={{ xs: 12, md: 4 }}>
@@ -159,17 +142,11 @@ const ProductForm = () => {
             error={!!errors.division}
             helperText={errors.division?.message}
           >
-            <MenuItem value="">
-              Select Division
-            </MenuItem>
+            <MenuItem value="">Select Division</MenuItem>
 
-            <MenuItem value="Woven">
-              Woven
-            </MenuItem>
+            <MenuItem value="Woven">Woven</MenuItem>
 
-            <MenuItem value="Crochet">
-              Crochet
-            </MenuItem>
+            <MenuItem value="Crochet">Crochet</MenuItem>
           </TextField>
         </Grid>
 
@@ -185,22 +162,14 @@ const ProductForm = () => {
               required: "Unit is required",
             })}
           >
-            <MenuItem value="Meter">
-              Meter
-            </MenuItem>
-
-          
+            <MenuItem value="Meter">Meter</MenuItem>
           </TextField>
         </Grid>
 
         {/* COLOR */}
 
         <Grid size={{ xs: 12, md: 3 }}>
-          <TextField
-            fullWidth
-            label="Color"
-            {...register("color")}
-          />
+          <TextField fullWidth label="Color" {...register("color")} />
         </Grid>
 
         {/* SIZE */}
@@ -208,8 +177,29 @@ const ProductForm = () => {
         <Grid size={{ xs: 12, md: 3 }}>
           <TextField
             fullWidth
-            label="Size"
-            {...register("size")}
+            label="Size in mm"
+            type="number"
+            inputProps={{
+              min: 0,
+              step: "0.01",
+            }}
+            {...register("size", {
+              required: "Size is required",
+              valueAsNumber: true,
+              validate: (value) => {
+                if (!Number.isFinite(value)) {
+                  return "Please enter a valid size";
+                }
+
+                if (value <= 0) {
+                  return "Size must be greater than 0";
+                }
+
+                return true;
+              },
+            })}
+            error={!!errors.size}
+            helperText={errors.size?.message}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 3 }}>
@@ -230,40 +220,53 @@ const ProductForm = () => {
         <Grid size={{ xs: 12, md: 3 }}>
           <TextField
             fullWidth
+            type="number"
             label="Rate"
-            {...register("rate")}
+            inputProps={{
+              min: 0,
+              step: "0.01",
+            }}
+            {...register("rate", {
+              required: "Rate is required",
+              validate: (value) => {
+                const rate = Number(value);
+
+                if (value === "") {
+                  return "Rate is required";
+                }
+
+                if (!Number.isFinite(rate)) {
+                  return "Please enter a valid rate";
+                }
+
+                if (rate <= 0) {
+                  return "Rate must be greater than 0";
+                }
+
+                return true;
+              },
+            })}
+            error={!!errors.rate}
+            helperText={errors.rate?.message}
           />
         </Grid>
-
       </Grid>
 
-      <Stack
-        direction="row"
-        spacing={2}
-        justifyContent="flex-end"
-        mt={4}
-      >
-        <Button
-          variant="outlined"
-          onClick={handleReset}
-        >
+      <Stack direction="row" spacing={2} justifyContent="flex-end" mt={4}>
+        <Button variant="outlined" onClick={handleReset}>
           Reset
         </Button>
 
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={loading}
-        >
+        <Button type="submit" variant="contained" disabled={loading}>
           {loading
             ? "Saving..."
             : product
-            ? "Update Product"
-            : "Create Product"}
+              ? "Update Product"
+              : "Create Product"}
         </Button>
       </Stack>
     </Box>
   );
 };
 
-export default ProductForm;  
+export default ProductForm;
