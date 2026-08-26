@@ -96,8 +96,9 @@ const ProductForm = () => {
         unit: "Meter",
         color: "",
         size: "",
-        meterPerKg:""
-,meterPerRoll:"",
+        rate:"",
+        meterPerKg:"",
+        meterPerRoll:"",
 
 });
 
@@ -152,7 +153,6 @@ const ProductForm = () => {
             select
             fullWidth
             label="Division"
-            defaultValue=""
             {...register("division", {
               required: "Division is required",
             })}
@@ -189,17 +189,7 @@ const ProductForm = () => {
               Meter
             </MenuItem>
 
-            <MenuItem value="Meter">
-              Roll
-            </MenuItem>
-
-            <MenuItem value="Meter">
-              Piece
-            </MenuItem>
-
-            <MenuItem value="Meter">
-              Kg
-            </MenuItem>
+          
           </TextField>
         </Grid>
 
