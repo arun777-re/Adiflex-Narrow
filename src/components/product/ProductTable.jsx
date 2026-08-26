@@ -1,13 +1,6 @@
-import { useMemo, useState,useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 
-import {
-  Box,
-  Grid,
-  MenuItem,
-  TextField,
-  Button,
-  Chip,
-} from "@mui/material";
+import { Box, Grid, MenuItem, TextField, Button, Chip } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -26,42 +19,31 @@ const ProductTable = () => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
-  const { allproducts, loading } = useSelector(
-    (state) => state.product
-  );
+  const { allproducts, loading } = useSelector((state) => state.product);
 
-  const { user } = useSelector(
-    (state) => state.auth
-  );
+  const { user } = useSelector((state) => state.auth);
 
   const [search, setSearch] = useState("");
 
-  const [division, setDivision] =
-    useState("All");
+  const [division, setDivision] = useState("All");
+  const [size, setSize] = useState("All");
 
-  const [status, setStatus] =
-    useState("All");
+  const [status, setStatus] = useState("All");
 
   // ACTIONS
   const handleEdit = (sku) => {
     dispatch(fetchProductBySku(sku));
   };
 
-  const handleStatus = async (
-    sku,
-    currentStatus
-  ) => {
-    const status =
-      currentStatus === "Active"
-        ? "Inactive"
-        : "Active";
+  const handleStatus = async (sku, currentStatus) => {
+    const status = currentStatus === "Active" ? "Inactive" : "Active";
 
     const res = await dispatch(
       changeProductStatus({
         sku,
         status,
         updatedBy: user?.user?.name,
-      })
+      }),
     );
 
     if (res.payload?.success) {
@@ -71,40 +53,33 @@ const ProductTable = () => {
 
   // FILTERED DATA
   const filteredRows = useMemo(() => {
-    const Product = Array.isArray(allproducts) && allproducts.length > 0 ? allproducts : [];
-    return  Product.filter((item) => {
+    const products = Array.isArray(allproducts) ? allproducts : [];
+
+    const normalize = (value) =>
+      String(value ?? "")
+        .trim()
+        .toLowerCase();
+
+    return products.filter((item) => {
       const searchMatch =
         search === "" ||
-        [
-          item.sku,
-          item.productName,
-          item.color,
-          item.size,
-        ]
+        [item.sku, item.productName, item.color, item.size]
           .join(" ")
           .toLowerCase()
           .includes(search.toLowerCase());
 
       const divisionMatch =
-        division === "All" ||
-        item.division === division;
+        division === "All" || normalize(item.division) === normalize(division);
 
       const statusMatch =
-        status === "All" ||
-        item.status === status;
+        status === "All" || normalize(item.status) === normalize(status);
 
-      return (
-        searchMatch &&
-        divisionMatch &&
-        statusMatch 
-      );
+      const sizeMatch =
+        size === "All" || normalize(item.size) === normalize(size);
+
+      return searchMatch && divisionMatch && statusMatch && sizeMatch;
     });
-  }, [
-    allproducts,
-    search,
-    division,
-    status,
-  ]);
+  }, [allproducts, search, division, status, size]);
 
   // DATAGRID COLUMNS
   const columns = useMemo(
@@ -154,11 +129,7 @@ const ProductTable = () => {
           <Chip
             size="small"
             label={params.value}
-            color={
-              params.value === "Active"
-                ? "success"
-                : "error"
-            }
+            color={params.value === "Active" ? "success" : "error"}
           />
         ),
       },
@@ -175,11 +146,7 @@ const ProductTable = () => {
         width: 180,
 
         valueFormatter: (value) =>
-          value
-            ? new Date(value).toLocaleString(
-                "en-IN"
-              )
-            : "",
+          value ? new Date(value).toLocaleString("en-IN") : "",
       },
 
       {
@@ -194,11 +161,7 @@ const ProductTable = () => {
         width: 180,
 
         valueFormatter: (value) =>
-          value
-            ? new Date(value).toLocaleString(
-                "en-IN"
-              )
-            : "",
+          value ? new Date(value).toLocaleString("en-IN") : "",
       },
 
       {
@@ -214,9 +177,7 @@ const ProductTable = () => {
               size="small"
               variant="outlined"
               sx={{ mr: 1 }}
-              onClick={() =>
-                handleEdit(params.row.sku)
-              }
+              onClick={() => handleEdit(params.row.sku)}
             >
               Edit
             </Button>
@@ -224,49 +185,30 @@ const ProductTable = () => {
             <Button
               size="small"
               variant="contained"
-              color={
-                params.row.status === "Active"
-                  ? "error"
-                  : "success"
-              }
-              onClick={() =>
-                handleStatus(
-                  params.row.sku,
-                  params.row.status
-                )
-              }
+              color={params.row.status === "Active" ? "error" : "success"}
+              onClick={() => handleStatus(params.row.sku, params.row.status)}
             >
-              {params.row.status ===
-              "Active"
-                ? "Deactivate"
-                : "Activate"}
+              {params.row.status === "Active" ? "Deactivate" : "Activate"}
             </Button>
           </>
         ),
       },
     ],
-    []
+    [],
   );
 
   return (
     <Box>
+      {/* FILTERS */}
 
-          {/* FILTERS */}
-
-      <Grid
-        container
-        spacing={2}
-        mb={3}
-      >
+      <Grid container spacing={2} mb={3}>
         <Grid size={{ xs: 12, md: 5 }}>
           <TextField
             fullWidth
             label="Search Product"
             placeholder="SKU, Product, Color..."
             value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
+            onChange={(e) => setSearch(e.target.value)}
           />
         </Grid>
 
@@ -276,49 +218,64 @@ const ProductTable = () => {
             fullWidth
             label="Division"
             value={division}
-            onChange={(e) =>
-              setDivision(e.target.value)
-            }
+            onChange={(e) => setDivision(e.target.value)}
           >
-            <MenuItem value="All">
-              All
-            </MenuItem>
+            <MenuItem value="All">All</MenuItem>
 
-            <MenuItem value="Woven">
-              Woven
-            </MenuItem>
+            <MenuItem value="Woven">Woven</MenuItem>
 
-            <MenuItem value="Crochet">
-              Crochet
-            </MenuItem>
+            <MenuItem value="Crochet">Crochet</MenuItem>
           </TextField>
         </Grid>
+        <Grid size={{ xs: 12, md: 2.3 }}>
+          <TextField
+            select
+            fullWidth
+            label="Size"
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+          >
+            <MenuItem value="All">All</MenuItem>
 
+            {[
+              ...new Set(
+                allproducts
+                  .map((item) => String(item.size ?? "").trim())
+                  .filter(Boolean),
+              ),
+            ]
+              .sort((a, b) => {
+                const numA = parseFloat(a);
+                const numB = parseFloat(b);
+
+                if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+                  return numA - numB;
+                }
+
+                return a.localeCompare(b);
+              })
+              .map((itemSize) => (
+                <MenuItem key={itemSize} value={itemSize}>
+                  {itemSize}
+                </MenuItem>
+              ))}
+          </TextField>
+        </Grid>
         <Grid size={{ xs: 12, md: 2.3 }}>
           <TextField
             select
             fullWidth
             label="Status"
             value={status}
-            onChange={(e) =>
-              setStatus(e.target.value)
-            }
+            onChange={(e) => setStatus(e.target.value)}
           >
-            <MenuItem value="All">
-              All
-            </MenuItem>
+            <MenuItem value="All">All</MenuItem>
 
-            <MenuItem value="Active">
-              Active
-            </MenuItem>
+            <MenuItem value="Active">Active</MenuItem>
 
-            <MenuItem value="Inactive">
-              Inactive
-            </MenuItem>
+            <MenuItem value="Inactive">Inactive</MenuItem>
           </TextField>
         </Grid>
-
-      
       </Grid>
 
       {/* ===========================
@@ -338,12 +295,7 @@ const ProductTable = () => {
           getRowId={(row) => row.sku}
           disableRowSelectionOnClick
           density="compact"
-          pageSizeOptions={[
-            10,
-            20,
-            50,
-            100,
-          ]}
+          pageSizeOptions={[10, 20, 50, 100]}
           columnHeaderHeight={48}
           rowHeight={42}
           initialState={{
@@ -356,33 +308,26 @@ const ProductTable = () => {
           sx={{
             border: 0,
 
-            "& .MuiDataGrid-columnHeaderTitle":
-              {
-                fontWeight: 700,
-              },
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: 700,
+            },
 
             "& .MuiDataGrid-cell": {
-              borderBottom:
-                "1px solid #eee",
+              borderBottom: "1px solid #eee",
               fontSize: 13,
             },
 
-            "& .MuiDataGrid-row:nth-of-type(even)":
-              {
-                backgroundColor:
-                  "#fafafa",
-              },
-
-            "& .MuiDataGrid-row:hover": {
-              backgroundColor:
-                "#e3f2fd",
+            "& .MuiDataGrid-row:nth-of-type(even)": {
+              backgroundColor: "#fafafa",
             },
 
-            "& .MuiDataGrid-footerContainer":
-              {
-                borderTop:
-                  "1px solid #ddd",
-              },
+            "& .MuiDataGrid-row:hover": {
+              backgroundColor: "#e3f2fd",
+            },
+
+            "& .MuiDataGrid-footerContainer": {
+              borderTop: "1px solid #ddd",
+            },
           }}
         />
       </Box>
