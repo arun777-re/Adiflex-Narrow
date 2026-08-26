@@ -10,6 +10,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       strategies:"injectManifest",
       srcDir:"src",
+      workbox:{
+       cleanupOutdatedCaches:true,
+      },
       filename:"sw.js",
       devOptions:{
         enabled:true
