@@ -202,16 +202,28 @@ const ProductForm = () => {
             helperText={errors.size?.message}
           />
         </Grid>
+        {/* meter in one roll */}
         <Grid size={{ xs: 12, md: 3 }}>
           <TextField
+          type="number"
+            inputProps={{
+              min: 0,
+              step: "0.01",
+            }}
             fullWidth
             label="Meter in one Roll"
             {...register("meterPerRoll")}
           />
         </Grid>
+        {/* meter in 1 kg */}
         <Grid size={{ xs: 12, md: 3 }}>
           <TextField
             fullWidth
+            type="number"
+              inputProps={{
+              min: 0,
+              step: "0.01",
+            }}
             label="Meter in One Kg"
             {...register("meterPerKg")}
           />
