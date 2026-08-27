@@ -10,6 +10,7 @@ import {
   Card,
   CardContent,
   Stack,
+  Autocomplete
 } from "@mui/material";
 
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -26,14 +27,13 @@ import { fetchSalesOrders } from "../redux/slices/salesOrderSlice";
 const SalesOrder = () => {
   const dispatch = useDispatch();
 
-  const { salesOrders, loading } = useSelector(
-    (state) => state.salesOrder
-  );
+  const { salesOrders, loading } = useSelector((state) => state.salesOrder);
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [customer, setCustomer] = useState("All");
   const [dateFilter, setDateFilter] = useState("All");
+  const [division, setDivision] = useState("All");
 
   useEffect(() => {
     dispatch(fetchSalesOrders());
@@ -42,52 +42,53 @@ const SalesOrder = () => {
   console.log("salesOrders12345", salesOrders);
   const customers = [
     "All",
-    ...new Set(
-      salesOrders
-        .map((item) => item.customer)
-        .filter(Boolean)
-    ),
+    ...new Set(salesOrders.map((item) => item.customer).filter(Boolean)),
   ];
 
   const totalOrders = salesOrders.length;
 
   const pendingOrders = salesOrders.filter(
-    (item) =>
-      item.status !== "Completed" &&
-      item.status !== "Cancelled"
+    (item) => item.status !== "Completed" && item.status !== "Cancelled",
   ).length;
 
   const completedOrders = salesOrders.filter(
-    (item) => item.status === "Ready To Dispatch"
+    (item) => item.status === "Ready To Dispatch",
   ).length;
 
   const cancelledOrders = salesOrders.filter(
-    (item) => item.status === "Cancelled"
+    (item) => item.status === "Cancelled",
   ).length;
 
   const filteredRows = useMemo(() => {
+    const normalize = (value) =>
+      String(value ?? "")
+        .trim()
+        .toLowerCase();
+
     return salesOrders.filter((row) => {
-      const searchText = search.toLowerCase().trim();
+      const searchText = normalize(search);
 
       const matchesSearch =
         searchText === "" ||
-        row.soNo?.toLowerCase().includes(searchText) ||
-        row.customer?.toLowerCase().includes(searchText) ||
-        row.product?.toLowerCase().includes(searchText);
+        normalize(row.soNo).includes(searchText) ||
+        normalize(row.customer).includes(searchText) ||
+        normalize(row.product).includes(searchText);
 
       const matchesStatus =
-        status === "All" || row.status === status;
+        status === "All" || normalize(row.status) === normalize(status);
 
       const matchesCustomer =
-        customer === "All" || row.customer === customer;
+        customer === "All" || normalize(row.customer) === normalize(customer);
+
+      const matchesDivision =
+        division === "All" || normalize(row.division) === normalize(division);
 
       let matchesDate = true;
 
       const today = new Date();
 
       if (dateFilter === "Today") {
-        matchesDate =
-          row.date === today.toISOString().slice(0, 10);
+        matchesDate = row.date === today.toISOString().slice(0, 10);
       }
 
       if (dateFilter === "This Week") {
@@ -95,13 +96,13 @@ const SalesOrder = () => {
 
         const firstDay = new Date(today);
         firstDay.setDate(today.getDate() - today.getDay());
+        firstDay.setHours(0, 0, 0, 0);
 
         const lastDay = new Date(firstDay);
         lastDay.setDate(firstDay.getDate() + 6);
+        lastDay.setHours(23, 59, 59, 999);
 
-        matchesDate =
-          orderDate >= firstDay &&
-          orderDate <= lastDay;
+        matchesDate = orderDate >= firstDay && orderDate <= lastDay;
       }
 
       if (dateFilter === "This Month") {
@@ -109,24 +110,18 @@ const SalesOrder = () => {
 
         matchesDate =
           orderDate.getMonth() === today.getMonth() &&
-          orderDate.getFullYear() ===
-            today.getFullYear();
+          orderDate.getFullYear() === today.getFullYear();
       }
 
       return (
         matchesSearch &&
         matchesStatus &&
         matchesCustomer &&
+        matchesDivision &&
         matchesDate
       );
     });
-  }, [
-    salesOrders,
-    search,
-    status,
-    customer,
-    dateFilter,
-  ]);
+  }, [salesOrders, search, status, customer, division, dateFilter]);
 
   return (
     <Box
@@ -134,7 +129,7 @@ const SalesOrder = () => {
         p: { xs: 2, md: 3 },
         bgcolor: "#f5f7fb",
         minHeight: "100vh",
-        height:"auto",
+        height: "auto",
       }}
     >
       <Stack
@@ -151,10 +146,7 @@ const SalesOrder = () => {
         spacing={2}
       >
         <Box>
-          <Typography
-            variant="h4"
-            fontWeight={700}
-          >
+          <Typography variant="h4" fontWeight={700}>
             Sales Orders
           </Typography>
 
@@ -166,9 +158,7 @@ const SalesOrder = () => {
         <Button
           variant="contained"
           startIcon={<RefreshIcon />}
-          onClick={() =>
-            dispatch(fetchSalesOrders())
-          }
+          onClick={() => dispatch(fetchSalesOrders())}
           sx={{
             borderRadius: 2,
             textTransform: "none",
@@ -183,29 +173,16 @@ const SalesOrder = () => {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card elevation={2}>
             <CardContent>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-              >
+              <Stack direction="row" justifyContent="space-between">
                 <Box>
-                  <Typography
-                    color="text.secondary"
-                  >
-                    Total Orders
-                  </Typography>
+                  <Typography color="text.secondary">Total Orders</Typography>
 
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                  >
+                  <Typography variant="h4" fontWeight={700}>
                     {totalOrders}
                   </Typography>
                 </Box>
 
-                <ShoppingCartIcon
-                  color="primary"
-                  sx={{ fontSize: 42 }}
-                />
+                <ShoppingCartIcon color="primary" sx={{ fontSize: 42 }} />
               </Stack>
             </CardContent>
           </Card>
@@ -214,29 +191,16 @@ const SalesOrder = () => {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card elevation={2}>
             <CardContent>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-              >
+              <Stack direction="row" justifyContent="space-between">
                 <Box>
-                  <Typography
-                    color="text.secondary"
-                  >
-                    Pending
-                  </Typography>
+                  <Typography color="text.secondary">Pending</Typography>
 
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                  >
+                  <Typography variant="h4" fontWeight={700}>
                     {pendingOrders}
                   </Typography>
                 </Box>
 
-                <PendingActionsIcon
-                  color="warning"
-                  sx={{ fontSize: 42 }}
-                />
+                <PendingActionsIcon color="warning" sx={{ fontSize: 42 }} />
               </Stack>
             </CardContent>
           </Card>
@@ -245,29 +209,16 @@ const SalesOrder = () => {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card elevation={2}>
             <CardContent>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-              >
+              <Stack direction="row" justifyContent="space-between">
                 <Box>
-                  <Typography
-                    color="text.secondary"
-                  >
-                    Completed
-                  </Typography>
+                  <Typography color="text.secondary">Completed</Typography>
 
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                  >
+                  <Typography variant="h4" fontWeight={700}>
                     {completedOrders}
                   </Typography>
                 </Box>
 
-                <CheckCircleIcon
-                  color="success"
-                  sx={{ fontSize: 42 }}
-                />
+                <CheckCircleIcon color="success" sx={{ fontSize: 42 }} />
               </Stack>
             </CardContent>
           </Card>
@@ -276,29 +227,16 @@ const SalesOrder = () => {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card elevation={2}>
             <CardContent>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-              >
+              <Stack direction="row" justifyContent="space-between">
                 <Box>
-                  <Typography
-                    color="text.secondary"
-                  >
-                    Cancelled
-                  </Typography>
+                  <Typography color="text.secondary">Cancelled</Typography>
 
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                  >
+                  <Typography variant="h4" fontWeight={700}>
                     {cancelledOrders}
                   </Typography>
                 </Box>
 
-                <CancelIcon
-                  color="error"
-                  sx={{ fontSize: 42 }}
-                />
+                <CancelIcon color="error" sx={{ fontSize: 42 }} />
               </Stack>
             </CardContent>
           </Card>
@@ -322,9 +260,7 @@ const SalesOrder = () => {
               label="Search"
               placeholder="SO No / Customer / Product"
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
+              onChange={(e) => setSearch(e.target.value)}
             />
           </Grid>
 
@@ -335,9 +271,7 @@ const SalesOrder = () => {
               size="small"
               label="Status"
               value={status}
-              onChange={(e) =>
-                setStatus(e.target.value)
-              }
+              onChange={(e) => setStatus(e.target.value)}
             >
               {[
                 "All",
@@ -349,33 +283,50 @@ const SalesOrder = () => {
                 "Completed",
                 "Cancelled",
               ].map((item) => (
-                <MenuItem
-                  key={item}
-                  value={item}
-                >
+                <MenuItem key={item} value={item}>
                   {item}
                 </MenuItem>
               ))}
             </TextField>
           </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <TextField
               fullWidth
               select
               size="small"
-              label="Customer"
-              value={customer}
-              onChange={(e) => setCustomer(e.target.value)}
+              label="Division"
+              value={division}
+              onChange={(e) => setDivision(e.target.value)}
             >
-              {customers.map((item) => (
-                <MenuItem
-                  key={item}
-                  value={item}
-                >
-                  {item}
-                </MenuItem>
-              ))}
+              <MenuItem value="All">All</MenuItem>
+
+              <MenuItem value="Woven">Woven</MenuItem>
+
+              <MenuItem value="Crochet">Crochet</MenuItem>
             </TextField>
+          </Grid>
+          {/* customer search */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Autocomplete
+              freeSolo
+              options={customers}
+              value={customer === "All" ? null : customer}
+              onChange={(event, newValue) => {
+                setCustomer(newValue || "All");
+              }}
+              onInputChange={(event, newInputValue) => {
+                setCustomer(newInputValue || "All");
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  fullWidth
+                  size="small"
+                  label="Customer"
+                  placeholder="Select or type customer"
+                />
+              )}
+            />
           </Grid>
 
           <Grid size={{ xs: 12, sm: 6, md: 2 }}>
@@ -394,11 +345,7 @@ const SalesOrder = () => {
             </TextField>
           </Grid>
 
-          <Grid
-            size={{ xs: 12, md: 2 }}
-            display="flex"
-            alignItems="center"
-          >
+          <Grid size={{ xs: 12, md: 2 }} display="flex" alignItems="center">
             <Button
               fullWidth
               variant="contained"
@@ -436,17 +383,11 @@ const SalesOrder = () => {
             bgcolor: "#fafafa",
           }}
         >
-          <Typography
-            variant="h6"
-            fontWeight={700}
-          >
+          <Typography variant="h6" fontWeight={700}>
             Sales Order List
           </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
+          <Typography variant="body2" color="text.secondary">
             Showing {filteredRows.length} of {salesOrders.length} Orders
           </Typography>
         </Box>
@@ -457,10 +398,7 @@ const SalesOrder = () => {
             minWidth: 0,
           }}
         >
-          <SalesOrderTable
-            rows={filteredRows}
-            loading={loading}
-          />
+          <SalesOrderTable rows={filteredRows} loading={loading} />
         </Box>
       </Paper>
     </Box>

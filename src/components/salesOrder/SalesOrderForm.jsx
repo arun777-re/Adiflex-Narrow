@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
 import toast from "react-hot-toast";
 
@@ -31,6 +31,8 @@ import { fetchFGAvailableQty } from "../../redux/slices/fgSlice";
 
 const SalesOrderForm = () => {
   const dispatch = useDispatch();
+
+  const isLoading = useRef(false);
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -106,66 +108,79 @@ const SalesOrderForm = () => {
   }, [products, setValue]);
 
   const onSubmit = async (data) => {
-    const payload = {
-      ...data,
+    if (isLoading.current) {
+      toast.loading("Request already in Process");
+      return;
+    }
+    isLoading.current = true;
 
-      orderReceivedBy: data.orderReceivedBy,
+    try {
+      const payload = {
+        ...data,
 
-      products: data.products.map((item) => ({
-        ...item,
+        orderReceivedBy: data.orderReceivedBy,
 
-        qty: Number(item.qty),
+        products: data.products.map((item) => ({
+          ...item,
 
-        rate: Number(item.rate),
-        rateadjustment: Number(item.rateadjustment),
-        finalrate:
-          (Number(item.rate) || 0) + (Number(item.rateadjustment) || 0),
+          qty: Number(item.qty),
 
-        openingFgQty: Number(item.openingFgQty) || 0,
+          rate: Number(item.rate),
+          rateadjustment: Number(item.rateadjustment),
+          finalrate:
+            (Number(item.rate) || 0) + (Number(item.rateadjustment) || 0),
 
-        productionQty: Number(item.productionQty),
-      })),
-    };
+          openingFgQty: Number(item.openingFgQty) || 0,
 
-    const res = await dispatch(addSalesOrder(payload));
+          productionQty: Number(item.productionQty),
+        })),
+      };
 
-    if (res?.payload?.success) {
-      toast.success("Sales Order Created");
+      const res = await dispatch(addSalesOrder(payload));
 
-      reset({
-        date: new Date().toISOString().slice(0, 10),
+      if (res?.payload?.success) {
+        toast.success("Sales Order Created");
 
-        customer: "",
+        reset({
+          date: new Date().toISOString().slice(0, 10),
 
-        ordertype: "",
-        route: "",
-        partyPO: "",
-        shippinglocation: "",
-        billinglocation: "",
-        jobWork: false,
-        freight: false,
+          customer: "",
 
-        products: [
-          {
-            product: "",
+          ordertype: "",
+          route: "",
+          partyPO: "",
+          shippinglocation: "",
+          billinglocation: "",
+          jobWork: false,
+          freight: false,
 
-            skucode: "",
-            division: "",
+          products: [
+            {
+              product: "",
 
-            qty: "",
+              skucode: "",
+              division: "",
 
-            rate: "",
-            rateadjustment: 0,
-            finalrate: 0,
+              qty: "",
 
-            unit: "Meter",
+              rate: "",
+              rateadjustment: 0,
+              finalrate: 0,
 
-            openingFgQty: 0,
+              unit: "Meter",
 
-            productionQty: 0,
-          },
-        ],
-      });
+              openingFgQty: 0,
+
+              productionQty: 0,
+            },
+          ],
+        });
+      }
+    } catch (error) {
+      console.error("Sales Order Error:", error);
+      toast.error(error?.message || "Failed to create Sales Order");
+    } finally {
+      isLoading.current = false;
     }
   };
   return (
