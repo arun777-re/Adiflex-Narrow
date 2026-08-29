@@ -1,6 +1,18 @@
 import { useMemo, useState, useEffect } from "react";
 
-import { Box, Grid, MenuItem, TextField, Button, Chip } from "@mui/material";
+import {
+  Box,
+  Grid,
+  MenuItem,
+  TextField,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+} from "@mui/material";
+
 
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -10,38 +22,164 @@ import {
   fetchProductBySku,
   changeProductStatus,
   fetchProducts,
+  editProduct as updateProductThunk
 } from "../../redux/slices/productSlice";
+import { productColumns } from "../../constant/productColumn";
+import toast from "react-hot-toast";
 
 const ProductTable = () => {
   const dispatch = useDispatch();
+
+  // =====================================================
+  // PRODUCTS
+  // =====================================================
 
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
-  const { allproducts, loading } = useSelector((state) => state.product);
+  const { allproducts, loading, selectedProduct } = useSelector(
+    (state) => state.product,
+  );
 
   const { user } = useSelector((state) => state.auth);
 
-  const [search, setSearch] = useState("");
+  // =====================================================
+  // FILTER STATES
+  // =====================================================
 
+  const [search, setSearch] = useState("");
   const [division, setDivision] = useState("All");
   const [size, setSize] = useState("All");
-
   const [status, setStatus] = useState("All");
 
-  // ACTIONS
-  const handleEdit = (sku) => {
-    dispatch(fetchProductBySku(sku));
+  // =====================================================
+  // EDIT STATES
+  // =====================================================
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editForm, setEditForm] = useState({
+    sku: "",
+    productName: "",
+    division: "",
+    unit: "",
+    meterPerKG: "",
+    meterPerRoll: "",
+    color: "",
+    size: "",
+    rate: "",
+  });
+
+  // =====================================================
+  // EDIT PRODUCT
+  // =====================================================
+
+  const handleEdit = async (sku) => {
+    try {
+      setEditLoading(true);
+
+      const res = await dispatch(fetchProductBySku(sku));
+
+      if (fetchProductBySku.fulfilled.match(res)) {
+        const product = res.payload?.data || res.payload;
+        setEditProduct(product);
+        setEditOpen(true);
+      }
+    } catch (error) {
+      console.error("Error fetching product:", error);
+    } finally {
+      setEditLoading(false);
+    }
   };
 
+  useEffect(() => {
+    if (editProduct) {
+      setEditForm({
+        sku: editProduct.sku || "",
+        productName: editProduct.productName || "",
+        division: editProduct.division || "",
+        unit: editProduct.unit || "",
+        meterPerKG: editProduct.meterPerKG || "",
+        meterPerRoll: editProduct.meterPerRoll || "",
+        color: editProduct.color || "",
+        size: editProduct.size || "",
+        rate: editProduct.rate || "",
+      });
+    }
+  }, [editProduct]);
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // =====================================================
+  // CLOSE EDIT
+  // =====================================================
+
+  const handleEditClose = () => {
+    setEditOpen(false);
+    setEditProduct(null);
+  };
+
+  const handleUpdateProduct = async () => {
+  try {
+    setEditLoading(true);
+
+    const res = await dispatch(
+      updateProductThunk({
+        sku: editForm.sku,
+        productName: editForm.productName,
+        division: editForm.division,
+        unit: editForm.unit,
+        meterPerKG: editForm.meterPerKG,
+        meterPerRoll: editForm.meterPerRoll,
+        color: editForm.color,
+        size: editForm.size,
+        rate: editForm.rate,
+        updatedBy: user?.user?.name,
+      }),
+    );
+
+    if (updateProductThunk.fulfilled.match(res)) {
+      toast.success("Product updated successfully");
+
+      setEditOpen(false);
+      setEditProduct(null);
+
+      // latest product data
+      dispatch(fetchProducts());
+    } else {
+      toast.error(
+        res.payload?.message || "Failed to update product",
+      );
+    }
+  } catch (error) {
+    console.error("Update product error:", error);
+
+    toast.error("Something went wrong while updating product");
+  } finally {
+    setEditLoading(false);
+  }
+};
+
+  // =====================================================
+  // STATUS CHANGE
+  // =====================================================
+
   const handleStatus = async (sku, currentStatus) => {
-    const status = currentStatus === "Active" ? "Inactive" : "Active";
+    const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
 
     const res = await dispatch(
       changeProductStatus({
         sku,
-        status,
+        status: newStatus,
         updatedBy: user?.user?.name,
       }),
     );
@@ -51,7 +189,10 @@ const ProductTable = () => {
     }
   };
 
+  // =====================================================
   // FILTERED DATA
+  // =====================================================
+
   const filteredRows = useMemo(() => {
     const products = Array.isArray(allproducts) ? allproducts : [];
 
@@ -61,12 +202,14 @@ const ProductTable = () => {
         .toLowerCase();
 
     return products.filter((item) => {
+      const searchValue = normalize(search);
+
       const searchMatch =
-        search === "" ||
+        searchValue === "" ||
         [item.sku, item.productName, item.color, item.size]
           .join(" ")
           .toLowerCase()
-          .includes(search.toLowerCase());
+          .includes(searchValue);
 
       const divisionMatch =
         division === "All" || normalize(item.division) === normalize(division);
@@ -81,135 +224,46 @@ const ProductTable = () => {
     });
   }, [allproducts, search, division, status, size]);
 
+  // =====================================================
   // DATAGRID COLUMNS
-  const columns = useMemo(
-    () => [
-      {
-        field: "sku",
-        headerName: "SKU Code",
-        width: 120,
-      },
+  // =====================================================
+  const columns = productColumns({
+    handleEdit,
+    handleStatus,
+  });
 
-      {
-        field: "productName",
-        headerName: "Product Name",
-        flex: 1,
-        minWidth: 220,
-      },
+  // =====================================================
+  // UNIQUE SIZES
+  // =====================================================
 
-      {
-        field: "division",
-        headerName: "Division",
-        width: 120,
-      },
+  const uniqueSizes = useMemo(() => {
+    return [
+      ...new Set(
+        (allproducts || [])
+          .map((item) => String(item.size ?? "").trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => {
+      const numA = parseFloat(a);
+      const numB = parseFloat(b);
 
-      {
-        field: "unit",
-        headerName: "Unit",
-        width: 100,
-      },
-      {
-        field: "meterPerKG",
-        headerName: "Meter/Kg",
-        width: 100,
-      },
-      {
-        field: "meterPerRoll",
-        headerName: "Meter/Roll",
-        width: 100,
-      },
-      {
-        field: "color",
-        headerName: "Color",
-        width: 120,
-      },
+      if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+        return numA - numB;
+      }
 
-      {
-        field: "size",
-        headerName: "Size",
-        width: 100,
-      },
+      return a.localeCompare(b);
+    });
+  }, [allproducts]);
 
-      {
-        field: "status",
-        headerName: "Status",
-        width: 120,
-
-        renderCell: (params) => (
-          <Chip
-            size="small"
-            label={params.value}
-            color={params.value === "Active" ? "success" : "error"}
-          />
-        ),
-      },
-
-      {
-        field: "createdBy",
-        headerName: "Created By",
-        width: 150,
-      },
-
-      {
-        field: "createdAt",
-        headerName: "Created At",
-        width: 180,
-
-        valueFormatter: (value) =>
-          value ? new Date(value).toLocaleString("en-IN") : "",
-      },
-
-      {
-        field: "updatedBy",
-        headerName: "Updated By",
-        width: 150,
-      },
-
-      {
-        field: "updatedAt",
-        headerName: "Updated At",
-        width: 180,
-
-        valueFormatter: (value) =>
-          value ? new Date(value).toLocaleString("en-IN") : "",
-      },
-
-      {
-        field: "actions",
-        headerName: "Actions",
-        width: 220,
-        sortable: false,
-        filterable: false,
-
-        renderCell: (params) => (
-          <>
-            <Button
-              size="small"
-              variant="outlined"
-              sx={{ mr: 1 }}
-              onClick={() => handleEdit(params.row.sku)}
-            >
-              Edit
-            </Button>
-
-            <Button
-              size="small"
-              variant="contained"
-              color={params.row.status === "Active" ? "error" : "success"}
-              onClick={() => handleStatus(params.row.sku, params.row.status)}
-            >
-              {params.row.status === "Active" ? "Deactivate" : "Activate"}
-            </Button>
-          </>
-        ),
-      },
-    ],
-    [],
-  );
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
     <Box>
-      {/* FILTERS */}
+      {/* =================================================
+          FILTERS
+      ================================================= */}
 
       <Grid container spacing={2} mb={3}>
         <Grid size={{ xs: 12, md: 5 }}>
@@ -237,6 +291,7 @@ const ProductTable = () => {
             <MenuItem value="Crochet">Crochet</MenuItem>
           </TextField>
         </Grid>
+
         <Grid size={{ xs: 12, md: 2.3 }}>
           <TextField
             select
@@ -247,30 +302,14 @@ const ProductTable = () => {
           >
             <MenuItem value="All">All</MenuItem>
 
-            {[
-              ...new Set(
-                allproducts
-                  .map((item) => String(item.size ?? "").trim())
-                  .filter(Boolean),
-              ),
-            ]
-              .sort((a, b) => {
-                const numA = parseFloat(a);
-                const numB = parseFloat(b);
-
-                if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
-                  return numA - numB;
-                }
-
-                return a.localeCompare(b);
-              })
-              .map((itemSize) => (
-                <MenuItem key={itemSize} value={itemSize}>
-                  {itemSize}
-                </MenuItem>
-              ))}
+            {uniqueSizes.map((itemSize) => (
+              <MenuItem key={itemSize} value={itemSize}>
+                {itemSize}
+              </MenuItem>
+            ))}
           </TextField>
         </Grid>
+
         <Grid size={{ xs: 12, md: 2.3 }}>
           <TextField
             select
@@ -288,9 +327,9 @@ const ProductTable = () => {
         </Grid>
       </Grid>
 
-      {/* ===========================
+      {/* =================================================
           DATA GRID
-      ============================ */}
+      ================================================= */}
 
       <Box
         sx={{
@@ -341,6 +380,169 @@ const ProductTable = () => {
           }}
         />
       </Box>
+
+      {/* =================================================
+          EDIT PRODUCT DIALOG
+      ================================================= */}
+
+      <Dialog open={editOpen} onClose={handleEditClose} fullWidth maxWidth="md">
+        <DialogTitle>Edit Product</DialogTitle>
+
+        <DialogContent dividers>
+          {editLoading ? (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                py: 5,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          ) : editProduct ? (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 2,
+                pt: 1,
+              }}
+            >
+              {/* SKU */}
+
+              <TextField
+                label="SKU Code"
+                name="sku"
+                value={editForm.sku}
+                disabled
+                fullWidth
+              />
+
+              {/* PRODUCT NAME */}
+
+              <TextField
+                label="Product Name"
+                name="productName"
+                value={editForm.productName}
+                onChange={handleEditChange}
+                fullWidth
+              />
+
+              {/* DIVISION */}
+
+              <TextField
+                select
+                label="Division"
+                name="division"
+                value={editForm.division}
+                onChange={handleEditChange}
+                fullWidth
+              >
+                <MenuItem value="Woven">Woven</MenuItem>
+
+                <MenuItem value="Crochet">Crochet</MenuItem>
+              </TextField>
+
+              {/* UNIT */}
+
+              <TextField
+                select
+                label="Unit"
+                name="unit"
+                value={editForm.unit}
+                onChange={handleEditChange}
+                fullWidth
+              >
+                <MenuItem value="Meter">Meter</MenuItem>
+              </TextField>
+
+              {/* METER / KG */}
+
+              <TextField
+                label="Meter / KG"
+                name="meterPerKG"
+                type="number"
+                value={editForm.meterPerKG}
+                onChange={handleEditChange}
+                fullWidth
+                inputProps={{
+                  min: 0,
+                  step: "0.01",
+                }}
+              />
+
+              {/* METER / ROLL */}
+
+              <TextField
+                label="Meter / Roll"
+                name="meterPerRoll"
+                type="number"
+                value={editForm.meterPerRoll}
+                onChange={handleEditChange}
+                fullWidth
+                inputProps={{
+                  min: 0,
+                  step: "0.01",
+                }}
+              />
+
+              {/* COLOR */}
+
+              <TextField
+                label="Color"
+                name="color"
+                value={editForm.color}
+                onChange={handleEditChange}
+                fullWidth
+              />
+
+              {/* SIZE */}
+
+              <TextField
+                label="Size"
+                name="size"
+                type="number"
+                value={editForm.size}
+                onChange={handleEditChange}
+                fullWidth
+                inputProps={{
+                  min: 0,
+                  step: "0.01",
+                }}
+              />
+
+              {/* RATE */}
+
+              <TextField
+                label="Rate"
+                name="rate"
+                type="number"
+                value={editForm.rate}
+                onChange={handleEditChange}
+                fullWidth
+                inputProps={{
+                  min: 0,
+                  step: "0.01",
+                }}
+              />
+            </Box>
+          ) : (
+            "Product not found"
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleEditClose}>Cancel</Button>
+
+          <Button
+            variant="contained"
+            disabled={!editProduct || editLoading}
+            onClick={handleUpdateProduct}
+          >
+            Update Product
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
