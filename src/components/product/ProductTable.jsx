@@ -438,9 +438,9 @@ const ProductTable = () => {
                 onChange={handleEditChange}
                 fullWidth
               >
-                <MenuItem value="Woven">Woven</MenuItem>
+                <MenuItem value="Woven">WOVEN</MenuItem>
 
-                <MenuItem value="Crochet">Crochet</MenuItem>
+                <MenuItem value="Crochet">CROCHET</MenuItem>
               </TextField>
 
               {/* UNIT */}
