@@ -194,7 +194,7 @@ export const menuConfig = {
     {
       id: 7,
       title: "Billing Done",
-      path: "/billingt-done",
+      path: "/billing-done",
       icon: <TaskAltRoundedIcon />,
     },
   ],
