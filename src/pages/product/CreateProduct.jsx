@@ -1,6 +1,6 @@
 import { Paper, Typography } from "@mui/material";
 
-import ProductForm from "../components/product/ProductForm.jsx";
+import ProductForm from "../../components/product/ProductForm.jsx";
 
 const CreateProduct = () => {
   return (

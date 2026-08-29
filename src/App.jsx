@@ -5,18 +5,18 @@ import Dashboard from "./pages/Dashboard";
 
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import SalesOrder from "./pages/SalesOrder";
-import SalesOrderCreate from "./pages/SalesOrderCreate";
+import SalesOrder from "./pages/sales-order/SalesOrder";
+import SalesOrderCreate from "./pages/sales-order/SalesOrderCreate";
 import ProductionDashboard from "./pages/Production/ProductionDashBoard";
-import DispatchPage from "./pages/DispatchPage";
+import DispatchPage from "./pages/dispatch/DispatchPage";
 import Inventory from "./pages/Inventory";
-import ViewAllProducts from "./pages/ViewAllProducts";
-import CreateProduct from "./pages/CreateProduct";
+import ViewAllProducts from "./pages/product/ViewAllProducts";
+import CreateProduct from "./pages/product/CreateProduct";
 import ActivityLog from "./pages/ActivityLog";
 import Reports from "./pages/Reports";
 import CompleteDispatch from "./pages/CompleteDispatch";
-import BillingPage from "./pages/BillingPage";
-import CompleteBilling from "./pages/CompleteBilling";
+import BillingPage from "./pages/billing/BillingPage";
+import CompleteBilling from "./pages/billing/CompleteBilling";
 import AdminProduction from "./pages/admin/AdminProduction";
 
 function App() {

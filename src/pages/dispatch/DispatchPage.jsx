@@ -4,10 +4,10 @@ import { Box, Typography } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 
-import { getAllDispatch } from "../redux/slices/dispatchSlice.jsx";
+import { getAllDispatch } from "../../redux/slices/dispatchSlice.jsx";
 
-import DispatchTable from "../components/dispatch/DispatchTable.jsx";
-import useNotification from "../hooks/useNotification.jsx";
+import DispatchTable from "../../components/dispatch/DispatchTable.jsx";
+import useNotification from "../../hooks/useNotification.jsx";
 
 const DispatchPage = () => {
   const dispatch = useDispatch();

@@ -109,6 +109,16 @@ const ProductTable = () => {
         width: 100,
       },
       {
+        field: "meterPerKG",
+        headerName: "Meter/Kg",
+        width: 100,
+      },
+      {
+        field: "meterPerRoll",
+        headerName: "Meter/Roll",
+        width: 100,
+      },
+      {
         field: "color",
         headerName: "Color",
         width: 120,

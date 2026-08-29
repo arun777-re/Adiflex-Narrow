@@ -1,15 +1,11 @@
-import { useEffect } from "react";
 
 import {
   Paper,
   Typography,
 } from "@mui/material";
 
-import { useDispatch } from "react-redux";
 
-import { fetchProducts } from "../redux/slices/productSlice.jsx";
-
-import ProductTable from "../components/product/ProductTable.jsx";
+import ProductTable from "../../components/product/ProductTable.jsx";
 
 const ViewAllProducts = () => {
 

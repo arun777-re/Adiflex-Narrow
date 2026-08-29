@@ -19,10 +19,10 @@ import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 
-import SalesOrderTable from "../components/salesOrder/SalesOrderTable";
+import SalesOrderTable from "../../components/salesOrder/SalesOrderTable";
 
 import { useDispatch, useSelector } from "react-redux";
-import { fetchSalesOrders } from "../redux/slices/salesOrderSlice";
+import { fetchSalesOrders } from "../../redux/slices/salesOrderSlice";
 
 const SalesOrder = () => {
   const dispatch = useDispatch();

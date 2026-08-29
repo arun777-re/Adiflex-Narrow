@@ -1,17 +1,13 @@
-import { useEffect } from "react";
 import {
-  Box,
   Paper,
-  Typography,
 } from "@mui/material";
 
-import SalesOrderForm from "../components/salesOrder/SalesOrderForm";
-import { useDispatch, useSelector } from "react-redux";
+import SalesOrderForm from "../../components/salesOrder/SalesOrderForm";
+import {  useSelector } from "react-redux";
 
 
 const SalesOrderCreate = () => {
 
-  const dispatch = useDispatch();
 
   const { salesOrders, loading } = useSelector(
     (state) => console.log("State in SalesOrderCreate component:", state) || state.salesOrder

@@ -13,11 +13,11 @@ import toast from "react-hot-toast";
 import {
   getBillingOrders,
   updateBillingStatus,
-} from "../redux/slices/billingSlice";
+} from "../../redux/slices/billingSlice";
 
-import useNotification from "../hooks/useNotification";
+import useNotification from "../../hooks/useNotification";
 
-import { subscribeToPush } from "../service-worker/webpushworker";
+import { subscribeToPush } from "../../service-worker/webpushworker";
 
 const CompleteBilling = () => {
   const dispatch = useDispatch();
