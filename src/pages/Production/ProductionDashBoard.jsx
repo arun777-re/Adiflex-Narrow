@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 
 import { Paper, Box, Typography } from "@mui/material";
 
@@ -9,6 +9,7 @@ import ProductionTable from "../../components/production/ProductionTable";
 
 import { getAllProductions } from "../../redux/slices/productionSlice";
 import toast from "react-hot-toast";
+import useNotification from "../../hooks/useNotification";
 
 const ProductionDashboard = () => {
   const dispatch = useDispatch();
@@ -45,6 +46,12 @@ const currentDivision = user?.division;
       toast.error(error);
     }
   },[error])
+
+     useNotification({
+      event:"new-notification",
+      refetch:getAllProductions,
+      refetchArg:currentDivision
+     });
 
   return (
     <Box>

@@ -1,6 +1,19 @@
+
 import { useMemo, useState } from "react";
 
-import { Button, Chip, Box, Stack, Typography } from "@mui/material";
+import {
+  Button,
+  Chip,
+  Box,
+  Stack,
+  Typography,
+  TextField,
+  MenuItem,
+  InputAdornment,
+} from "@mui/material";
+
+import SearchIcon from "@mui/icons-material/Search";
+import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -38,6 +51,7 @@ const PROCESS_ORDER = [
     startField: "finishingStartsAt",
     endField: "finishingEndsAt",
   },
+
   {
     key: "quality",
     label: "Quality",
@@ -60,12 +74,18 @@ const PROCESS_ORDER = [
   },
 ];
 
-// get current process of order
+// =====================================================
+// GET CURRENT PROCESS
+// =====================================================
+
 const getCurrentProcess = (row) => {
-  // OLD PRODUCTION CYCLE
+  // OLD / COMPLETED PRODUCTION CYCLE
+
   if (
     row.overAllStatus === "Cycle Completed" ||
-    row.overAllStatus === "Completed"
+    row.overAllStatus === "Completed" ||
+    row.status === "Cycle Completed" ||
+    row.status === "Completed"
   ) {
     return {
       key: null,
@@ -73,11 +93,12 @@ const getCurrentProcess = (row) => {
       status: "Completed",
     };
   }
+
   const processOrder = [];
 
-  // ==========================================
+  // ===================================================
   // JOB WORK
-  // ==========================================
+  // ===================================================
 
   if (row.isJobWork === true) {
     processOrder.push({
@@ -88,32 +109,26 @@ const getCurrentProcess = (row) => {
     });
   }
 
-  // ==========================================
+  // ===================================================
   // NORMAL PRODUCTION PROCESSES
-  // ==========================================
+  // ===================================================
 
   processOrder.push(...PROCESS_ORDER);
 
-  // ==========================================
+  // ===================================================
   // FIND CURRENT PROCESS
-  // ==========================================
+  // ===================================================
 
   for (const process of processOrder) {
     const startTime = row[process.startField];
     const endTime = row[process.endField];
 
-    // ----------------------------------------
     // COMPLETED
-    // ----------------------------------------
-
     if (endTime) {
       continue;
     }
 
-    // ----------------------------------------
     // IN PROGRESS
-    // ----------------------------------------
-
     if (startTime) {
       return {
         key: process.key,
@@ -122,10 +137,7 @@ const getCurrentProcess = (row) => {
       };
     }
 
-    // ----------------------------------------
     // PENDING
-    // ----------------------------------------
-
     return {
       key: process.key,
       label: process.label,
@@ -133,9 +145,9 @@ const getCurrentProcess = (row) => {
     };
   }
 
-  // ==========================================
+  // ===================================================
   // ALL COMPLETED
-  // ==========================================
+  // ===================================================
 
   return {
     key: null,
@@ -143,38 +155,233 @@ const getCurrentProcess = (row) => {
     status: "Completed",
   };
 };
-// component
 
-const ProductionTable = ({
-  rows = [],
+// =====================================================
+// COMPONENT
+// =====================================================
 
-  loading = false,
-}) => {
+const ProductionTable = ({ rows = [], loading = false }) => {
   const [open, setOpen] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   const [selectedAction, setSelectedAction] = useState(null);
 
-  let activeRows = []
-  if(Array.isArray(rows) && rows.length > 0) {
-    activeRows = rows.filter((row) => row.status !== "Completed" && row.status !== "Cycle Completed");
-  }
+  // =====================================================
+  // FILTER STATES
+  // =====================================================
+
+  const [search, setSearch] = useState("");
+
+  const [divisionFilter, setDivisionFilter] = useState("all");
+
+  const [customerFilter, setCustomerFilter] = useState("all");
+
+  const [productFilter, setProductFilter] = useState("all");
+
+  const [processFilter, setProcessFilter] = useState("all");
+
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // =====================================================
+  // QUICK FILTER
+  // =====================================================
+
+  const [quickFilter, setQuickFilter] = useState("all");
+
+  // =====================================================
+  // REMOVE COMPLETED ROWS
+  // =====================================================
+
+  const activeRows = useMemo(() => {
+    if (!Array.isArray(rows)) {
+      return [];
+    }
+
+    return rows.filter((row) => {
+      return (
+        row.status !== "Completed" &&
+        row.status !== "Cycle Completed" &&
+        row.overAllStatus !== "Completed" &&
+        row.overAllStatus !== "Cycle Completed"
+      );
+    });
+  }, [rows]);
+
+  // =====================================================
+  // DROPDOWN OPTIONS
+  // =====================================================
+
+  const filterOptions = useMemo(() => {
+    const divisions = [
+      ...new Set(
+        activeRows
+          .map((row) => row.division)
+          .filter(Boolean)
+      ),
+    ].sort();
+
+    const customers = [
+      ...new Set(
+        activeRows
+          .map((row) => row.customer)
+          .filter(Boolean)
+      ),
+    ].sort();
+
+    const products = [
+      ...new Set(
+        activeRows
+          .map((row) => row.product)
+          .filter(Boolean)
+      ),
+    ].sort();
+
+    return {
+      divisions,
+      customers,
+      products,
+    };
+  }, [activeRows]);
+
+  // =====================================================
+  // FILTERED ROWS
+  // =====================================================
+
+  const filteredRows = useMemo(() => {
+    const searchValue = search.trim().toLowerCase();
+
+    return activeRows.filter((row) => {
+      const currentProcess = getCurrentProcess(row);
+
+      // =================================================
+      // SEARCH
+      // =================================================
+
+      const searchableText = [
+        row.soNo,
+        row.cycleID,
+        row.customer,
+        row.product,
+        row.skuCode,
+        row.division,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch =
+        !searchValue ||
+        searchableText.includes(searchValue);
+
+      // =================================================
+      // DIVISION
+      // =================================================
+
+      const matchesDivision =
+        divisionFilter === "all" ||
+        String(row.division || "") === divisionFilter;
+
+      // =================================================
+      // CUSTOMER
+      // =================================================
+
+      const matchesCustomer =
+        customerFilter === "all" ||
+        String(row.customer || "") === customerFilter;
+
+      // =================================================
+      // PRODUCT
+      // =================================================
+
+      const matchesProduct =
+        productFilter === "all" ||
+        String(row.product || "") === productFilter;
+
+      // =================================================
+      // PROCESS
+      // =================================================
+
+      const matchesProcess =
+        processFilter === "all" ||
+        currentProcess.key === processFilter;
+
+      // =================================================
+      // STATUS
+      // =================================================
+
+      const matchesStatus =
+        statusFilter === "all" ||
+        currentProcess.status === statusFilter;
+
+      // =================================================
+      // QUICK FILTER
+      // =================================================
+
+      let matchesQuickFilter = true;
+
+      if (quickFilter === "ready") {
+        matchesQuickFilter =
+          currentProcess.status === "Pending";
+      }
+
+      if (quickFilter === "progress") {
+        matchesQuickFilter =
+          currentProcess.status === "In Progress";
+      }
+
+      // =================================================
+      // FINAL
+      // =================================================
+
+      return (
+        matchesSearch &&
+        matchesDivision &&
+        matchesCustomer &&
+        matchesProduct &&
+        matchesProcess &&
+        matchesStatus &&
+        matchesQuickFilter
+      );
+    });
+  }, [
+    activeRows,
+    search,
+    divisionFilter,
+    customerFilter,
+    productFilter,
+    processFilter,
+    statusFilter,
+    quickFilter,
+  ]);
+
+  // =====================================================
+  // RESET FILTERS
+  // =====================================================
+
+  const handleResetFilters = () => {
+    setSearch("");
+
+    setDivisionFilter("all");
+
+    setCustomerFilter("all");
+
+    setProductFilter("all");
+
+    setProcessFilter("all");
+
+    setStatusFilter("all");
+
+    setQuickFilter("all");
+  };
 
   // =====================================================
   // OPEN DIALOG
   // =====================================================
 
-  const handleProcessAction = (
-    row,
-
-    action,
-
-    process,
-  ) => {
+  const handleProcessAction = (row, action, process) => {
     setSelectedOrder({
       ...row,
-
       currentProcess: process,
     });
 
@@ -201,9 +408,9 @@ const ProductionTable = ({
 
   const columns = useMemo(
     () => [
-      // -----------------------------------------------
+      // =================================================
       // SO NO
-      // -----------------------------------------------
+      // =================================================
 
       {
         field: "soNo",
@@ -212,6 +419,11 @@ const ProductionTable = ({
 
         width: 130,
       },
+
+      // =================================================
+      // CYCLE
+      // =================================================
+
       {
         field: "cycleID",
 
@@ -220,9 +432,21 @@ const ProductionTable = ({
         width: 130,
       },
 
-      // -----------------------------------------------
+      // =================================================
+      // CUSTOMER
+      // =================================================
+
+      {
+        field: "customer",
+
+        headerName: "Customer",
+
+        width: 180,
+      },
+
+      // =================================================
       // PRODUCT
-      // -----------------------------------------------
+      // =================================================
 
       {
         field: "product",
@@ -234,9 +458,9 @@ const ProductionTable = ({
         minWidth: 220,
       },
 
-      // -----------------------------------------------
+      // =================================================
       // DIVISION
-      // -----------------------------------------------
+      // =================================================
 
       {
         field: "division",
@@ -246,9 +470,9 @@ const ProductionTable = ({
         width: 120,
       },
 
-      // -----------------------------------------------
+      // =================================================
       // TARGET
-      // -----------------------------------------------
+      // =================================================
 
       {
         field: "productionTargetQty",
@@ -264,9 +488,9 @@ const ProductionTable = ({
         headerAlign: "center",
       },
 
-      // -----------------------------------------------
+      // =================================================
       // PRODUCTION QTY
-      // -----------------------------------------------
+      // =================================================
 
       {
         field: "productionQty",
@@ -282,9 +506,9 @@ const ProductionTable = ({
         headerAlign: "center",
       },
 
-      // -----------------------------------------------
+      // =================================================
       // CURRENT PROCESS
-      // -----------------------------------------------
+      // =================================================
 
       {
         field: "currentProcess",
@@ -293,22 +517,30 @@ const ProductionTable = ({
 
         width: 170,
 
+        sortable: false,
+
         renderCell: (params) => {
           const process = getCurrentProcess(params.row);
 
           return (
             <Chip
               label={process.label}
-              color={process.status === "Completed" ? "success" : "primary"}
+              color={
+                process.status === "Completed"
+                  ? "success"
+                  : process.status === "In Progress"
+                  ? "info"
+                  : "warning"
+              }
               size="small"
             />
           );
         },
       },
 
-      // -----------------------------------------------
+      // =================================================
       // STATUS
-      // -----------------------------------------------
+      // =================================================
 
       {
         field: "currentStatus",
@@ -316,6 +548,8 @@ const ProductionTable = ({
         headerName: "Status",
 
         width: 140,
+
+        sortable: false,
 
         renderCell: (params) => {
           const process = getCurrentProcess(params.row);
@@ -330,13 +564,19 @@ const ProductionTable = ({
             color = "success";
           }
 
-          return <Chip label={process.status} color={color} size="small" />;
+          return (
+            <Chip
+              label={process.status}
+              color={color}
+              size="small"
+            />
+          );
         },
       },
 
-      // -----------------------------------------------
+      // =================================================
       // ACTION
-      // -----------------------------------------------
+      // =================================================
 
       {
         field: "action",
@@ -354,7 +594,11 @@ const ProductionTable = ({
 
           if (process.status === "Completed") {
             return (
-              <Chip label="Production Completed" color="success" size="small" />
+              <Chip
+                label="Production Completed"
+                color="success"
+                size="small"
+              />
             );
           }
 
@@ -369,10 +613,8 @@ const ProductionTable = ({
                 onClick={() =>
                   handleProcessAction(
                     params.row,
-
                     "start",
-
-                    process.key,
+                    process.key
                   )
                 }
               >
@@ -392,10 +634,8 @@ const ProductionTable = ({
                 onClick={() =>
                   handleProcessAction(
                     params.row,
-
                     "complete",
-
-                    process.key,
+                    process.key
                   )
                 }
               >
@@ -408,61 +648,369 @@ const ProductionTable = ({
         },
       },
     ],
-
-    [],
+    []
   );
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
     <>
-      <Box
-        sx={{
-          width: "100%",
+      <Box sx={{ width: "100%" }}>
+        {/* =================================================
+            FILTER PANEL
+        ================================================= */}
 
-          height: "calc(100vh - 280px)",
-        }}
-      >
-        <DataGrid
-          rows={activeRows}
-          columns={columns}
-          loading={loading}
-          getRowId={(row) => row.id}
-          disableRowSelectionOnClick
-          density="compact"
-          pageSizeOptions={[
-            10,
-
-            20,
-
-            50,
-          ]}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 10,
-              },
-            },
-          }}
+        <Box
           sx={{
+            mb: 2,
+            p: 2,
             borderRadius: 2,
-
-            "& .MuiDataGrid-columnHeaders": {
-              backgroundColor: "#f5f5f5",
-
-              fontWeight: 700,
-            },
-
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontWeight: 700,
-            },
-
-            "& .MuiDataGrid-row:hover": {
-              backgroundColor: "#f1f8ff",
-            },
+            backgroundColor: "#fafafa",
+            border: "1px solid #e0e0e0",
           }}
-        />
+        >
+          {/* =============================================
+              TITLE
+          ============================================= */}
+
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 2 }}
+          >
+            <Box>
+              <Typography
+                variant="h6"
+                fontWeight={700}
+              >
+                Production Planning
+              </Typography>
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                Find production cycles that need
+                attention
+              </Typography>
+            </Box>
+
+            <Chip
+              label={`${filteredRows.length} Production Cycles`}
+              color="primary"
+              variant="outlined"
+            />
+          </Stack>
+
+          {/* =============================================
+              SEARCH
+          ============================================= */}
+
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search SO No, Customer, Product, Cycle ID..."
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          {/* =============================================
+              DROPDOWN FILTERS
+          ============================================= */}
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(5, 1fr)",
+              },
+              gap: 1.5,
+            }}
+          >
+            {/* DIVISION */}
+
+            <TextField
+              select
+              size="small"
+              label="Division"
+              value={divisionFilter}
+              onChange={(e) =>
+                setDivisionFilter(e.target.value)
+              }
+            >
+              <MenuItem value="all">
+                All Divisions
+              </MenuItem>
+
+              {filterOptions.divisions.map(
+                (division) => (
+                  <MenuItem
+                    key={division}
+                    value={division}
+                  >
+                    {division}
+                  </MenuItem>
+                )
+              )}
+            </TextField>
+
+            {/* CUSTOMER */}
+
+            <TextField
+              select
+              size="small"
+              label="Customer"
+              value={customerFilter}
+              onChange={(e) =>
+                setCustomerFilter(e.target.value)
+              }
+            >
+              <MenuItem value="all">
+                All Customers
+              </MenuItem>
+
+              {filterOptions.customers.map(
+                (customer) => (
+                  <MenuItem
+                    key={customer}
+                    value={customer}
+                  >
+                    {customer}
+                  </MenuItem>
+                )
+              )}
+            </TextField>
+
+            {/* PRODUCT */}
+
+            <TextField
+              select
+              size="small"
+              label="Product"
+              value={productFilter}
+              onChange={(e) =>
+                setProductFilter(e.target.value)
+              }
+            >
+              <MenuItem value="all">
+                All Products
+              </MenuItem>
+
+              {filterOptions.products.map(
+                (product) => (
+                  <MenuItem
+                    key={product}
+                    value={product}
+                  >
+                    {product}
+                  </MenuItem>
+                )
+              )}
+            </TextField>
+
+            {/* PROCESS */}
+
+            <TextField
+              select
+              size="small"
+              label="Process"
+              value={processFilter}
+              onChange={(e) =>
+                setProcessFilter(e.target.value)
+              }
+            >
+              <MenuItem value="all">
+                All Processes
+              </MenuItem>
+
+              {PROCESS_ORDER.map((process) => (
+                <MenuItem
+                  key={process.key}
+                  value={process.key}
+                >
+                  {process.label}
+                </MenuItem>
+              ))}
+
+              <MenuItem value="jobWork">
+                Job Work
+              </MenuItem>
+            </TextField>
+
+            {/* STATUS */}
+
+            <TextField
+              select
+              size="small"
+              label="Status"
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value)
+              }
+            >
+              <MenuItem value="all">
+                All Status
+              </MenuItem>
+
+              <MenuItem value="Pending">
+                Pending
+              </MenuItem>
+
+              <MenuItem value="In Progress">
+                In Progress
+              </MenuItem>
+            </TextField>
+          </Box>
+
+          {/* =============================================
+              QUICK FILTERS
+          ============================================= */}
+
+          <Stack
+            direction="row"
+            spacing={1}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{ mt: 2 }}
+          >
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{
+                alignSelf: "center",
+                mr: 0.5,
+              }}
+            >
+              Quick:
+            </Typography>
+
+            <Button
+              size="small"
+              variant={
+                quickFilter === "all"
+                  ? "contained"
+                  : "outlined"
+              }
+              onClick={() =>
+                setQuickFilter("all")
+              }
+            >
+              All
+            </Button>
+
+            <Button
+              size="small"
+              variant={
+                quickFilter === "ready"
+                  ? "contained"
+                  : "outlined"
+              }
+              color="warning"
+              onClick={() =>
+                setQuickFilter("ready")
+              }
+            >
+              Ready to Start
+            </Button>
+
+            <Button
+              size="small"
+              variant={
+                quickFilter === "progress"
+                  ? "contained"
+                  : "outlined"
+              }
+              color="info"
+              onClick={() =>
+                setQuickFilter("progress")
+              }
+            >
+              In Progress
+            </Button>
+
+            {/* RESET */}
+
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              startIcon={
+                <FilterAltOffIcon />
+              }
+              onClick={handleResetFilters}
+              sx={{ ml: "auto" }}
+            >
+              Reset Filters
+            </Button>
+          </Stack>
+        </Box>
+
+        {/* =================================================
+            DATA GRID
+        ================================================= */}
+
+        <Box
+          sx={{
+            width: "100%",
+            height: "calc(100vh - 430px)",
+            minHeight: 400,
+          }}
+        >
+          <DataGrid
+            rows={filteredRows}
+            columns={columns}
+            loading={loading}
+            getRowId={(row) =>
+              row.id || row.cycleID
+            }
+            disableRowSelectionOnClick
+            density="compact"
+            pageSizeOptions={[10, 20, 50]}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  pageSize: 10,
+                },
+              },
+            }}
+            sx={{
+              borderRadius: 2,
+
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: "#f5f5f5",
+                fontWeight: 700,
+              },
+
+              "& .MuiDataGrid-columnHeaderTitle": {
+                fontWeight: 700,
+              },
+
+              "& .MuiDataGrid-row:hover": {
+                backgroundColor: "#f1f8ff",
+              },
+            }}
+          />
+        </Box>
       </Box>
 
-      {/* PROCESS DIALOG */}
+      {/* =================================================
+          PROCESS DIALOG
+      ================================================= */}
 
       <UpdateProductionDialog
         open={open}
@@ -476,3 +1024,4 @@ const ProductionTable = ({
 };
 
 export default ProductionTable;
+
