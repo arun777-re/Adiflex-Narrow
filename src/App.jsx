@@ -18,6 +18,7 @@ import CompleteDispatch from "./pages/CompleteDispatch";
 import BillingPage from "./pages/billing/BillingPage";
 import CompleteBilling from "./pages/billing/CompleteBilling";
 import AdminProduction from "./pages/admin/AdminProduction";
+import JobWorkOrders from "./pages/Production/JobWorkOrders";
 
 function App() {
 
@@ -93,6 +94,10 @@ function App() {
           <Route
           path="/admin-production"
           element={<AdminProduction/>}
+        />
+          <Route
+          path="/jobwork-orders"
+          element={<JobWorkOrders/>}
         />
 
       </Route>

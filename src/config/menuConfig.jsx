@@ -108,6 +108,12 @@ export const menuConfig = {
       path: "/view-product",
       icon: <AssignmentRoundedIcon />,
     },
+    {
+      id: 4,
+      title: "Job Work Orders",
+      path: "/jobwork-orders",
+      icon: <AssignmentRoundedIcon />,
+    },
   ],
 
   // ==========================================
