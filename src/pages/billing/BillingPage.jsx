@@ -170,15 +170,16 @@ const BillingPage = () => {
         headerName: "SKU Code",
         width: 120,
       },
-
       {
-        field: "cycleID",
-        headerName: "Cycle ID",
-        width: 150,
-
-        valueGetter: (value) => value || "-",
+        field: "shippinglocation",
+        headerName: "Shipping Location",
+        width: 120,
       },
-
+      {
+        field: "billinglocation",
+        headerName: "Billining Location",
+        width: 120,
+      },
       {
         field: "product",
         headerName: "Product",
