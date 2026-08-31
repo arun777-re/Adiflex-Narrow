@@ -27,21 +27,22 @@ console.log("response from billing slice",response);
 export const updateBillingStatus = createAsyncThunk(
   "billing/updateBillingStatus",
   async (
-    { soNo, skuCode, cycleID, status },
+    { soNo, skuCode,billingID, status },
     { rejectWithValue }
   ) => {
+    console.log("billing payload bhai",{soNo,skuCode,billingID,status});
+
     try {
       const response = await api.patch("/billing/status", {
         soNo,
         skuCode,
-        cycleID,
+        billingID,
         status,
       });
-
       return {
         soNo,
         skuCode,
-        cycleID,
+        billingID,
         status,
         ...response.data,
       };
@@ -117,7 +118,7 @@ const billingSlice = createSlice({
         const {
           soNo,
           skuCode,
-          cycleID,
+          billingID,
           status,
         } = action.payload;
 
@@ -125,7 +126,7 @@ const billingSlice = createSlice({
           (item) =>
             String(item.soNo).trim() === String(soNo).trim() &&
             String(item.skuCode).trim() === String(skuCode).trim() &&
-            String(item.cycleID).trim() === String(cycleID).trim()
+            String(item.billingID).trim() === String(billingID).trim()
         );
 
         if (order) {

@@ -112,14 +112,19 @@ const BillingPage = () => {
   const handleBillingDone = async (row) => {
     try {
       setBillingRow(row);
-
+      // console.log("billing row",billingRow);
+      console.log("🔥 BILLING UPDATE DATA:", {
+        soNo: row.soNo,
+        skuCode: row.skuCode,
+        billingID: row.billingID,
+      });
       await dispatch(
         updateBillingStatus({
           soNo: row.soNo,
 
           skuCode: row.skuCode,
 
-          cycleID: row.cycleID || "",
+          billingID: row.billingID || "",
 
           status: "Done",
         }),
@@ -130,7 +135,11 @@ const BillingPage = () => {
       // Refresh billing orders
       dispatch(getBillingOrders());
     } catch (error) {
-      toast.error(error || "Billing failed");
+      console.error("❌ Billing failed:", error);
+
+      toast.error(
+        typeof error === "string" ? error : error?.message || "Billing failed",
+      );
     } finally {
       setBillingRow(null);
     }
