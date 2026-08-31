@@ -6,6 +6,7 @@ import {
   completeProductionProcess,
   completeQualityWithWastage,
   getAllProduction,
+  getAllJobWorkProductionOrders,
 } from "../../services/productionApi";
 
 // fetch production orders by process
@@ -86,6 +87,26 @@ export const getAllProductions = createAsyncThunk(
     }
   }
 );
+// get all production jobwork orders
+export const getAllJobWorkProductions = createAsyncThunk(
+  "/get-alljobwork",
+  async (division, thunkAPI) => {
+    if(!division){
+      throw Error("Division required");
+    }
+    try {
+
+      console.log("🔥 THUNK DIVISION:", division);
+
+      const data = await getAllJobWorkProductionOrders(division);
+      return data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message
+      );
+    }
+  }
+);
 
 // complete production process
 export const completeProduction = createAsyncThunk(
@@ -128,15 +149,11 @@ export const completeQuality = createAsyncThunk(
 const initialState = {
   allProductionOrders: [],
   productionOrders: [],
-
+  jobOrders:[],
   loading: false,
-
   starting: false,
-
   completing: false,
-
   completingQuality: false,
-
   error: null,
 };
 
@@ -312,6 +329,35 @@ const productionSlice = createSlice({
 
         (state, action) => {
           state.allOrdersLoading = false;
+
+          state.error = action.payload;
+        },
+      )
+      .addCase(
+        getAllJobWorkProductions.pending,
+
+        (state) => {
+          state.loading = true;
+
+          state.error = null;
+        },
+      )
+
+      .addCase(
+        getAllJobWorkProductions.fulfilled,
+
+        (state, action) => {
+          state.loading = false;
+
+          state.jobOrders = action.payload;
+        },
+      )
+
+      .addCase(
+        getAllJobWorkProductions.rejected,
+
+        (state, action) => {
+          state.loading = false;
 
           state.error = action.payload;
         },

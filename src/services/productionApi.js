@@ -39,6 +39,17 @@ export const getAllProduction = async (division) => {
 
 };
 
+// get all job work orders 
+export const getAllJobWorkProductionOrders = async (division) => {
+  const response =
+    await api.get(
+      `/production/job-work/${division}`
+    );
+
+  return response.data;
+
+};
+
 
 // =====================================================
 // START PRODUCTION PROCESS
