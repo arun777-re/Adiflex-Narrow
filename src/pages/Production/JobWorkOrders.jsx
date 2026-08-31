@@ -193,7 +193,7 @@ useEffect(() => {
           rows={jobWorkOrders}
           columns={columns}
           loading={loading}
-          getRowId={(row) => row.soNo}
+          getRowId={(row,index) => `${row.soNo}-${row.skucode}-${index}`}
           disableRowSelectionOnClick
           density="compact"
           pageSizeOptions={[10, 20, 50]}
