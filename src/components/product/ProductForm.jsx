@@ -34,6 +34,7 @@ const ProductForm = () => {
       size: "",
       meterPerRoll: "",
       meterPerKg: "",
+      availableQty:"",
     },
   });
 
@@ -52,6 +53,7 @@ const ProductForm = () => {
         size: product.size,
         meterPerKg: product.meterPerKg,
         meterPerRoll: product.meterPerRoll,
+        availableQty: product.availableQty,
       });
     }
   }, [product, reset]);
@@ -89,6 +91,7 @@ const ProductForm = () => {
         rate: "",
         meterPerKg: "",
         meterPerRoll: "",
+        availableQty: "",
       });
 
       // Refresh Product List
@@ -110,6 +113,7 @@ const ProductForm = () => {
       size: "",
       meterPerKg: "",
       meterPerRoll: "",
+      availableQty: "",
     });
   };
   return (
@@ -170,6 +174,36 @@ const ProductForm = () => {
 
         <Grid size={{ xs: 12, md: 3 }}>
           <TextField fullWidth label="Color" {...register("color")} />
+        </Grid>
+        {/* Available Qty */}
+
+        <Grid size={{ xs: 12, md: 3 }}>
+          <TextField
+            fullWidth
+            label="Available Quantity"
+            type="number"
+            inputProps={{
+              min: 0,
+              step: "0.01",
+            }}
+            {...register("availableQty", {
+              required: "Available Quantity is required",
+              valueAsNumber: true,
+              validate: (value) => {
+                if (!Number.isFinite(value)) {
+                  return "Please enter a valid quantity";
+                }
+
+                if (value < 0) {
+                  return "Quantity must be a positive number";
+                }
+
+                return true;
+              },
+            })}
+            error={!!errors.availableQty}
+            helperText={errors.availableQty?.message}
+          />
         </Grid>
 
         {/* SIZE */}
