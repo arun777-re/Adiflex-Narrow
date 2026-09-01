@@ -10,7 +10,7 @@ import {
   Card,
   CardContent,
   Stack,
-  Autocomplete
+  Autocomplete,
 } from "@mui/material";
 
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -48,11 +48,15 @@ const SalesOrder = () => {
   const totalOrders = salesOrders.length;
 
   const pendingOrders = salesOrders.filter(
-    (item) => item.status !== "Completed" && item.status !== "Cancelled",
+    (item) =>
+      item.productionstatus === "Pending Production" ||
+      item.dispatchstatus === "Pending Dispatch",
   ).length;
 
   const completedOrders = salesOrders.filter(
-    (item) => item.status === "Ready To Dispatch",
+    (item) =>
+      item.productionstatus === "Completed" &&
+      item.dispatchstatus === "Dispatched",
   ).length;
 
   const cancelledOrders = salesOrders.filter(
@@ -73,9 +77,14 @@ const SalesOrder = () => {
         normalize(row.soNo).includes(searchText) ||
         normalize(row.customer).includes(searchText) ||
         normalize(row.product).includes(searchText);
-
       const matchesStatus =
-        status === "All" || normalize(row.status) === normalize(status);
+        status === "All" ||
+        (status === "Pending" &&
+          (normalize(row.productionstatus) === "pending production" ||
+            normalize(row.dispatchstatus) === "pending dispatch")) ||
+        (status === "Completed" &&
+          normalize(row.productionstatus) === "completed" &&
+          normalize(row.dispatchstatus) === "dispatched");
 
       const matchesCustomer =
         customer === "All" || normalize(row.customer) === normalize(customer);
@@ -273,16 +282,7 @@ const SalesOrder = () => {
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
-              {[
-                "All",
-                "Start",
-                "Printing",
-                "Lamination",
-                "Cutting",
-                "Packing",
-                "Completed",
-                "Cancelled",
-              ].map((item) => (
+              {["All", "Pending", "Completed"].map((item) => (
                 <MenuItem key={item} value={item}>
                   {item}
                 </MenuItem>

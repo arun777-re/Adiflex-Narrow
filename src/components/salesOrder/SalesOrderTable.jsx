@@ -8,19 +8,19 @@ const SalesOrderTable = ({ rows = [], loading = false }) => {
       {
         field: "soNo",
         headerName: "SO No",
-        width: 110,
+        width: 100,
       },
 
       {
         field: "date",
         headerName: "Date",
-        width: 120,
+        width: 100,
       },
 
       {
         field: "skucode",
         headerName: "SKU Code",
-        width: 120,
+        width: 100,
       },
 
       {
@@ -35,6 +35,46 @@ const SalesOrderTable = ({ rows = [], loading = false }) => {
         headerName: "Product Name",
         minWidth: 220,
         flex: 1.3,
+      },
+      {
+        field: "productionstatus",
+        headerName: "Production Status",
+        minWidth: 160,
+        flex: 1.3,
+        align: "center",
+        headerAlign: "center",
+        renderCell: ({ value }) => {
+          const isCompleted = value === "Completed";
+          return (
+            <Chip
+              label={isCompleted ? "Completed" : "Pending Production"}
+              color={isCompleted ? "success" : "warning"}
+              size="small"
+              variant="outlined"
+              sx={{ fontWeight: 600, minWidth: 125, borderRadius: "16px" }}
+            />
+          );
+        },
+      },
+      {
+        field: "dispatchstatus",
+        headerName: "Dispatch Status",
+        minWidth: 150,
+        flex: 1.3,
+        align: "center",
+        headerAlign: "center",
+        renderCell: ({ value }) => {
+          const isDispatched = value === "Dispatched";
+          return (
+            <Chip
+              label={isDispatched ? "Dispatched" : "Pending Dispatch"}
+              color={isDispatched ? "success" : "warning"}
+              size="small"
+              variant="outlined"
+              sx={{ fontWeight: 600, minWidth: 120, borderRadius: "16px" }}
+            />
+          );
+        },
       },
 
       {
@@ -63,8 +103,7 @@ const SalesOrderTable = ({ rows = [], loading = false }) => {
         width: 110,
         align: "center",
         headerAlign: "center",
-        renderCell: ({ row }) =>
-          `₹ ${Number(row.rate || 0).toFixed(2)}`,
+        renderCell: ({ row }) => `₹ ${Number(row.rate || 0).toFixed(2)}`,
       },
 
       {
@@ -84,9 +123,7 @@ const SalesOrderTable = ({ rows = [], loading = false }) => {
         align: "center",
         headerAlign: "center",
         renderCell: ({ row }) => (
-          <strong>
-            ₹ {Number(row.finalrate || 0).toFixed(2)}
-          </strong>
+          <strong>₹ {Number(row.finalrate || 0).toFixed(2)}</strong>
         ),
       },
 
@@ -150,29 +187,8 @@ const SalesOrderTable = ({ rows = [], loading = false }) => {
         headerName: "Created By",
         width: 150,
       },
-
-      {
-        field: "status",
-        headerName: "Status",
-        width: 130,
-        renderCell: ({ row }) => (
-          <Chip
-            size="small"
-            label={row.status || "Pending"}
-            color={
-              row.status === "Completed"
-                ? "success"
-                : row.status === "Running"
-                ? "warning"
-                : row.status === "Dispatch"
-                ? "primary"
-                : "default"
-            }
-          />
-        ),
-      },
     ],
-    []
+    [],
   );
 
   return (
