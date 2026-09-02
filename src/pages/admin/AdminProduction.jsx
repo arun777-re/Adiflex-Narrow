@@ -1,10 +1,9 @@
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
   Box,
-  Chip,
   FormControl,
   InputLabel,
   MenuItem,
@@ -18,190 +17,10 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 
 import { getAllProductions } from "../../redux/slices/productionSlice";
+import ProcessCircle from '../../components/admin/ProcessCircle';
+import { PROCESS_CONFIG } from "../../config/productionProcess.config";
+import { getProcessStatus } from "../../utils/productionStatus.utils";
 
-// ============================================================
-// IDEAL PROCESS TIME - MINUTES
-// ============================================================
-
-const IDEAL_PROCESS_TIMES = {
-  "Job Work": 120,
-  Warping: 120,
-  Filling: 90,
-  Machine: 180,
-  Finishing: 120,
-  Quality: 30,
-  Rolling: 60,
-  Packing: 45,
-};
-
-// ============================================================
-// PROCESS CONFIGURATION
-// ============================================================
-
-const PROCESS_CONFIG = [
-  {
-    name: "Job Work",
-    startKey: "jobWorkStartTime",
-    endKey: "jobWorkEndTime",
-  },
-  {
-    name: "Warping",
-    startKey: "warpingStartAt",
-    endKey: "warpingEndsAt",
-  },
-  {
-    name: "Filling",
-    startKey: "fillingStartsAt",
-    endKey: "fillingEndsAt",
-  },
-  {
-    name: "Machine",
-    startKey: "machineStartsAt",
-    endKey: "machineEndsAt",
-  },
-  {
-    name: "Finishing",
-    startKey: "finishingStartsAt",
-    endKey: "finishingEndsAt",
-  },
-  {
-    name: "Quality",
-    startKey: "qualityStartsAt",
-    endKey: "qualityEndsAt",
-  },
-  {
-    name: "Rolling",
-    startKey: "rollingStartsAt",
-    endKey: "rollingEndsAt",
-  },
-  {
-    name: "Packing",
-    startKey: "packingStartsAt",
-    endKey: "packingEndsAt",
-  },
-];
-
-// ============================================================
-// HELPERS
-// ============================================================
-
-const getValue = (row, keys = []) => {
-  for (const key of keys) {
-    if (
-      row?.[key] !== undefined &&
-      row?.[key] !== null &&
-      String(row[key]).trim() !== ""
-    ) {
-      return row[key];
-    }
-  }
-
-  return "";
-};
-
-// ------------------------------------------------------------
-// DATE PARSER
-// ------------------------------------------------------------
-
-const parseDate = (value) => {
-  if (!value) return null;
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date;
-};
-
-// ------------------------------------------------------------
-// DURATION
-// ------------------------------------------------------------
-
-const getDurationMinutes = (startValue, endValue) => {
-  const start = parseDate(startValue);
-
-  if (!start) {
-    return null;
-  }
-
-  const end = endValue ? parseDate(endValue) : new Date();
-
-  if (!end) {
-    return null;
-  }
-
-  const diff = (end - start) / (1000 * 60);
-
-  if (diff < 0) {
-    return null;
-  }
-
-  return diff;
-};
-
-// ------------------------------------------------------------
-// FORMAT DURATION
-// ------------------------------------------------------------
-
-const formatDuration = (minutes) => {
-  if (minutes === null || minutes === undefined) {
-    return "-";
-  }
-
-  const totalMinutes = Math.round(minutes);
-
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${mins}m`;
-  }
-
-  return `${mins}m`;
-};
-
-// ------------------------------------------------------------
-// PERFORMANCE STATUS
-// ------------------------------------------------------------
-
-const getPerformance = (actual, ideal, isRunning) => {
-  if (actual === null || ideal === null) {
-    return {
-      type: "pending",
-      label: "Not Started",
-    };
-  }
-
-  const difference = actual - ideal;
-
-  // Running and already crossed ideal time
-  if (difference > 0) {
-    return {
-      type: "late",
-      label: `Late +${formatDuration(difference)}`,
-    };
-  }
-
-  // Completed exactly around ideal
-  if (Math.abs(difference) <= 1) {
-    return {
-      type: "ontime",
-      label: isRunning ? "On Time" : "On Time",
-    };
-  }
-
-  // Still under ideal time
-  return {
-    type: "faster",
-    label: `${formatDuration(Math.abs(difference))} Faster`,
-  };
-};
-
-// ============================================================
-// COMPONENT
-// ============================================================
 
 const AdminProduction = () => {
   const dispatch = useDispatch();
@@ -211,333 +30,369 @@ const AdminProduction = () => {
   // ==========================================================
 
   const {
-    productionOrders = [],
+    allProductionOrders = [],
     loading = false,
-  } = useSelector((state) => state.production);
+  } = useSelector(
+    (state) => state.production
+  );
 
   // ==========================================================
   // FILTER STATES
   // ==========================================================
 
-  const [division, setDivision] = useState("WOVEN");
-  const [process, setProcess] = useState("ALL");
-  const [status, setStatus] = useState("ALL");
-  const [search, setSearch] = useState("");
+  const [division, setDivision] =
+    useState("WOVEN");
+
+  const [process, setProcess] =
+    useState("ALL");
+
+  const [status, setStatus] =
+    useState("ALL");
+
+  const [search, setSearch] =
+    useState("");
 
   // ==========================================================
   // LIVE CLOCK
-  // Re-render every 30 seconds so running process time updates.
   // ==========================================================
 
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] =
+    useState(new Date());
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setNow(new Date());
-    }, 30000);
+    const interval =
+      setInterval(() => {
+        setNow(new Date());
+      }, 30000);
 
-    return () => clearInterval(interval);
+    return () =>
+      clearInterval(interval);
   }, []);
 
   // ==========================================================
   // GET PRODUCTION DATA
   // ==========================================================
 
-useEffect(() => {
-  console.log("====================================");
-  console.log("🔥 ADMIN PRODUCTION EFFECT RUNNING");
-  console.log("🔥 SELECTED DIVISION:", division);
+  useEffect(() => {
+    if (!division) {
+      return;
+    }
 
-  if (!division) {
-    console.log("❌ DIVISION EMPTY - API CALL SKIPPED");
-    return;
-  }
-
-  console.log("🚀 DISPATCHING getAllProductions...");
-  console.log("🚀 DIVISION SENT TO THUNK:", division);
-
-  dispatch(getAllProductions(division))
-    .unwrap()
-    .then((data) => {
-      console.log("✅ THUNK SUCCESS");
-      console.log("🔥 PRODUCTION DATA FROM THUNK:", data);
-      console.log("🔥 DATA LENGTH:", data?.length);
-      console.log("🔥 FIRST PRODUCTION ORDER:", data?.[0]);
-    })
-    .catch((error) => {
-      console.error("❌ THUNK FAILED");
-      console.error("❌ ERROR:", error);
-    });
-
-}, [dispatch, division]);
-
-  // ==========================================================
-  // CREATE PROCESS-WISE ROWS
-  // ==========================================================
-
-  const processRows = useMemo(() => {
-    const result = [];
-
-    productionOrders.forEach((order, orderIndex) => {
-      PROCESS_CONFIG.forEach((processConfig, processIndex) => {
-        // ----------------------------------------------------
-        // Job Work only when Is Job Work is true
-        // ----------------------------------------------------
-
-        if (processConfig.name === "Job Work") {
-          const isJobWork =
-            order.isJobWork === true ||
-            String(order.isJobWork).toUpperCase() === "TRUE";
-
-          if (!isJobWork) {
-            return;
-          }
-        }
-
-        const start = getValue(order, [
-          processConfig.startKey,
-          processConfig.startKey.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`),
-        ]);
-
-        const end = getValue(order, [
-          processConfig.endKey,
-          processConfig.endKey.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`),
-        ]);
-
-        // Process not started
-        if (!start) {
-          return;
-        }
-
-        const actualMinutes = getDurationMinutes(start, end);
-
-        if (actualMinutes === null) {
-          return;
-        }
-
-        const idealMinutes =
-          IDEAL_PROCESS_TIMES[processConfig.name] || null;
-
-        const isRunning = !end;
-
-        const performance = getPerformance(
-          actualMinutes,
-          idealMinutes,
-          isRunning
+    dispatch(
+      getAllProductions(division)
+    )
+      .unwrap()
+      .catch((error) => {
+        console.error(
+          "❌ getAllProductions failed:",
+          error
         );
+      });
+  }, [dispatch, division]);
 
-        result.push({
-          id: `${orderIndex}-${processIndex}-${order.soNo}-${order.cycleID}`,
-          soNo: order.soNo || "-",
-          cycleID: order.cycleID || "-",
-          skuCode: order.skuCode || "-",
-          productName: order.productName || order.product || "-",
-          customer: order.customer || "-",
-          orderType: order.orderType || "-",
-          division: order.division || division,
-          process: processConfig.name,
+  // ==========================================================
+  // ONE ROW = ONE PRODUCTION ORDER
+  // ==========================================================
+
+  const productionRows =
+    useMemo(() => {
+      return allProductionOrders.map(
+        (order, index) => ({
+          id:
+            order.id ||
+            `${index}-${order.soNo}-${order.cycleID}`,
+
+          soNo:
+            order.soNo || "-",
+
+          cycleID:
+            order.cycleID || "-",
+
+          skuCode:
+            order.skuCode || "-",
+
+          productName:
+            order.productName ||
+            order.product ||
+            "-",
+
+          customer:
+            order.customer || "-",
+
           productionQty:
             order.productionQty ??
             order.productionTargetQty ??
-            "-",
-          startTime: start,
-          endTime: end,
-          idealMinutes,
-          actualMinutes,
-          idealTime: formatDuration(idealMinutes),
-          actualTime: formatDuration(actualMinutes),
-          performance,
-          running: isRunning,
-          now,
-        });
-      });
-    });
+            0,
 
-    return result;
-  }, [productionOrders, now, division]);
+          division:
+            order.division ||
+            division,
+
+          order,
+        })
+      );
+    }, [
+      allProductionOrders,
+      division,
+    ]);
 
   // ==========================================================
-  // FILTER
+  // FILTERED ROWS
   // ==========================================================
 
-  const filteredRows = useMemo(() => {
-    return processRows.filter((row) => {
-      const processMatch =
-        process === "ALL" || row.process === process;
+  const filteredRows =
+    useMemo(() => {
+      const searchText =
+        search
+          .toLowerCase()
+          .trim();
 
-      const statusMatch =
-        status === "ALL" ||
-        (status === "LATE" && row.performance.type === "late") ||
-        (status === "ON_TIME" && row.performance.type === "ontime") ||
-        (status === "FASTER" && row.performance.type === "faster") ||
-        (status === "RUNNING" && row.running);
+      return productionRows.filter(
+        (row) => {
+          const order =
+            row.order;
 
-      const searchText = search.toLowerCase().trim();
+          // --------------------------------------------------
+          // SEARCH
+          // --------------------------------------------------
 
-      const searchMatch =
-        !searchText ||
-        String(row.soNo).toLowerCase().includes(searchText) ||
-        String(row.cycleID).toLowerCase().includes(searchText) ||
-        String(row.skuCode).toLowerCase().includes(searchText) ||
-        String(row.productName).toLowerCase().includes(searchText) ||
-        String(row.customer).toLowerCase().includes(searchText);
+          const searchMatch =
+            !searchText ||
+            String(row.soNo)
+              .toLowerCase()
+              .includes(searchText) ||
+            String(row.cycleID)
+              .toLowerCase()
+              .includes(searchText) ||
+            String(row.skuCode)
+              .toLowerCase()
+              .includes(searchText) ||
+            String(row.productName)
+              .toLowerCase()
+              .includes(searchText) ||
+            String(row.customer)
+              .toLowerCase()
+              .includes(searchText);
 
-      return processMatch && statusMatch && searchMatch;
-    });
-  }, [processRows, process, status, search]);
+          if (!searchMatch) {
+            return false;
+          }
+
+          // --------------------------------------------------
+          // PROCESS FILTER
+          // --------------------------------------------------
+
+          if (
+            process !== "ALL"
+          ) {
+            const selectedProcess =
+              PROCESS_CONFIG.find(
+                (item) =>
+                  item.name ===
+                  process
+              );
+
+            if (selectedProcess) {
+              const processStatus =
+                getProcessStatus(
+                  order,
+                  selectedProcess
+                );
+
+              if (
+                processStatus.type ===
+                  "notApplicable" ||
+                processStatus.type ===
+                  "notStarted"
+              ) {
+                return false;
+              }
+            }
+          }
+
+          // --------------------------------------------------
+          // STATUS FILTER
+          // --------------------------------------------------
+
+          if (
+            status !== "ALL"
+          ) {
+            const processStatuses =
+              PROCESS_CONFIG.map(
+                (config) =>
+                  getProcessStatus(
+                    order,
+                    config
+                  )
+              );
+
+            let statusMatch =
+              false;
+
+            if (
+              status ===
+              "RUNNING"
+            ) {
+              statusMatch =
+                processStatuses.some(
+                  (item) =>
+                    item.type ===
+                    "running"
+                );
+            }
+
+            if (
+              status === "LATE"
+            ) {
+              statusMatch =
+                processStatuses.some(
+                  (item) =>
+                    item.type ===
+                    "late"
+                );
+            }
+
+            if (
+              status ===
+              "ON_TIME"
+            ) {
+              statusMatch =
+                processStatuses.some(
+                  (item) =>
+                    item.type ===
+                    "ontime"
+                );
+            }
+
+            if (
+              status ===
+              "FASTER"
+            ) {
+              statusMatch =
+                processStatuses.some(
+                  (item) =>
+                    item.type ===
+                    "faster"
+                );
+            }
+
+            if (
+              status ===
+              "COMPLETED"
+            ) {
+              statusMatch =
+                processStatuses.some(
+                  (item) =>
+                    item.type ===
+                      "completed" ||
+                    item.type ===
+                      "ontime" ||
+                    item.type ===
+                      "faster"
+                );
+            }
+
+            if (!statusMatch) {
+              return false;
+            }
+          }
+
+          return true;
+        }
+      );
+    }, [
+      productionRows,
+      process,
+      status,
+      search,
+      now,
+    ]);
 
   // ==========================================================
   // COLUMNS
   // ==========================================================
 
-  const columns = [
-    {
-      field: "soNo",
-      headerName: "SO No.",
-      width: 110,
-    },
-    {
-      field: "cycleID",
-      headerName: "Cycle ID",
-      width: 150,
-    },
-    {
-      field: "skuCode",
-      headerName: "SKU Code",
-      width: 110,
-    },
-    {
-      field: "productName",
-      headerName: "Product",
-      minWidth: 220,
-      flex: 1,
-    },
-    {
-      field: "customer",
-      headerName: "Customer",
-      width: 150,
-    },
-    {
-      field: "process",
-      headerName: "Process",
-      width: 120,
-    },
-    {
-      field: "productionQty",
-      headerName: "Production Qty",
-      width: 130,
-    },
-    {
-      field: "idealTime",
-      headerName: "Ideal Time",
-      width: 110,
-    },
-    {
-      field: "actualTime",
-      headerName: "Actual Time",
-      width: 115,
-      renderCell: (params) => (
-        <Box>
-          <Typography
-            variant="body2"
-            fontWeight={700}
-          >
-            {params.value}
-          </Typography>
+  const columns = useMemo(() => {
+    return [
+      {
+        field: "soNo",
+        headerName: "SO No.",
+        width: 110,
+      },
 
-          {params.row.running && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
+      {
+        field: "cycleID",
+        headerName: "Cycle ID",
+        width: 180,
+      },
+
+      {
+        field: "skuCode",
+        headerName: "SKU Code",
+        width: 110,
+      },
+
+      {
+        field: "productName",
+        headerName: "Product",
+        minWidth: 220,
+        flex: 1,
+      },
+
+      {
+        field: "customer",
+        headerName: "Customer",
+        width: 180,
+      },
+
+      {
+        field: "productionQty",
+        headerName: "Production Qty",
+        width: 130,
+        type: "number",
+      },
+
+      // ======================================================
+      // PROCESS COLUMNS
+      // ======================================================
+
+      ...PROCESS_CONFIG.map(
+        (processConfig) => ({
+          field: processConfig.name,
+          headerName:
+            processConfig.name,
+          width: 110,
+
+          sortable: false,
+          filterable: false,
+
+          renderCell: (params) => (
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+
+                display: "flex",
+                alignItems: "center",
+                justifyContent:
+                  "center",
+              }}
             >
-              Running
-            </Typography>
-          )}
-        </Box>
+              <ProcessCircle
+                order={
+                  params.row
+                    .order
+                }
+                processConfig={
+                  processConfig
+                }
+              />
+            </Box>
+          ),
+        })
       ),
-    },
-    {
-      field: "performance",
-      headerName: "Performance",
-      width: 160,
-      renderCell: (params) => {
-        const { type, label } = params.value;
-
-        let color = "default";
-
-        if (type === "late") {
-          color = "error";
-        }
-
-        if (type === "ontime") {
-          color = "success";
-        }
-
-        if (type === "faster") {
-          color = "info";
-        }
-
-        return (
-          <Chip
-            size="small"
-            color={color}
-            label={label}
-            sx={{
-              fontWeight: 700,
-            }}
-          />
-        );
-      },
-    },
-    {
-      field: "startTime",
-      headerName: "Started At",
-      width: 180,
-      valueGetter: (value) => {
-        if (!value) return "-";
-
-        const date = new Date(value);
-
-        if (Number.isNaN(date.getTime())) {
-          return value;
-        }
-
-        return date.toLocaleString("en-IN", {
-          timeZone: "Asia/Kolkata",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        });
-      },
-    },
-    {
-      field: "endTime",
-      headerName: "Ended At",
-      width: 180,
-      valueGetter: (value) => {
-        if (!value) return "Running";
-
-        const date = new Date(value);
-
-        if (Number.isNaN(date.getTime())) {
-          return value;
-        }
-
-        return date.toLocaleString("en-IN", {
-          timeZone: "Asia/Kolkata",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        });
-      },
-    },
-  ];
+    ];
+  }, [now]);
 
   // ==========================================================
   // UI
@@ -547,7 +402,10 @@ useEffect(() => {
     <Box
       sx={{
         width: "100%",
-        p: { xs: 1.5, md: 2 },
+        p: {
+          xs: 1.5,
+          md: 2,
+        },
       }}
     >
       {/* ======================================================
@@ -571,7 +429,10 @@ useEffect(() => {
           variant="body2"
           color="text.secondary"
         >
-          {filteredRows.length} processes
+          {
+            filteredRows.length
+          }{" "}
+          production orders
         </Typography>
       </Stack>
 
@@ -594,7 +455,9 @@ useEffect(() => {
           }}
           spacing={1.5}
         >
-          {/* Division */}
+          {/* ==================================================
+              DIVISION
+          ================================================== */}
 
           <FormControl
             size="small"
@@ -602,13 +465,18 @@ useEffect(() => {
               minWidth: 150,
             }}
           >
-            <InputLabel>Division</InputLabel>
+            <InputLabel>
+              Division
+            </InputLabel>
 
             <Select
               value={division}
               label="Division"
               onChange={(e) => {
-                setDivision(e.target.value);
+                setDivision(
+                  e.target.value
+                );
+
                 setProcess("ALL");
                 setStatus("ALL");
               }}
@@ -623,7 +491,9 @@ useEffect(() => {
             </Select>
           </FormControl>
 
-          {/* Process */}
+          {/* ==================================================
+              PROCESS
+          ================================================== */}
 
           <FormControl
             size="small"
@@ -631,29 +501,39 @@ useEffect(() => {
               minWidth: 150,
             }}
           >
-            <InputLabel>Process</InputLabel>
+            <InputLabel>
+              Process
+            </InputLabel>
 
             <Select
               value={process}
               label="Process"
-              onChange={(e) => setProcess(e.target.value)}
+              onChange={(e) =>
+                setProcess(
+                  e.target.value
+                )
+              }
             >
               <MenuItem value="ALL">
                 All Processes
               </MenuItem>
 
-              {PROCESS_CONFIG.map((item) => (
-                <MenuItem
-                  key={item.name}
-                  value={item.name}
-                >
-                  {item.name}
-                </MenuItem>
-              ))}
+              {PROCESS_CONFIG.map(
+                (item) => (
+                  <MenuItem
+                    key={item.name}
+                    value={item.name}
+                  >
+                    {item.name}
+                  </MenuItem>
+                )
+              )}
             </Select>
           </FormControl>
 
-          {/* Status */}
+          {/* ==================================================
+              STATUS
+          ================================================== */}
 
           <FormControl
             size="small"
@@ -661,12 +541,18 @@ useEffect(() => {
               minWidth: 150,
             }}
           >
-            <InputLabel>Status</InputLabel>
+            <InputLabel>
+              Status
+            </InputLabel>
 
             <Select
               value={status}
               label="Status"
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) =>
+                setStatus(
+                  e.target.value
+                )
+              }
             >
               <MenuItem value="ALL">
                 All Status
@@ -687,17 +573,27 @@ useEffect(() => {
               <MenuItem value="FASTER">
                 Faster
               </MenuItem>
+
+              <MenuItem value="COMPLETED">
+                Completed
+              </MenuItem>
             </Select>
           </FormControl>
 
-          {/* Search */}
+          {/* ==================================================
+              SEARCH
+          ================================================== */}
 
           <TextField
             size="small"
             fullWidth
             label="Search SO / Cycle / SKU / Product"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>
+              setSearch(
+                e.target.value
+              )
+            }
           />
         </Stack>
       </Paper>
@@ -721,7 +617,11 @@ useEffect(() => {
           autoHeight
           disableRowSelectionOnClick
           hideFooterSelectedRowCount
-          pageSizeOptions={[10, 25, 50]}
+          pageSizeOptions={[
+            10,
+            25,
+            50,
+          ]}
           initialState={{
             pagination: {
               paginationModel: {
@@ -733,18 +633,22 @@ useEffect(() => {
           sx={{
             border: 0,
 
-            "& .MuiDataGrid-columnHeaders": {
-              fontWeight: 700,
-            },
+            "& .MuiDataGrid-columnHeaders":
+              {
+                fontWeight: 700,
+              },
 
             "& .MuiDataGrid-cell": {
               display: "flex",
-              alignItems: "center",
+              alignItems:
+                "center",
             },
 
-            "& .MuiDataGrid-row:hover": {
-              backgroundColor: "action.hover",
-            },
+            "& .MuiDataGrid-row:hover":
+              {
+                backgroundColor:
+                  "action.hover",
+              },
           }}
         />
       </Paper>

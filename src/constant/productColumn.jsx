@@ -1,5 +1,3 @@
-import React from "react";
-
 import { Box, Button, Chip } from "@mui/material";
 
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
