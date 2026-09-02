@@ -104,6 +104,8 @@ const AdminProduction = () => {
 
           soNo:
             order.soNo || "-",
+            skucode:
+            order.skuCode || "-",
 
           cycleID:
             order.cycleID || "-",
@@ -327,7 +329,7 @@ const AdminProduction = () => {
       },
 
       {
-        field: "skuCode",
+        field: "skucode",
         headerName: "SKU Code",
         width: 110,
       },

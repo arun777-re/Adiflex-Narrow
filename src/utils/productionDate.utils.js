@@ -1,4 +1,4 @@
-export const parseDate = (value) => {
+const parseDate = (value) => {
   if (!value) return null;
 
   if (value instanceof Date) {
@@ -11,14 +11,23 @@ export const parseDate = (value) => {
 
   // =========================================================
   // DD-MM-YYYY HH:mm:ss
-  // Example: 02-09-2026 13:55:48
+  // Example: 02-09-2026 17:14:29
   // =========================================================
+
   let match = str.match(
-    /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/
+    /^(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/
   );
 
   if (match) {
-    const [, day, month, year, hour, minute, second] = match;
+    const [
+      ,
+      day,
+      month,
+      year,
+      hour,
+      minute,
+      second,
+    ] = match;
 
     const date = new Date(
       Number(year),
@@ -33,15 +42,24 @@ export const parseDate = (value) => {
   }
 
   // =========================================================
-  // DD/MM/YYYY HH:mm:ss
-  // Example: 02/09/2026 13:55:48
+  // D/M/YYYY, HH:mm:ss
+  // Example: 2/9/2026, 17:14:38
   // =========================================================
+
   match = str.match(
-    /^(\d{2})\/(\d{2})\/(\d{4}),?\s+(\d{2}):(\d{2}):(\d{2})$/
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2}):(\d{2})$/
   );
 
   if (match) {
-    const [, day, month, year, hour, minute, second] = match;
+    const [
+      ,
+      day,
+      month,
+      year,
+      hour,
+      minute,
+      second,
+    ] = match;
 
     const date = new Date(
       Number(year),
@@ -56,8 +74,9 @@ export const parseDate = (value) => {
   }
 
   // =========================================================
-  // ISO / normal JS date fallback
+  // Native fallback
   // =========================================================
+
   const parsed = new Date(str);
 
   return isNaN(parsed.getTime()) ? null : parsed;
