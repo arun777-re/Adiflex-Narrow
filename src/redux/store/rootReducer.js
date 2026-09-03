@@ -10,6 +10,7 @@ import fgReducer from '../slices/fgSlice.jsx';
 import dashboardReducer from '../slices/dashboardSlice.jsx';
 import billingReducer from '../slices/billingSlice.jsx';
 import analyticsReducer from '../slices/analyticsSlice.jsx';
+import activityReducer from '../slices/activitySlice.jsx';
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -20,5 +21,6 @@ export const rootReducer = combineReducers({
   fginventory:fgReducer,
   dashboard:dashboardReducer,
   billing:billingReducer,
-  analytics:analyticsReducer
+  analytics:analyticsReducer,
+  activity:activityReducer,
 });

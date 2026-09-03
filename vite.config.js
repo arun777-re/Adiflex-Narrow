@@ -8,21 +8,20 @@ export default defineConfig({
 
     VitePWA({
       registerType: "autoUpdate",
-      strategies:"injectManifest",
-      srcDir:"src",
-      workbox:{
-       cleanupOutdatedCaches:true,
+      strategies: "injectManifest",
+      srcDir: "src",
+      workbox: {
+        cleanupOutdatedCaches: true,
+        navigateFallback: "/index.html",
+
+        navigateFallbackAllowlist: [/^\/.*$/],
       },
-      filename:"sw.js",
-      devOptions:{
-        enabled:false
+      filename: "sw.js",
+      devOptions: {
+        enabled: false,
       },
 
-      includeAssets: [
-        "favicon.ico",
-        "apple-touch-icon.png",
-        "mask-icon.svg"
-      ],
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
 
       manifest: {
         name: "Adiflex ERP",
@@ -44,15 +43,15 @@ export default defineConfig({
           {
             src: "/pwa.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
           },
           {
             src: "/pwa-512.png",
             sizes: "512x512",
-            type: "image/png"
-          }
-        ]
-      }
-    })
-  ]
+            type: "image/png",
+          },
+        ],
+      },
+    }),
+  ],
 });

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   Box,
@@ -12,6 +12,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
@@ -46,6 +47,19 @@ import {
 
 const DIVISION_TOTAL = "ALL";
 
+const PERIOD_OPTIONS = [
+  { value: "all", label: "All Data" },
+  { value: "week", label: "This Week" },
+  { value: "month", label: "This Month" },
+  { value: "year", label: "This Year" },
+];
+
+const DIVISION_OPTIONS = [
+  { value: DIVISION_TOTAL, label: "All Divisions" },
+  { value: "WOVEN", label: "Woven" },
+  { value: "CROCHET", label: "Crochet" },
+];
+
 const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0,
 });
@@ -53,15 +67,15 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
 const NUMBER_FORMATTER = new Intl.NumberFormat("en-IN");
 
 /* =========================================================
-   UTILS
+   FORMATTERS
 ========================================================= */
 
 const formatNumber = (value) => {
-  return NUMBER_FORMATTER.format(value || 0);
+  return NUMBER_FORMATTER.format(Number(value) || 0);
 };
 
 const formatCurrency = (value) => {
-  return `₹${CURRENCY_FORMATTER.format(value || 0)}`;
+  return `₹${CURRENCY_FORMATTER.format(Number(value) || 0)}`;
 };
 
 const calculateGrowth = (current, previous) => {
@@ -78,6 +92,67 @@ const formatGrowth = (value) => {
   }
 
   return `${rounded}%`;
+};
+
+/* =========================================================
+   REUSABLE CARD
+========================================================= */
+
+const DashboardCard = ({
+  title,
+  subtitle,
+  children,
+  sx = {},
+}) => {
+  return (
+    <Card
+      elevation={1}
+      sx={{
+        width: "100%",
+        height: "100%",
+        borderRadius: 2,
+        overflow: "hidden",
+        ...sx,
+      }}
+    >
+      <CardContent
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          "&:last-child": {
+            pb: 2,
+          },
+        }}
+      >
+        <Typography
+          variant="h6"
+          fontWeight={700}
+        >
+          {title}
+        </Typography>
+
+        {subtitle && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 0.25, mb: 2 }}
+          >
+            {subtitle}
+          </Typography>
+        )}
+
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          {children}
+        </Box>
+      </CardContent>
+    </Card>
+  );
 };
 
 /* =========================================================
@@ -98,99 +173,687 @@ const DashboardKpiCard = ({
   const isPositive = growth >= 0;
 
   return (
-    <Card
-      elevation={1}
-      sx={{
-        height: "100%",
-        borderRadius: 2,
-      }}
-    >
-      <CardContent>
+    <DashboardCard>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        fontWeight={600}
+      >
+        {title}
+      </Typography>
+
+      <Typography
+        variant="h4"
+        fontWeight={800}
+        sx={{
+          mt: 1,
+          lineHeight: 1.2,
+        }}
+      >
+        {formatter(value)}
+      </Typography>
+
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        sx={{
+          mt: 1.5,
+          flexWrap: "wrap",
+          rowGap: 0.5,
+        }}
+      >
+        <Chip
+          size="small"
+          label={formatGrowth(growth)}
+          color={
+            isPositive
+              ? "success"
+              : "error"
+          }
+          variant="outlined"
+        />
+
         <Typography
-          variant="body2"
+          variant="caption"
           color="text.secondary"
-          fontWeight={600}
         >
-          {title}
+          vs previous period
         </Typography>
-
-        <Typography
-          variant="h4"
-          fontWeight={800}
-          sx={{ mt: 1 }}
-        >
-          {formatter(value)}
-        </Typography>
-
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1}
-          sx={{ mt: 1 }}
-        >
-          <Chip
-            size="small"
-            label={formatGrowth(growth)}
-            color={
-              isPositive
-                ? "success"
-                : "error"
-            }
-            variant="outlined"
-          />
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-          >
-            vs previous period
-          </Typography>
-        </Stack>
-      </CardContent>
-    </Card>
+      </Stack>
+    </DashboardCard>
   );
 };
 
 /* =========================================================
-   SECTION HEADER
+   CHART CONTAINER
 ========================================================= */
 
-const DashboardSection = ({
-  title,
-  subtitle,
+const ChartContainer = ({
   children,
+  height = 320,
 }) => {
   return (
-    <Card
-      elevation={1}
+    <Box
       sx={{
-        borderRadius: 2,
-        height: "100%",
+        width: "100%",
+        height,
+        minWidth: 0,
+        minHeight: 0,
       }}
     >
-      <CardContent>
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+      >
+        {children}
+      </ResponsiveContainer>
+    </Box>
+  );
+};
+
+/* =========================================================
+   FILTER COMPONENT
+========================================================= */
+
+const DashboardFilter = ({
+  label,
+  value,
+  options,
+  onChange,
+}) => {
+  return (
+    <FormControl
+      size="small"
+      sx={{
+        minWidth: {
+          xs: 140,
+          sm: 150,
+        },
+      }}
+    >
+      <InputLabel>{label}</InputLabel>
+
+      <Select
+        value={value}
+        label={label}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+      >
+        {options.map((option) => (
+          <MenuItem
+            key={option.value}
+            value={option.value}
+          >
+            {option.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+};
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+const DashboardHeader = ({
+  period,
+  division,
+  onPeriodChange,
+  onDivisionChange,
+}) => {
+  return (
+    <Stack
+      direction={{
+        xs: "column",
+        md: "row",
+      }}
+      alignItems={{
+        xs: "flex-start",
+        md: "center",
+      }}
+      justifyContent="space-between"
+      spacing={2}
+      sx={{ mb: 2 }}
+    >
+      <Box>
         <Typography
-          variant="h6"
-          fontWeight={700}
+          variant="h5"
+          fontWeight={800}
         >
-          {title}
+          Management Dashboard
         </Typography>
 
-        {subtitle && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+        >
+          Orders, production completion
+          and sales performance
+        </Typography>
+      </Box>
+
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          width: {
+            xs: "100%",
+            md: "auto",
+          },
+          flexWrap: "wrap",
+          rowGap: 1,
+        }}
+      >
+        <DashboardFilter
+          label="Period"
+          value={period}
+          options={PERIOD_OPTIONS}
+          onChange={onPeriodChange}
+        />
+
+        <DashboardFilter
+          label="Division"
+          value={division}
+          options={DIVISION_OPTIONS}
+          onChange={onDivisionChange}
+        />
+      </Stack>
+    </Stack>
+  );
+};
+
+/* =========================================================
+   KPI SECTION
+========================================================= */
+
+const KpiGrid = ({ summary }) => {
+  const cards = [
+    {
+      title: "Orders Received",
+      value: summary.orders,
+      previousValue: summary.previousOrders,
+    },
+    {
+      title: "Orders Completed",
+      value: summary.completed,
+      previousValue: summary.previousCompleted,
+    },
+    {
+      title: "Pending Orders",
+      value: summary.pending,
+      previousValue: summary.previousPending,
+    },
+    {
+      title: "Sales",
+      value: summary.sales,
+      previousValue: summary.previousSales,
+      formatter: formatCurrency,
+    },
+  ];
+
+  return (
+    <Grid
+      container
+      spacing={2}
+    >
+      {cards.map((card) => (
+        <Grid
+          key={card.title}
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3,
+          }}
+          sx={{
+            display: "flex",
+            minWidth: 0,
+          }}
+        >
+          <DashboardKpiCard {...card} />
+        </Grid>
+      ))}
+    </Grid>
+  );
+};
+
+/* =========================================================
+   COMPLETION CARD
+========================================================= */
+
+const CompletionCard = ({ summary }) => {
+  const completionRate = summary.orders
+    ? (
+        (summary.completed /
+          summary.orders) *
+        100
+      ).toFixed(1)
+    : 0;
+
+  return (
+    <DashboardCard
+      title="Order Completion"
+      subtitle="Current period completion rate"
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={2}
+        sx={{ height: "100%" }}
+      >
+        <Box>
+          <Typography
+            variant="h3"
+            fontWeight={800}
+            sx={{
+              lineHeight: 1.1,
+            }}
+          >
+            {completionRate}%
+          </Typography>
+
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{ mb: 2 }}
+            sx={{ mt: 1 }}
           >
-            {subtitle}
+            {formatNumber(summary.completed)}{" "}
+            of{" "}
+            {formatNumber(summary.orders)}{" "}
+            orders completed
           </Typography>
-        )}
+        </Box>
 
-        {children}
-      </CardContent>
-    </Card>
+        <Typography
+          sx={{
+            fontSize: {
+              xs: 40,
+              sm: 48,
+            },
+            fontWeight: 800,
+            lineHeight: 1,
+          }}
+        >
+          ✓
+        </Typography>
+      </Stack>
+    </DashboardCard>
   );
 };
+
+/* =========================================================
+   QUICK SUMMARY
+========================================================= */
+
+const QuickSummaryCard = ({ summary }) => {
+  const items = [
+    {
+      label: "Orders",
+      value: formatNumber(summary.orders),
+    },
+    {
+      label: "Completed",
+      value: formatNumber(summary.completed),
+    },
+    {
+      label: "Sales",
+      value: formatCurrency(summary.sales),
+    },
+  ];
+
+  return (
+    <DashboardCard
+      title="Quick Summary"
+      subtitle="Management overview"
+    >
+      <Grid
+        container
+        spacing={2}
+        sx={{
+          height: "100%",
+          alignItems: "center",
+        }}
+      >
+        {items.map((item) => (
+          <Grid
+            key={item.label}
+            size={{
+              xs: 4,
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+            >
+              {item.label}
+            </Typography>
+
+            <Typography
+              variant="h6"
+              fontWeight={700}
+              sx={{
+                mt: 0.5,
+                wordBreak: "break-word",
+              }}
+            >
+              {item.value}
+            </Typography>
+          </Grid>
+        ))}
+      </Grid>
+    </DashboardCard>
+  );
+};
+
+/* =========================================================
+   ORDERS CHART
+========================================================= */
+
+const OrdersChart = ({ data }) => {
+  return (
+    <ChartContainer>
+      <BarChart
+        data={data}
+        margin={{
+          top: 10,
+          right: 10,
+          left: 0,
+          bottom: 0,
+        }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+        />
+
+        <XAxis
+          dataKey="week"
+        />
+
+        <YAxis />
+
+        <Tooltip />
+
+        <Legend />
+
+        <Bar
+          dataKey="received"
+          name="Orders Received"
+        />
+
+        <Bar
+          dataKey="completed"
+          name="Completed"
+        />
+      </BarChart>
+    </ChartContainer>
+  );
+};
+
+/* =========================================================
+   DIVISION PIE CHART
+========================================================= */
+
+const DivisionPieChart = ({ data }) => {
+  return (
+    <ChartContainer>
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="orders"
+          nameKey="division"
+          cx="50%"
+          cy="50%"
+          outerRadius={95}
+          label
+        >
+          {data.map((entry) => (
+            <Cell
+              key={entry.division}
+            />
+          ))}
+        </Pie>
+
+        <Tooltip />
+
+        <Legend />
+      </PieChart>
+    </ChartContainer>
+  );
+};
+
+/* =========================================================
+   SALES CHART
+========================================================= */
+
+const SalesChart = ({ data }) => {
+  return (
+    <ChartContainer>
+      <LineChart
+        data={data}
+        margin={{
+          top: 10,
+          right: 10,
+          left: 0,
+          bottom: 0,
+        }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+        />
+
+        <XAxis
+          dataKey="week"
+        />
+
+        <YAxis
+          tickFormatter={(value) =>
+            `₹${(
+              value / 100000
+            ).toFixed(0)}L`
+          }
+        />
+
+        <Tooltip
+          formatter={(value) =>
+            formatCurrency(value)
+          }
+        />
+
+        <Legend />
+
+        <Line
+          type="monotone"
+          dataKey="sales"
+          name="Sales"
+          strokeWidth={3}
+        />
+      </LineChart>
+    </ChartContainer>
+  );
+};
+
+/* =========================================================
+   DIVISION PERFORMANCE
+========================================================= */
+
+const DivisionPerformance = ({
+  data,
+}) => {
+  return (
+    <DashboardCard
+      title="Division Performance"
+      subtitle="Orders and completion"
+    >
+      <Stack
+        spacing={1.5}
+        sx={{
+          height: "100%",
+          overflowY: "auto",
+          pr: 0.5,
+        }}
+      >
+        {data.map((item) => {
+          const rate = item.orders
+            ? (
+                (item.completed /
+                  item.orders) *
+                100
+              ).toFixed(1)
+            : 0;
+
+          return (
+            <Box
+              key={item.division}
+            >
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                spacing={1}
+              >
+                <Typography
+                  fontWeight={700}
+                  noWrap
+                >
+                  {item.division}
+                </Typography>
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {rate}% complete
+                </Typography>
+              </Stack>
+
+              <Typography
+                variant="body2"
+                sx={{ mt: 0.5 }}
+              >
+                {formatNumber(item.orders)}{" "}
+                orders ·{" "}
+                {formatNumber(item.completed)}{" "}
+                completed
+              </Typography>
+
+              <Typography
+                variant="body2"
+                fontWeight={700}
+                sx={{ mt: 0.5 }}
+              >
+                {formatCurrency(item.sales)}
+              </Typography>
+
+              <Divider sx={{ mt: 1.25 }} />
+            </Box>
+          );
+        })}
+
+        {!data.length && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            No division data available.
+          </Typography>
+        )}
+      </Stack>
+    </DashboardCard>
+  );
+};
+
+/* =========================================================
+   DATA HELPERS
+========================================================= */
+
+const createDivisionData = (
+  divisionOrders,
+  divisionSales
+) => {
+  const map = {};
+
+  const ensureDivision = (
+    division
+  ) => {
+    if (!map[division]) {
+      map[division] = {
+        division,
+        orders: 0,
+        completed: 0,
+        sales: 0,
+      };
+    }
+
+    return map[division];
+  };
+
+  divisionOrders.forEach((item) => {
+    const division =
+      item.division || "UNKNOWN";
+
+    const target =
+      ensureDivision(division);
+
+    target.orders =
+      Number(item.orders) || 0;
+
+    target.completed =
+      Number(item.completed) || 0;
+  });
+
+  divisionSales.forEach((item) => {
+    const division =
+      item.division || "UNKNOWN";
+
+    const target =
+      ensureDivision(division);
+
+    target.sales =
+      Number(item.sales) || 0;
+  });
+
+  return Object.values(map);
+};
+
+const createDashboardSummary = (
+  summary
+) => ({
+  orders:
+    Number(summary?.ordersReceived) || 0,
+
+  completed:
+    Number(summary?.ordersCompleted) || 0,
+
+  pending:
+    Number(summary?.pendingOrders) || 0,
+
+  sales:
+    Number(summary?.sales) || 0,
+
+  previousOrders:
+    Number(
+      summary?.previousOrdersReceived
+    ) || 0,
+
+  previousCompleted:
+    Number(
+      summary?.previousOrdersCompleted
+    ) || 0,
+
+  previousPending:
+    Number(
+      summary?.previousPendingOrders
+    ) || 0,
+
+  previousSales:
+    Number(summary?.previousSales) || 0,
+});
 
 /* =========================================================
    MAIN COMPONENT
@@ -199,21 +862,11 @@ const DashboardSection = ({
 const AnalysisPage = () => {
   const dispatch = useDispatch();
 
-  /* =======================================================
-     FILTERS
-  ======================================================= */
-
-  // Temporary testing:
-  // ALL will bring August data also.
-  // Later we will make month/week/year dynamic.
-  const [period, setPeriod] = useState("all");
+  const [period, setPeriod] =
+    useState("all");
 
   const [division, setDivision] =
     useState(DIVISION_TOTAL);
-
-  /* =======================================================
-     REDUX STATE
-  ======================================================= */
 
   const {
     summary,
@@ -226,7 +879,7 @@ const AnalysisPage = () => {
   );
 
   /* =======================================================
-     FETCH ANALYTICS
+     FETCH
   ======================================================= */
 
   useEffect(() => {
@@ -234,11 +887,6 @@ const AnalysisPage = () => {
       period,
       division,
     };
-
-    console.log(
-      "📊 Fetching Analytics:",
-      params
-    );
 
     dispatch(
       getAnalyticsSummary(params)
@@ -251,314 +899,100 @@ const AnalysisPage = () => {
     dispatch(
       getSalesAnalytics(params)
     );
-  }, [dispatch, period, division]);
-
-  /* =======================================================
-     NORMALIZE API DATA
-  ======================================================= */
-
-  const weeklyOrders = useMemo(() => {
-    return orders?.weekly || [];
-  }, [orders]);
-
-  const divisionOrders = useMemo(() => {
-    return orders?.division || [];
-  }, [orders]);
-
-  const weeklySales = useMemo(() => {
-    return sales?.weekly || [];
-  }, [sales]);
-
-  const divisionSales = useMemo(() => {
-    return sales?.division || [];
-  }, [sales]);
-
-  /* =======================================================
-     COMBINE DIVISION DATA
-     
-     Orders API:
-       division -> orders, completed
-
-     Sales API:
-       division -> sales
-  ======================================================= */
-
-  const divisionData = useMemo(() => {
-    const map = {};
-
-    divisionOrders.forEach((item) => {
-      const divisionName =
-        item.division || "UNKNOWN";
-
-      if (!map[divisionName]) {
-        map[divisionName] = {
-          division: divisionName,
-          orders: 0,
-          completed: 0,
-          sales: 0,
-        };
-      }
-
-      map[divisionName].orders =
-        Number(item.orders) || 0;
-
-      map[divisionName].completed =
-        Number(item.completed) || 0;
-    });
-
-    divisionSales.forEach((item) => {
-      const divisionName =
-        item.division || "UNKNOWN";
-
-      if (!map[divisionName]) {
-        map[divisionName] = {
-          division: divisionName,
-          orders: 0,
-          completed: 0,
-          sales: 0,
-        };
-      }
-
-      map[divisionName].sales =
-        Number(item.sales) || 0;
-    });
-
-    return Object.values(map);
   }, [
-    divisionOrders,
-    divisionSales,
+    dispatch,
+    period,
+    division,
   ]);
 
   /* =======================================================
-     FILTERED DIVISION DATA
+     DERIVED DATA
   ======================================================= */
+
+  const dashboardSummary =
+    useMemo(
+      () =>
+        createDashboardSummary(
+          summary
+        ),
+      [summary]
+    );
+
+  const weeklyOrders =
+    orders?.weekly || [];
+
+  const weeklySales =
+    sales?.weekly || [];
+
+  const divisionData =
+    useMemo(
+      () =>
+        createDivisionData(
+          orders?.division || [],
+          sales?.division || []
+        ),
+      [orders, sales]
+    );
 
   const filteredDivisionData =
     useMemo(() => {
-      if (division === DIVISION_TOTAL) {
+      if (
+        division ===
+        DIVISION_TOTAL
+      ) {
         return divisionData;
       }
 
       return divisionData.filter(
         (item) =>
-          item.division === division
+          item.division ===
+          division
       );
     }, [
       divisionData,
       division,
     ]);
 
-  /* =======================================================
-     SUMMARY
-  ======================================================= */
-
-  const dashboardSummary = useMemo(() => {
-    return {
-      orders:
-        Number(
-          summary?.ordersReceived
-        ) || 0,
-
-      completed:
-        Number(
-          summary?.ordersCompleted
-        ) || 0,
-
-      pending:
-        Number(
-          summary?.pendingOrders
-        ) || 0,
-
-      sales:
-        Number(summary?.sales) || 0,
-
-      previousOrders:
-        Number(
-          summary?.previousOrdersReceived
-        ) || 0,
-
-      previousCompleted:
-        Number(
-          summary?.previousOrdersCompleted
-        ) || 0,
-
-      previousPending:
-        Number(
-          summary?.previousPendingOrders
-        ) || 0,
-
-      previousSales:
-        Number(
-          summary?.previousSales
-        ) || 0,
-    };
-  }, [summary]);
-
-  /* =======================================================
-     COMPLETION RATE
-  ======================================================= */
-
-  const completionRate = useMemo(() => {
-    if (!dashboardSummary.orders) {
-      return 0;
-    }
-
-    return (
-      (dashboardSummary.completed /
-        dashboardSummary.orders) *
-      100
-    ).toFixed(1);
-  }, [
-    dashboardSummary.orders,
-    dashboardSummary.completed,
-  ]);
-
-  /* =======================================================
-     LOADING
-  ======================================================= */
-
   const isLoading =
-    loading?.summary ||
-    loading?.orders ||
-    loading?.sales;
+    Boolean(loading?.summary) ||
+    Boolean(loading?.orders) ||
+    Boolean(loading?.sales);
+
+  const hasError =
+    error?.summary ||
+    error?.orders ||
+    error?.sales;
 
   /* =======================================================
-     UI
+     RENDER
   ======================================================= */
 
   return (
     <Box
       sx={{
         width: "100%",
+        maxWidth: "100%",
         p: {
           xs: 1.5,
-          md: 2,
+          sm: 2,
+          md: 2.5,
         },
+        boxSizing: "border-box",
+        overflowX: "hidden",
       }}
     >
-      {/* ===================================================
-          HEADER
-      =================================================== */}
+      {/* HEADER */}
 
-      <Stack
-        direction={{
-          xs: "column",
-          md: "row",
-        }}
-        alignItems={{
-          xs: "flex-start",
-          md: "center",
-        }}
-        justifyContent="space-between"
-        spacing={2}
-        sx={{ mb: 2 }}
-      >
-        <Box>
-          <Typography
-            variant="h5"
-            fontWeight={800}
-          >
-            Management Dashboard
-          </Typography>
+      <DashboardHeader
+        period={period}
+        division={division}
+        onPeriodChange={setPeriod}
+        onDivisionChange={setDivision}
+      />
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            Orders, production completion
-            and sales performance
-          </Typography>
-        </Box>
+      {/* ERROR */}
 
-        <Stack
-          direction="row"
-          spacing={1}
-        >
-          {/* PERIOD */}
-
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 150,
-            }}
-          >
-            <InputLabel>
-              Period
-            </InputLabel>
-
-            <Select
-              value={period}
-              label="Period"
-              onChange={(e) =>
-                setPeriod(
-                  e.target.value
-                )
-              }
-            >
-              <MenuItem value="all">
-                All Data
-              </MenuItem>
-
-              <MenuItem value="week">
-                This Week
-              </MenuItem>
-
-              <MenuItem value="month">
-                This Month
-              </MenuItem>
-
-              <MenuItem value="year">
-                This Year
-              </MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* DIVISION */}
-
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 150,
-            }}
-          >
-            <InputLabel>
-              Division
-            </InputLabel>
-
-            <Select
-              value={division}
-              label="Division"
-              onChange={(e) =>
-                setDivision(
-                  e.target.value
-                )
-              }
-            >
-              <MenuItem
-                value={DIVISION_TOTAL}
-              >
-                All Divisions
-              </MenuItem>
-
-              <MenuItem value="WOVEN">
-                Woven
-              </MenuItem>
-
-              <MenuItem value="CROCHET">
-                Crochet
-              </MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
-      </Stack>
-
-      {/* ===================================================
-          ERROR
-      =================================================== */}
-
-      {(error?.summary ||
-        error?.orders ||
-        error?.sales) && (
+      {hasError && (
         <Card
           sx={{
             mb: 2,
@@ -576,6 +1010,7 @@ const AnalysisPage = () => {
             <Typography
               variant="body2"
               color="text.secondary"
+              sx={{ mt: 0.5 }}
             >
               {error.summary ||
                 error.orders ||
@@ -585,91 +1020,15 @@ const AnalysisPage = () => {
         </Card>
       )}
 
-      {/* ===================================================
-          KPI CARDS
-      =================================================== */}
+      {/* KPI */}
 
-      <Grid
-        container
-        spacing={2}
-      >
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3,
-          }}
-        >
-          <DashboardKpiCard
-            title="Orders Received"
-            value={
-              dashboardSummary.orders
-            }
-            previousValue={
-              dashboardSummary.previousOrders
-            }
-          />
-        </Grid>
+      <KpiGrid
+        summary={
+          dashboardSummary
+        }
+      />
 
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3,
-          }}
-        >
-          <DashboardKpiCard
-            title="Orders Completed"
-            value={
-              dashboardSummary.completed
-            }
-            previousValue={
-              dashboardSummary.previousCompleted
-            }
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3,
-          }}
-        >
-          <DashboardKpiCard
-            title="Pending Orders"
-            value={
-              dashboardSummary.pending
-            }
-            previousValue={
-              dashboardSummary.previousPending
-            }
-          />
-        </Grid>
-
-        <Grid
-          size={{
-            xs: 12,
-            sm: 6,
-            md: 3,
-          }}
-        >
-          <DashboardKpiCard
-            title="Sales"
-            value={
-              dashboardSummary.sales
-            }
-            previousValue={
-              dashboardSummary.previousSales
-            }
-            formatter={formatCurrency}
-          />
-        </Grid>
-      </Grid>
-
-      {/* ===================================================
-          COMPLETION SUMMARY
-      =================================================== */}
+      {/* SUMMARY */}
 
       <Grid
         container
@@ -681,47 +1040,16 @@ const AnalysisPage = () => {
             xs: 12,
             md: 4,
           }}
+          sx={{
+            display: "flex",
+            minWidth: 0,
+          }}
         >
-          <DashboardSection
-            title="Order Completion"
-            subtitle="Current period completion rate"
-          >
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-            >
-              <Box>
-                <Typography
-                  variant="h3"
-                  fontWeight={800}
-                >
-                  {completionRate}%
-                </Typography>
-
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  {formatNumber(
-                    dashboardSummary.completed
-                  )}{" "}
-                  of{" "}
-                  {formatNumber(
-                    dashboardSummary.orders
-                  )}{" "}
-                  orders completed
-                </Typography>
-              </Box>
-
-              <Typography
-                variant="h2"
-                fontWeight={800}
-              >
-                ✓
-              </Typography>
-            </Stack>
-          </DashboardSection>
+          <CompletionCard
+            summary={
+              dashboardSummary
+            }
+          />
         </Grid>
 
         <Grid
@@ -729,76 +1057,20 @@ const AnalysisPage = () => {
             xs: 12,
             md: 8,
           }}
+          sx={{
+            display: "flex",
+            minWidth: 0,
+          }}
         >
-          <DashboardSection
-            title="Quick Summary"
-            subtitle="Management overview"
-          >
-            <Grid
-              container
-              spacing={2}
-            >
-              <Grid size={4}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Orders
-                </Typography>
-
-                <Typography
-                  variant="h6"
-                  fontWeight={700}
-                >
-                  {formatNumber(
-                    dashboardSummary.orders
-                  )}
-                </Typography>
-              </Grid>
-
-              <Grid size={4}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Completed
-                </Typography>
-
-                <Typography
-                  variant="h6"
-                  fontWeight={700}
-                >
-                  {formatNumber(
-                    dashboardSummary.completed
-                  )}
-                </Typography>
-              </Grid>
-
-              <Grid size={4}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Sales
-                </Typography>
-
-                <Typography
-                  variant="h6"
-                  fontWeight={700}
-                >
-                  {formatCurrency(
-                    dashboardSummary.sales
-                  )}
-                </Typography>
-              </Grid>
-            </Grid>
-          </DashboardSection>
+          <QuickSummaryCard
+            summary={
+              dashboardSummary
+            }
+          />
         </Grid>
       </Grid>
 
-      {/* ===================================================
-          ORDER TREND
-      =================================================== */}
+      {/* ORDERS */}
 
       <Grid
         container
@@ -810,105 +1082,55 @@ const AnalysisPage = () => {
             xs: 12,
             md: 8,
           }}
+          sx={{
+            display: "flex",
+            minWidth: 0,
+          }}
         >
-          <DashboardSection
+          <DashboardCard
             title="Weekly Orders"
             subtitle="Orders received vs completed"
           >
-            <Box
-              sx={{
-                width: "100%",
-                height: 350,
-              }}
-            >
-              <ResponsiveContainer>
-                <BarChart
-                  data={weeklyOrders}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                  />
-
-                  <XAxis
-                    dataKey="week"
-                  />
-
-                  <YAxis />
-
-                  <Tooltip />
-
-                  <Legend />
-
-                  <Bar
-                    dataKey="orders"
-                    name="Orders Received"
-                  />
-
-                  <Bar
-                    dataKey="completed"
-                    name="Completed"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </Box>
-          </DashboardSection>
+            {weeklyOrders.length ? (
+              <OrdersChart
+                data={weeklyOrders}
+              />
+            ) : (
+              <EmptyChart
+                message="No weekly order data available"
+              />
+            )}
+          </DashboardCard>
         </Grid>
-
-        {/* =================================================
-            DIVISION ORDERS
-        ================================================= */}
 
         <Grid
           size={{
             xs: 12,
             md: 4,
           }}
+          sx={{
+            display: "flex",
+            minWidth: 0,
+          }}
         >
-          <DashboardSection
+          <DashboardCard
             title="Orders by Division"
             subtitle="Division-wise order distribution"
           >
-            <Box
-              sx={{
-                width: "100%",
-                height: 350,
-              }}
-            >
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={divisionData}
-                    dataKey="orders"
-                    nameKey="division"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={110}
-                    label
-                  >
-                    {divisionData.map(
-                      (entry) => (
-                        <Cell
-                          key={
-                            entry.division
-                          }
-                        />
-                      )
-                    )}
-                  </Pie>
-
-                  <Tooltip />
-
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </Box>
-          </DashboardSection>
+            {divisionData.length ? (
+              <DivisionPieChart
+                data={divisionData}
+              />
+            ) : (
+              <EmptyChart
+                message="No division order data available"
+              />
+            )}
+          </DashboardCard>
         </Grid>
       </Grid>
 
-      {/* ===================================================
-          SALES TREND
-      =================================================== */}
+      {/* SALES */}
 
       <Grid
         container
@@ -920,161 +1142,46 @@ const AnalysisPage = () => {
             xs: 12,
             md: 8,
           }}
+          sx={{
+            display: "flex",
+            minWidth: 0,
+          }}
         >
-          <DashboardSection
+          <DashboardCard
             title="Weekly Sales"
             subtitle="Sales value by week"
           >
-            <Box
-              sx={{
-                width: "100%",
-                height: 350,
-              }}
-            >
-              <ResponsiveContainer>
-                <LineChart
-                  data={weeklySales}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                  />
-
-                  <XAxis
-                    dataKey="week"
-                  />
-
-                  <YAxis
-                    tickFormatter={(value) =>
-                      `₹${(
-                        value / 100000
-                      ).toFixed(0)}L`
-                    }
-                  />
-
-                  <Tooltip
-                    formatter={(value) =>
-                      formatCurrency(value)
-                    }
-                  />
-
-                  <Legend />
-
-                  <Line
-                    type="monotone"
-                    dataKey="sales"
-                    name="Sales"
-                    strokeWidth={3}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
-          </DashboardSection>
+            {weeklySales.length ? (
+              <SalesChart
+                data={weeklySales}
+              />
+            ) : (
+              <EmptyChart
+                message="No weekly sales data available"
+              />
+            )}
+          </DashboardCard>
         </Grid>
-
-        {/* =================================================
-            DIVISION PERFORMANCE
-        ================================================= */}
 
         <Grid
           size={{
             xs: 12,
             md: 4,
           }}
+          sx={{
+            display: "flex",
+            minWidth: 0,
+          }}
         >
-          <DashboardSection
-            title="Division Performance"
-            subtitle="Orders and completion"
-          >
-            <Stack spacing={2}>
-              {filteredDivisionData.map(
-                (item) => {
-                  const rate =
-                    item.orders
-                      ? (
-                          (item.completed /
-                            item.orders) *
-                          100
-                        ).toFixed(1)
-                      : 0;
-
-                  return (
-                    <Box
-                      key={
-                        item.division
-                      }
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                      >
-                        <Typography
-                          fontWeight={700}
-                        >
-                          {item.division}
-                        </Typography>
-
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                        >
-                          {rate}% complete
-                        </Typography>
-                      </Stack>
-
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          mt: 0.5,
-                        }}
-                      >
-                        {formatNumber(
-                          item.orders
-                        )}{" "}
-                        orders ·{" "}
-                        {formatNumber(
-                          item.completed
-                        )}{" "}
-                        completed
-                      </Typography>
-
-                      <Typography
-                        variant="body2"
-                        fontWeight={700}
-                        sx={{
-                          mt: 0.5,
-                        }}
-                      >
-                        {formatCurrency(
-                          item.sales
-                        )}
-                      </Typography>
-
-                      <Divider
-                        sx={{
-                          mt: 1.5,
-                        }}
-                      />
-                    </Box>
-                  );
-                }
-              )}
-
-              {!filteredDivisionData.length && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
-                  No division data available.
-                </Typography>
-              )}
-            </Stack>
-          </DashboardSection>
+          <DivisionPerformance
+            data={
+              filteredDivisionData
+            }
+          />
         </Grid>
       </Grid>
 
-      {/* ===================================================
-          LOADING INDICATOR
-      =================================================== */}
+      {/* LOADING */}
 
       {isLoading && (
         <Typography
@@ -1089,6 +1196,33 @@ const AnalysisPage = () => {
           Updating analytics...
         </Typography>
       )}
+    </Box>
+  );
+};
+
+/* =========================================================
+   EMPTY CHART
+========================================================= */
+
+const EmptyChart = ({
+  message,
+}) => {
+  return (
+    <Box
+      sx={{
+        width: "100%",
+        height: 320,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Typography
+        variant="body2"
+        color="text.secondary"
+      >
+        {message}
+      </Typography>
     </Box>
   );
 };
