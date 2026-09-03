@@ -15,6 +15,8 @@ const persistConfig = {
     "product",
     "dispatch",
     "production",
+    "billing",
+    "analytics"
   ],
 };
 

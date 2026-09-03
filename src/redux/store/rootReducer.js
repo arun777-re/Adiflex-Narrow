@@ -9,6 +9,7 @@ import productReducer from '../slices/productSlice.jsx';
 import fgReducer from '../slices/fgSlice.jsx';
 import dashboardReducer from '../slices/dashboardSlice.jsx';
 import billingReducer from '../slices/billingSlice.jsx';
+import analyticsReducer from '../slices/analyticsSlice.jsx';
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -18,5 +19,6 @@ export const rootReducer = combineReducers({
   product:productReducer,
   fginventory:fgReducer,
   dashboard:dashboardReducer,
-  billing:billingReducer
+  billing:billingReducer,
+  analytics:analyticsReducer
 });

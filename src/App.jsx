@@ -19,6 +19,7 @@ import BillingPage from "./pages/billing/BillingPage";
 import CompleteBilling from "./pages/billing/CompleteBilling";
 import AdminProduction from "./pages/admin/AdminProduction";
 import JobWorkOrders from "./pages/Production/JobWorkOrders";
+import AnalysisPage from "./pages/admin/AnalysisPage";
 
 function App() {
 
@@ -77,7 +78,7 @@ function App() {
         />
           <Route
           path="/reports"
-          element={<Reports/>}
+          element={<AnalysisPage/>}
         />
           <Route
           path="/complete-dispatch"

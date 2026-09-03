@@ -24,7 +24,6 @@ import { getProcessStatus } from "../../utils/productionStatus.utils";
 
 const AdminProduction = () => {
   const dispatch = useDispatch();
-
   // ==========================================================
   // REDUX
   // ==========================================================
@@ -105,7 +104,7 @@ const AdminProduction = () => {
           soNo:
             order.soNo || "-",
             skucode:
-            order.skuCode || "-",
+            order.skucode || "-",
 
           cycleID:
             order.cycleID || "-",
