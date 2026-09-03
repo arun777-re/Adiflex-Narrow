@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
+import api from '../../services/api'
 
 // =========================================================
 // GET ALL ACTIVITIES
@@ -9,8 +9,8 @@ export const getAllActivities = createAsyncThunk(
   "activity/getAllActivities",
   async (date, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
-        "http://localhost:5000/activities/getAll",
+      const response = await api.get(
+        "/activities/getAll",
         {
           params: {
             date,
