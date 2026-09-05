@@ -23,6 +23,7 @@ import SalesOrderTable from "../../components/salesOrder/SalesOrderTable";
 
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSalesOrders } from "../../redux/slices/salesOrderSlice";
+import SalesOrderCards from "../../components/salesOrder/SalesOrderCards";
 
 const SalesOrder = () => {
   const dispatch = useDispatch();
@@ -34,6 +35,7 @@ const SalesOrder = () => {
   const [customer, setCustomer] = useState("All");
   const [dateFilter, setDateFilter] = useState("All");
   const [division, setDivision] = useState("All");
+  const [isTable, setTable] = useState(false);
 
   useEffect(() => {
     dispatch(fetchSalesOrders());
@@ -69,14 +71,58 @@ const SalesOrder = () => {
         .trim()
         .toLowerCase();
 
+    // Today's local date: YYYY-MM-DD
+    const today = new Date();
+
+    const todayStr = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, "0"),
+      String(today.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    // Start of current week - Sunday
+    const startOfWeek = new Date(today);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    // End of current week
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    // Start of current month
+    const startOfMonth = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+
+    // End of current month
+    const endOfMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
     return salesOrders.filter((row) => {
       const searchText = normalize(search);
 
+      // ================= SEARCH =================
       const matchesSearch =
         searchText === "" ||
         normalize(row.soNo).includes(searchText) ||
         normalize(row.customer).includes(searchText) ||
         normalize(row.product).includes(searchText);
+
+      // ================= STATUS =================
       const matchesStatus =
         status === "All" ||
         (status === "Pending" &&
@@ -86,40 +132,40 @@ const SalesOrder = () => {
           normalize(row.productionstatus) === "completed" &&
           normalize(row.dispatchstatus) === "dispatched");
 
+      // ================= CUSTOMER =================
       const matchesCustomer =
         customer === "All" || normalize(row.customer) === normalize(customer);
 
+      // ================= DIVISION =================
       const matchesDivision =
         division === "All" || normalize(row.division) === normalize(division);
 
+      // ================= DATE =================
       let matchesDate = true;
 
-      const today = new Date();
+      if (row.date && dateFilter !== "All") {
+        // Keep date as YYYY-MM-DD without UTC conversion
+        const rowDateStr = String(row.date).slice(0, 10);
 
-      if (dateFilter === "Today") {
-        matchesDate = row.date === today.toISOString().slice(0, 10);
-      }
+        if (dateFilter === "Today") {
+          matchesDate = rowDateStr === todayStr;
+        }
 
-      if (dateFilter === "This Week") {
-        const orderDate = new Date(row.date);
+        if (dateFilter === "This Week") {
+          const [year, month, day] = rowDateStr.split("-").map(Number);
 
-        const firstDay = new Date(today);
-        firstDay.setDate(today.getDate() - today.getDay());
-        firstDay.setHours(0, 0, 0, 0);
+          const orderDate = new Date(year, month - 1, day);
 
-        const lastDay = new Date(firstDay);
-        lastDay.setDate(firstDay.getDate() + 6);
-        lastDay.setHours(23, 59, 59, 999);
+          matchesDate = orderDate >= startOfWeek && orderDate <= endOfWeek;
+        }
 
-        matchesDate = orderDate >= firstDay && orderDate <= lastDay;
-      }
+        if (dateFilter === "This Month") {
+          const [year, month, day] = rowDateStr.split("-").map(Number);
 
-      if (dateFilter === "This Month") {
-        const orderDate = new Date(row.date);
+          const orderDate = new Date(year, month - 1, day);
 
-        matchesDate =
-          orderDate.getMonth() === today.getMonth() &&
-          orderDate.getFullYear() === today.getFullYear();
+          matchesDate = orderDate >= startOfMonth && orderDate <= endOfMonth;
+        }
       }
 
       return (
@@ -259,6 +305,10 @@ const SalesOrder = () => {
           borderRadius: 3,
           mb: 3,
           border: "1px solid #e5e7eb",
+          position:"sticky",
+          top:0,
+          zIndex: 1,
+          backgroundColor: "#fff",
         }}
       >
         <Grid container spacing={2}>
@@ -398,7 +448,23 @@ const SalesOrder = () => {
             minWidth: 0,
           }}
         >
-          <SalesOrderTable rows={filteredRows} loading={loading} />
+          <Button
+            variant="outlined"
+            onClick={() => setTable((prev) => !prev)}
+            sx={{
+              mb: 2,
+              ml: 3,
+              textTransform: "none",
+              fontWeight: 600,
+            }}
+          >
+            {isTable ? "View as Cards" : "View as Table"}
+          </Button>
+          {isTable ? (
+            <SalesOrderTable rows={filteredRows} loading={loading} />
+          ) : (
+            <SalesOrderCards rows={filteredRows} loading={loading} />
+          )}
         </Box>
       </Paper>
     </Box>

@@ -37,6 +37,18 @@ const SalesOrderTable = ({ rows = [], loading = false }) => {
         flex: 1.3,
       },
       {
+        field: "shippinglocation",
+        headerName: "Shipping Location",
+        minWidth: 220,
+        flex: 1.3,
+      },
+      {
+        field: "billinglocation",
+        headerName: "Billing Location",
+        minWidth: 220,
+        flex: 1.3,
+      },
+      {
         field: "productionstatus",
         headerName: "Production Status",
         minWidth: 160,
