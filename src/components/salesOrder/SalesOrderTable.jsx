@@ -49,6 +49,12 @@ const SalesOrderTable = ({ rows = [], loading = false }) => {
         flex: 1.3,
       },
       {
+        field: "route",
+        headerName: "Route",
+        minWidth: 220,
+        flex: 1.3,
+      },
+      {
         field: "productionstatus",
         headerName: "Production Status",
         minWidth: 160,

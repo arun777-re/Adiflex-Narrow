@@ -1,0 +1,107 @@
+
+/* ===============================
+   PRINT COMPONENT
+================================ */
+
+.sales-order-print {
+  display: none;
+}
+
+
+/* ===============================
+   PRINT MODE
+================================ */
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .sales-order-print,
+  .sales-order-print * {
+    visibility: visible;
+  }
+
+  .sales-order-print {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+    color: black;
+    padding: 10px;
+  }
+
+  /* ===============================
+     HEADER
+  ================================ */
+
+  .print-header {
+    margin-bottom: 15px;
+  }
+
+  .print-header h1 {
+    text-align: center;
+    font-size: 20px;
+    margin: 0 0 10px;
+  }
+
+  .print-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+
+  /* ===============================
+     TABLE
+  ================================ */
+
+  .sales-order-print table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8px;
+  }
+
+  .sales-order-print th,
+  .sales-order-print td {
+    border: 1px solid #333;
+    padding: 4px;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .sales-order-print th {
+    font-weight: 700;
+    background: #eee !important;
+  }
+
+  .sales-order-print tr {
+    page-break-inside: avoid;
+  }
+
+
+  /* ===============================
+     FOOTER
+  ================================ */
+
+  .print-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    font-size: 10px;
+  }
+
+
+  /* ===============================
+     PAGE
+  ================================ */
+
+  @page {
+    size: A3 landscape;
+    margin: 8mm;
+  }
+}
+

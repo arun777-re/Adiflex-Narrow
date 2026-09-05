@@ -12,6 +12,9 @@ import {
   Stack,
   Autocomplete,
 } from "@mui/material";
+import PrintIcon from "@mui/icons-material/Print";
+import SalesOrderPrint from "../../components/salesOrder/salesorder-print/SalesOrderPrint";
+import  "../../components/salesOrder/salesorder-print/SalesOrderPrint.css";
 
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -301,18 +304,17 @@ const SalesOrder = () => {
       <Paper
         elevation={0}
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 2.5, md: 3 },
           borderRadius: 3,
           mb: 3,
           border: "1px solid #e5e7eb",
-          position:"sticky",
-          top:0,
-          zIndex: 1,
           backgroundColor: "#fff",
         }}
       >
+        {/* ================= FILTERS ================= */}
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          {/* Search */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <TextField
               fullWidth
               size="small"
@@ -323,6 +325,7 @@ const SalesOrder = () => {
             />
           </Grid>
 
+          {/* Status */}
           <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <TextField
               fullWidth
@@ -339,6 +342,8 @@ const SalesOrder = () => {
               ))}
             </TextField>
           </Grid>
+
+          {/* Division */}
           <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <TextField
               fullWidth
@@ -349,14 +354,13 @@ const SalesOrder = () => {
               onChange={(e) => setDivision(e.target.value)}
             >
               <MenuItem value="All">All</MenuItem>
-
               <MenuItem value="Woven">Woven</MenuItem>
-
               <MenuItem value="Crochet">Crochet</MenuItem>
             </TextField>
           </Grid>
-          {/* customer search */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+
+          {/* Customer */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Autocomplete
               freeSolo
               options={customers}
@@ -379,6 +383,7 @@ const SalesOrder = () => {
             />
           </Grid>
 
+          {/* Date */}
           <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <TextField
               fullWidth
@@ -395,67 +400,95 @@ const SalesOrder = () => {
             </TextField>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 2 }} display="flex" alignItems="center">
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={() => dispatch(fetchSalesOrders())}
+          {/* ================= ACTIONS ================= */}
+          <Grid
+            size={{ xs: 12 }}
+            sx={{
+              display: "flex",
+              justifyContent: {
+                xs: "stretch",
+                sm: "flex-end",
+              },
+              mt: 0.5,
+            }}
+          >
+            <Stack
+              direction={{
+                xs: "column",
+                sm: "row",
+              }}
+              spacing={1.5}
               sx={{
-                height: 40,
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
+                width: {
+                  xs: "100%",
+                  sm: "auto",
+                },
               }}
             >
-              Refresh
-            </Button>
+              {/* Refresh */}
+              <Button
+                variant="contained"
+                startIcon={<RefreshIcon />}
+                onClick={() => dispatch(fetchSalesOrders())}
+                sx={{
+                  height: 40,
+                  minWidth: { xs: "100%", sm: 130 },
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Refresh
+              </Button>
+
+              {/* Print */}
+              <Button
+                variant="outlined"
+                startIcon={<PrintIcon />}
+                onClick={() => window.print()}
+                sx={{
+                  height: 40,
+                  minWidth: { xs: "100%", sm: 130 },
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Print
+              </Button>
+
+              {/* View Toggle */}
+              <Button
+                variant="outlined"
+                onClick={() => setTable((prev) => !prev)}
+                sx={{
+                  height: 40,
+                  minWidth: { xs: "100%", sm: 130 },
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                {isTable ? "Card View" : "Table View"}
+              </Button>
+            </Stack>
           </Grid>
         </Grid>
       </Paper>
 
       {/* Sales Order Table */}
-
-    <Box
-  sx={{
-    width: "100%",
-  }}
->
-        <Box
-          sx={{
-            px: 3,
-            py: 2,
-            borderBottom: "1px solid #eee",
-            bgcolor: "#fafafa",
-          }}
-        >
-          <Typography variant="h6" fontWeight={700}>
-            Sales Order List
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            Showing {filteredRows.length} of {salesOrders.length} Orders
-          </Typography>
-        </Box>
-
+      <Box
+        className="sales-order-print-area"
+        sx={{
+          width: "100%",
+        }}
+      >
         <Box
           sx={{
             overflowX: "auto",
             minWidth: 0,
           }}
         >
-          <Button
-            variant="outlined"
-            onClick={() => setTable((prev) => !prev)}
-            sx={{
-              mb: 2,
-              ml: 3,
-              textTransform: "none",
-              fontWeight: 600,
-            }}
-          >
-            {isTable ? "View as Cards" : "View as Table"}
-          </Button>
           {isTable ? (
             <SalesOrderTable rows={filteredRows} loading={loading} />
           ) : (
@@ -463,6 +496,8 @@ const SalesOrder = () => {
           )}
         </Box>
       </Box>
+      {/* print only */}
+      <SalesOrderPrint rows={filteredRows} />
     </Box>
   );
 };

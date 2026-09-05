@@ -245,6 +245,10 @@ const SalesOrderCard = ({ row }) => {
             label="Billing Location"
             value={row.billinglocation}
           />
+          <InfoItem
+            label="Route"
+            value={row.route}
+          />
 
           <InfoItem
             label="Created By"
