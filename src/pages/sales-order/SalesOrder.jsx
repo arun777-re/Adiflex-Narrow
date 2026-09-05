@@ -416,15 +416,11 @@ const SalesOrder = () => {
 
       {/* Sales Order Table */}
 
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: 1,
-          overflow: "hidden",
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 8px 24px rgba(0,0,0,.05)",
-        }}
-      >
+    <Box
+  sx={{
+    width: "100%",
+  }}
+>
         <Box
           sx={{
             px: 3,
@@ -466,7 +462,7 @@ const SalesOrder = () => {
             <SalesOrderCards rows={filteredRows} loading={loading} />
           )}
         </Box>
-      </Paper>
+      </Box>
     </Box>
   );
 };
