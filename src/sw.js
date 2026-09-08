@@ -1,5 +1,9 @@
 import { precacheAndRoute } from "workbox-precaching";
 import { clientsClaim } from "workbox-core";
+import {
+  NavigationRoute,
+  createHandlerBoundToURL,
+} from "workbox-routing";
 
 // New service worker ko immediately activate karo
 self.skipWaiting();
@@ -7,6 +11,24 @@ clientsClaim();
 
 // Vite PWA generated assets
 precacheAndRoute(self.__WB_MANIFEST);
+
+// =========================================================
+// SPA NAVIGATION
+// =========================================================
+
+// React Router ke routes ko index.html par fallback karo
+const navigationRoute = new NavigationRoute(
+  createHandlerBoundToURL("/index.html"),
+  {
+    allowlist: [/^\/.*$/],
+  }
+);
+
+registerRoute(navigationRoute);
+
+// =========================================================
+// PUSH NOTIFICATION
+// =========================================================
 
 self.addEventListener("push", (event) => {
   console.log("🔥 PUSH EVENT RECEIVED");
@@ -39,6 +61,10 @@ self.addEventListener("push", (event) => {
     )
   );
 });
+
+// =========================================================
+// NOTIFICATION CLICK
+// =========================================================
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();

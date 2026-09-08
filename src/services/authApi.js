@@ -1,8 +1,12 @@
+  import api from './api';
+  
+  const url = `${import.meta.env.VITE_API_URL}/auth`;
+
+
+
 export const loginUser = async (payload) => {
 
-  const url = `${import.meta.env.VITE_API_URL}/auth/login`;
-
-  const response = await fetch(url, {
+  const response = await fetch(`${url}/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -14,3 +18,8 @@ export const loginUser = async (payload) => {
 
   return data;
 };
+
+export const getAllUsers = async()=>{
+const response  = await api.get(`${url}/all-users`);
+return response.data;
+}

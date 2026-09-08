@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { loginUser } from "../../services/authApi";
+import { loginUser,getAllUsers } from "../../services/authApi";
+
 
 export const login = createAsyncThunk(
   "auth/login",
@@ -18,8 +19,21 @@ export const login = createAsyncThunk(
   },
 );
 
+export const getAllUsersData = createAsyncThunk(
+  "auth/getAllUsers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await getAllUsers();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
 const initialState = {
   user: null,
+  users:[],
   loading: false,
   error: null,
 };
@@ -50,6 +64,11 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(getAllUsersData.fulfilled, (state, action) => {
+        state.users = action.payload;
+        state.loading = false;
+        state.error = null;
       });
   },
 });

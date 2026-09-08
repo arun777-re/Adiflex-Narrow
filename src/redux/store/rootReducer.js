@@ -11,6 +11,7 @@ import dashboardReducer from '../slices/dashboardSlice.jsx';
 import billingReducer from '../slices/billingSlice.jsx';
 import analyticsReducer from '../slices/analyticsSlice.jsx';
 import activityReducer from '../slices/activitySlice.jsx';
+import dailyTaskReducer from '../slices/dailtTask.slice.jsx';
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -23,4 +24,5 @@ export const rootReducer = combineReducers({
   billing:billingReducer,
   analytics:analyticsReducer,
   activity:activityReducer,
+  dailyTask:dailyTaskReducer,
 });
