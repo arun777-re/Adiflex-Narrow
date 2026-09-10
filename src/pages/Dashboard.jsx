@@ -1,10 +1,3 @@
-import {
-  Grid,
-  Typography,
-  Paper,
-  Box,
-  Chip,
-} from "@mui/material";
 
 import {
   useSelector,

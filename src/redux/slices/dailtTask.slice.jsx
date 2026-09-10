@@ -1,5 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import api from "../../services/api";
+import { columnGroupsStateInitializer } from "@mui/x-data-grid/internals";
 
 const API_URL = `${import.meta.env.VITE_API_URL}/daily-tasks`;
 
@@ -72,12 +74,58 @@ export const updateDailyTask = createAsyncThunk(
   },
 );
 
+
+
+
+export const getDailyTaskEmployees = createAsyncThunk('/daily-tasks/employees',
+  async(userID,{rejectWithValue})=>{
+  try {
+    const response = await api.get("/daily-tasks/employee-gettasks",{
+      params:{userID}
+    });
+    return response.data;
+  } catch (error) {
+    console.error("❌ getDailyTaskEmployees error:",
+        error);
+
+        return rejectWithValue(error.response?.data?.message || "Failed to fetch employee daily tasks")
+  }
+});
+
+export const completeDailyTasks = createAsyncThunk(
+  "/daily-tasks/complete",
+  async ({ taskId, userID }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(
+        "/daily-tasks/complete-task",
+        {
+          taskId,
+          userID,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error(
+        "❌ completeDailyTasks error:",
+        error
+      );
+
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to complete daily task"
+      );
+    }
+  }
+);
+ 
+
 // =========================================================
 // INITIAL STATE
 // =========================================================
-
 const initialState = {
   tasks: [],
+  employeeTasks:[],
   loading: false,
   creating: false,
   updating: false,
@@ -192,7 +240,14 @@ const dailyTaskSlice = createSlice({
         state.updating = false;
         state.error = action.payload;
         state.success = false;
-      });
+      })
+      .addCase(getDailyTaskEmployees.fulfilled,(state,action)=>{
+        state.employeeTasks = action.payload;
+        state.error = null;
+        state.loading = false;
+      })
+      
+      ;
   },
 });
 

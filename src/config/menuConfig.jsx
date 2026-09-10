@@ -17,6 +17,7 @@ import FactCheckRoundedIcon from "@mui/icons-material/FactCheckRounded";
 import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 
 import { ROLES } from "./roles";
 
@@ -72,6 +73,12 @@ export const menuConfig = {
       id: 7,
       title: "Activity Log",
       path: "/activity-log",
+      icon: <HistoryRoundedIcon />,
+    },
+    {
+      id: 7,
+      title: "Tasks",
+      path: "/admin/daily-tasks",
       icon: <HistoryRoundedIcon />,
     },
   ],
@@ -224,4 +231,13 @@ export const menuConfig = {
       icon: <CheckCircleRoundedIcon />,
     },
   ],
+
+  [ROLES.EMPLOYEE]:[
+    {
+      id:1,
+      title:"Daily Tasks",
+      path:"/employee/daily-tasks",
+      icon:<AssignmentOutlinedIcon/>
+    }
+  ]
 };

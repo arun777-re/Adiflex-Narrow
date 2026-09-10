@@ -3,6 +3,7 @@ import { clientsClaim } from "workbox-core";
 import {
   NavigationRoute,
   createHandlerBoundToURL,
+  registerRoute
 } from "workbox-routing";
 
 // New service worker ko immediately activate karo
@@ -20,7 +21,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 const navigationRoute = new NavigationRoute(
   createHandlerBoundToURL("/index.html"),
   {
-    allowlist: [/^\/.*$/],
+    allowlist: [/.*/],
   }
 );
 

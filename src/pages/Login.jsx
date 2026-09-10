@@ -2,15 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import loginPic from "../assets/SR.Tech.png";
 import toast from "react-hot-toast";
+
 import {
   Box,
   Button,
   Card,
   CardContent,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   TextField,
   Typography,
 } from "@mui/material";
@@ -19,23 +16,22 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { login } from "../redux/slices/authSlices";
 
-import { loginData } from "../utils/loginRoleData";
 import { companyData } from "../utils/companyInfo";
 import { notificationAudio } from "../utils/audio";
 import { subscribeToPush } from "../service-worker/webpushworker";
 
 const Login = () => {
   const navigate = useNavigate();
-
   const dispatch = useDispatch();
 
   const { loading } = useSelector((state) => state.auth);
 
+  // ==========================================
+  // FORM DATA
+  // ==========================================
+
   const [formData, setFormData] = useState({
-    role: "",
-
-    division: "",
-
+    userID: "",
     password: "",
   });
 
@@ -46,36 +42,8 @@ const Login = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // ========================================
-    // ROLE CHANGE
-    // ========================================
-
-    if (name === "role") {
-      const selectedRole = loginData.find((item) => item.value === value);
-
-      const roleDivisions = selectedRole?.divisions || [];
-
-      const isOnlyAllDivision =
-        roleDivisions.length === 1 && roleDivisions[0] === "all";
-
-      setFormData((prev) => ({
-        ...prev,
-
-        role: value,
-
-        division: isOnlyAllDivision ? "all" : "",
-      }));
-
-      return;
-    }
-
-    // ========================================
-    // OTHER FIELDS
-    // ========================================
-
     setFormData((prev) => ({
       ...prev,
-
       [name]: value,
     }));
   };
@@ -92,51 +60,73 @@ const Login = () => {
 
       console.log("Login response:", data);
 
-      if (!data.success) {
-        toast.error("Either Role/Division/Password is incorrect");
+      if (!data?.success) {
+        toast.error("Invalid User ID or Password");
         return;
       }
 
-      // =========================================
-      // 🔔 SETUP WEB PUSH
-      // =========================================
+      // ==========================================
+      // LOGGED-IN USER
+      // ==========================================
+
+      const loggedInUser = data?.user;
+
+      console.log("Logged-in user:", loggedInUser);
+
+      // ==========================================
+      // WEB PUSH
+      // ==========================================
 
       try {
-        await subscribeToPush({ userId: data?.user?.userID });
+        await subscribeToPush({
+          userId: loggedInUser?.userID,
+        });
 
-        console.log("🔔 Push notification subscription completed");
+        console.log(
+          "🔔 Push notification subscription completed"
+        );
       } catch (error) {
-        // Push fail hone par LOGIN fail nahi hoga
-        console.error("❌ Push subscription failed:", error);
+        // Push fail hone par login fail nahi hoga
+        console.error(
+          "❌ Push subscription failed:",
+          error
+        );
       }
 
-      // =========================================
-      // 🔊 EXISTING AUDIO
-      // =========================================
+      // ==========================================
+      // LOGIN AUDIO
+      // ==========================================
 
-      await notificationAudio.play();
+      try {
+        await notificationAudio.play();
 
-      notificationAudio.pause();
-      notificationAudio.currentTime = 0;
+        notificationAudio.pause();
+        notificationAudio.currentTime = 0;
+      } catch (error) {
+        console.error(
+          "❌ Notification audio failed:",
+          error
+        );
+      }
+
+      // ==========================================
+      // DASHBOARD
+      // ==========================================
 
       navigate("/dashboard");
-    } catch (error) {
-      console.error(error);
 
-      toast.error("Either Role/Division/Password is incorrect");
+    } catch (error) {
+      console.error("❌ Login error:", error);
+
+      toast.error(
+        error || "Invalid User ID or Password"
+      );
     }
   };
 
   // ==========================================
-  // SELECTED ROLE
+  // UI
   // ==========================================
-
-  const selectedRole = loginData.find((item) => item.value === formData.role);
-
-  const allowedDivisions = selectedRole?.divisions || [];
-
-  const isAllDivisionOnly =
-    allowedDivisions.length === 1 && allowedDivisions[0] === "all";
 
   return (
     <Box
@@ -164,17 +154,15 @@ const Login = () => {
         },
 
         backgroundImage: `
-      linear-gradient(
-        rgba(0,0,0,.45),
-        rgba(0,0,0,.45)
-      ),
-      url(${loginPic})
-    `,
+          linear-gradient(
+            rgba(0,0,0,.45),
+            rgba(0,0,0,.45)
+          ),
+          url(${loginPic})
+        `,
 
         backgroundSize: "cover",
-
         backgroundPosition: "center",
-
         backgroundRepeat: "no-repeat",
       }}
     >
@@ -183,15 +171,22 @@ const Login = () => {
         sx={{
           width: 420,
 
+          maxWidth: "100%",
+
           background: "rgba(255,255,255,.95)",
 
           borderRadius: 4,
 
-          boxShadow: "0 30px 70px rgba(0,0,0,.45)",
+          boxShadow:
+            "0 30px 70px rgba(0,0,0,.45)",
 
           overflow: "hidden",
         }}
       >
+        {/* ================================= */}
+        {/* HEADER */}
+        {/* ================================= */}
+
         <Box
           sx={{
             background: "#1976d2",
@@ -199,14 +194,28 @@ const Login = () => {
             p: 3,
           }}
         >
-          <Typography variant="h5" fontWeight={700}>
+          <Typography
+            variant="h5"
+            fontWeight={700}
+          >
             {companyData.companyName}
           </Typography>
 
-          <Typography>{companyData.work}</Typography>
+          <Typography>
+            {companyData.work}
+          </Typography>
         </Box>
+
         <CardContent>
-          <Typography variant="h4" fontWeight={700} textAlign="center">
+          {/* ================================= */}
+          {/* TITLE */}
+          {/* ================================= */}
+
+          <Typography
+            variant="h4"
+            fontWeight={700}
+            textAlign="center"
+          >
             Welcome Back
           </Typography>
 
@@ -218,57 +227,30 @@ const Login = () => {
           >
             Login to S.R. Technologies ERP
           </Typography>
-          <Box component="form" onSubmit={handleSubmit}>
-            {/* ================================= */}
-            {/* ROLE */}
-            {/* ================================= */}
 
-            <FormControl fullWidth margin="normal" required>
-              <InputLabel>Role</InputLabel>
+          {/* ================================= */}
+          {/* FORM */}
+          {/* ================================= */}
 
-              <Select
-                name="role"
-                value={formData.role}
-                label="Role"
-                onChange={handleChange}
-              >
-                {loginData.map((item) => (
-                  <MenuItem key={item.id} value={item.value}>
-                    {item.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+          >
             {/* ================================= */}
-            {/* DIVISION */}
+            {/* USER ID */}
             {/* ================================= */}
 
-            <FormControl
+            <TextField
               fullWidth
               margin="normal"
               required
-              disabled={isAllDivisionOnly}
-            >
-              <InputLabel>Division</InputLabel>
-
-              <Select
-                name="division"
-                value={formData.division}
-                label="Division"
-                onChange={handleChange}
-              >
-                {allowedDivisions.map((division) => (
-                  <MenuItem key={division} value={division}>
-                    {division === "all"
-                      ? "All"
-                      : division === "woven"
-                        ? "Woven"
-                        : "Crochet"}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+              label="User ID"
+              name="userID"
+              value={formData.userID}
+              onChange={handleChange}
+              autoComplete="username"
+              autoFocus
+            />
 
             {/* ================================= */}
             {/* PASSWORD */}
@@ -283,6 +265,7 @@ const Login = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
+              autoComplete="current-password"
             />
 
             {/* ================================= */}
@@ -301,11 +284,19 @@ const Login = () => {
                 fontSize: 17,
                 fontWeight: 700,
                 textTransform: "none",
-                boxShadow: "0 10px 25px rgba(25,118,210,.35)",
+                boxShadow:
+                  "0 10px 25px rgba(25,118,210,.35)",
               }}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading
+                ? "Logging in..."
+                : "Login"}
             </Button>
+
+            {/* ================================= */}
+            {/* FOOTER */}
+            {/* ================================= */}
+
             <Typography
               variant="caption"
               display="block"

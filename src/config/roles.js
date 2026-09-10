@@ -7,4 +7,5 @@ export const ROLES = {
 
   SUPERVISOR: "supervisor",
   BILLING: "billing",
+  EMPLOYEE:"employee"
 };

@@ -17,6 +17,8 @@ import {
   Switch,
 } from "@mui/material";
 
+import { DataGrid } from "@mui/x-data-grid";
+
 import { useDispatch, useSelector } from "react-redux";
 
 import AddIcon from "@mui/icons-material/Add";
@@ -30,6 +32,7 @@ import {
   updateDailyTask,
   fetchDailyTasks,
 } from "../../../redux/slices/dailtTask.slice.jsx";
+
 import { getAllUsersData } from "../../../redux/slices/authSlices.jsx";
 
 // =========================================================
@@ -42,23 +45,16 @@ const TASK_TYPE = {
 };
 
 // =========================================================
-// DUMMY EMPLOYEES
-// =========================================================
-// Baad mein existing Users Redux/API se replace kar denge.
-
-
-
-// =========================================================
 // INITIAL FORM
 // =========================================================
 
 const initialForm = {
-  taskName: "",
   taskType: TASK_TYPE.DAILY,
   description: "",
   assignedTo: "",
   department: "",
-  priority: "Medium",
+  taskOrder: "",
+  priority: "",
   dueTime: "",
   active: true,
 };
@@ -79,11 +75,7 @@ const priorityColor = {
 // =========================================================
 
 const isTaskActive = (value) => {
-  return (
-    value === true ||
-    value === "TRUE" ||
-    value === "true"
-  );
+  return value === true || value === "TRUE" || value === "true";
 };
 
 // =========================================================
@@ -104,6 +96,12 @@ const DailyTaskAdmin = () => {
     updating,
   } = useSelector((state) => state.dailyTask);
 
+  // Logged-in user
+  const authUser = useSelector((state) => state.auth?.user?.user);
+
+  // Users
+  const users = useSelector((state) => state.auth?.users?.data || []);
+
   // =======================================================
   // LOCAL UI STATE
   // =======================================================
@@ -115,7 +113,7 @@ const DailyTaskAdmin = () => {
   const [form, setForm] = useState(initialForm);
 
   // =======================================================
-  // FETCH TASKS
+  // FETCH TASKS + USERS
   // =======================================================
 
   useEffect(() => {
@@ -123,17 +121,26 @@ const DailyTaskAdmin = () => {
     dispatch(getAllUsersData());
   }, [dispatch]);
 
-  const users = useSelector((state)=> state.auth?.users?.data || []);
+  // =======================================================
+  // EMPLOYEES
+  // =======================================================
+
   const employees = useMemo(() => {
-    return  users?.map((user) => ({
-        userId: user.userID,
-        name: user.name,
-        department: user.division,
-        role:user.role
-      }));
+    return users?.map((user) => ({
+      userId: user.userID,
+      name: user.name,
+      department: user.division,
+      role: user.role,
+    }));
   }, [users]);
 
-  console.log("👥 Employees:", employees,"Users...",users);
+  // =======================================================
+  // DEBUG
+  // =======================================================
+
+  console.log("👤 Auth User:", authUser);
+  console.log("👥 Employees:", employees);
+  console.log("📋 Tasks:", tasks);
 
   // =======================================================
   // KPI
@@ -142,11 +149,8 @@ const DailyTaskAdmin = () => {
   const totalTasks = tasks.length;
 
   const activeTasks = useMemo(
-    () =>
-      tasks.filter((task) =>
-        isTaskActive(task.active)
-      ).length,
-    [tasks]
+    () => tasks.filter((task) => isTaskActive(task.active)).length,
+    [tasks],
   );
 
   const inactiveTasks = totalTasks - activeTasks;
@@ -170,6 +174,12 @@ const DailyTaskAdmin = () => {
     setForm((prev) => ({
       ...prev,
       taskType,
+
+      // Daily ke liye priority nahi
+      priority: taskType === TASK_TYPE.DAILY ? "" : prev.priority || "Medium",
+
+      // Delegation ke liye task order nahi
+      taskOrder: taskType === TASK_TYPE.DELEGATION ? "" : prev.taskOrder || "",
     }));
   };
 
@@ -178,9 +188,7 @@ const DailyTaskAdmin = () => {
   // =======================================================
 
   const handleEmployeeChange = (userId) => {
-    const employee = employees.find(
-      (item) => item.userId === userId
-    );
+    const employee = employees.find((item) => item.userId === userId);
 
     setForm((prev) => ({
       ...prev,
@@ -199,6 +207,7 @@ const DailyTaskAdmin = () => {
     setForm({
       ...initialForm,
       taskType: TASK_TYPE.DAILY,
+      priority: "",
     });
 
     setDrawerOpen(true);
@@ -212,13 +221,20 @@ const DailyTaskAdmin = () => {
     setEditingTask(task);
 
     setForm({
-      taskName: task.taskName || "",
       taskType: task.taskType || TASK_TYPE.DAILY,
+
       description: task.description || "",
+
       assignedTo: task.assignedTo || "",
+
       department: task.department || "",
-      priority: task.priority || "Medium",
+
+      taskOrder: task.taskOrder || "",
+
+      priority: task.priority || "",
+
       dueTime: task.dueTime || "",
+
       active: isTaskActive(task.active),
     });
 
@@ -229,81 +245,98 @@ const DailyTaskAdmin = () => {
   // CREATE / UPDATE
   // =======================================================
 
-const handleSubmit = async () => {
-  if (!form.taskName.trim()) {
-    return;
-  }
-
-  if (!form.assignedTo) {
-    return;
-  }
-
-  try {
-    // =========================================================
-    // COMMON TASK DATA
-    // =========================================================
-
-    const taskData = {
-      taskName: form.taskName.trim(),
-      taskType: form.taskType,
-      description: form.description.trim(),
-      assignedTo: form.assignedTo,
-
-      // IMPORTANT:
-      // Yahan logged-in user ki actual ID deni hai.
-      // Field confirm karne ke baad exact kar denge.
-      assignedBy: authUser?.userId,
-
-      department: form.department,
-      priority: form.priority,
-      dueTime: form.dueTime,
-      active: form.active,
-    };
-
-    // =========================================================
-    // CREATE
-    // =========================================================
-
-    if (!editingTask) {
-      await dispatch(
-        createDailyTask(taskData)
-      ).unwrap();
+  const handleSubmit = async () => {
+    // Description validation
+    if (!form.description.trim()) {
+      console.warn("Description is required");
+      return;
     }
 
-    // =========================================================
-    // UPDATE
-    // =========================================================
-
-    else {
-      await dispatch(
-        updateDailyTask({
-          taskId: editingTask.taskId,
-          taskData,
-        })
-      ).unwrap();
+    // Assigned employee validation
+    if (!form.assignedTo) {
+      console.warn("Assigned To is required");
+      return;
     }
 
-    // =========================================================
-    // REFRESH
-    // =========================================================
+    // Daily task order validation
+    if (form.taskType === TASK_TYPE.DAILY && !form.taskOrder) {
+      console.warn("Task Order is required for Daily Task");
+      return;
+    }
 
-    dispatch(fetchDailyTasks());
+    // Delegation priority validation
+    if (form.taskType === TASK_TYPE.DELEGATION && !form.priority) {
+      console.warn("Priority is required for Delegation Task");
+      return;
+    }
 
-    // =========================================================
-    // RESET
-    // =========================================================
+    try {
+      // =====================================================
+      // TASK DATA
+      // =====================================================
 
-    setDrawerOpen(false);
-    setEditingTask(null);
-    setForm(initialForm);
+      const taskData = {
+        taskType: form.taskType,
 
-  } catch (error) {
-    console.error(
-      "Daily Task submit error:",
-      error
-    );
-  }
-};
+        description: form.description.trim(),
+
+        assignedTo: form.assignedTo,
+
+        // Logged-in admin
+        assignedBy: authUser?.userId,
+
+        department: form.department,
+
+        // Daily only
+        taskOrder: form.taskType === TASK_TYPE.DAILY ? form.taskOrder : "",
+
+        // Delegation only
+        priority: form.taskType === TASK_TYPE.DELEGATION ? form.priority : "",
+
+        dueTime: form.dueTime,
+
+        active: form.active,
+      };
+
+      console.log("📤 Task Data:", taskData);
+
+      // =====================================================
+      // CREATE
+      // =====================================================
+
+      if (!editingTask) {
+        await dispatch(createDailyTask(taskData)).unwrap();
+      }
+
+      // =====================================================
+      // UPDATE
+      // =====================================================
+      else {
+        await dispatch(
+          updateDailyTask({
+            taskId: editingTask.taskId,
+            taskData,
+          }),
+        ).unwrap();
+      }
+
+      // =====================================================
+      // REFRESH
+      // =====================================================
+
+      await dispatch(fetchDailyTasks());
+
+      // =====================================================
+      // RESET
+      // =====================================================
+
+      setDrawerOpen(false);
+      setEditingTask(null);
+      setForm(initialForm);
+    } catch (error) {
+      console.error("❌ Daily Task submit error:", error);
+    }
+  };
 
   // =======================================================
   // CLOSE DRAWER
@@ -316,18 +349,316 @@ const handleSubmit = async () => {
   };
 
   // =======================================================
+  // DATAGRID COLUMNS
+  // =======================================================
+
+  const columns = useMemo(
+    () => [
+      // ===================================================
+      // TASK ID
+      // ===================================================
+
+      {
+        field: "taskId",
+        headerName: "TASK ID",
+        width: 100,
+        sortable: true,
+      },
+
+      // ===================================================
+      // TASK TYPE
+      // ===================================================
+
+      {
+        field: "taskType",
+        headerName: "TASK TYPE",
+        width: 115,
+
+        renderCell: (params) => (
+          <Chip
+            size="small"
+            label={
+              params.value === TASK_TYPE.DELEGATION ? "Delegation" : "Daily"
+            }
+            color={params.value === TASK_TYPE.DELEGATION ? "warning" : "info"}
+            variant="outlined"
+            sx={{
+              height: 24,
+              fontSize: "0.7rem",
+            }}
+          />
+        ),
+      },
+
+      // ===================================================
+      // DESCRIPTION
+      // ===================================================
+
+      {
+        field: "description",
+        headerName: "DESCRIPTION",
+        width: 260,
+        sortable: true,
+
+        renderCell: (params) => (
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            noWrap
+            title={params.value || ""}
+          >
+            {params.value || "--"}
+          </Typography>
+        ),
+      },
+
+      // ===================================================
+      // ASSIGNED TO
+      // ===================================================
+
+      {
+        field: "assignedTo",
+        headerName: "ASSIGNED TO",
+        width: 155,
+
+        renderCell: (params) => {
+          const employee = employees.find(
+            (item) => item.userId === params.value,
+          );
+
+          return (
+            <Box
+              sx={{
+                overflow: "hidden",
+                width: "100%",
+              }}
+            >
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                noWrap
+                title={employee?.name || params.value || ""}
+              >
+                {employee?.name || params.value || "--"}
+              </Typography>
+
+              {employee?.role && (
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {employee.role}
+                </Typography>
+              )}
+            </Box>
+          );
+        },
+      },
+
+      // ===================================================
+      // ASSIGNED BY
+      // ===================================================
+
+      {
+        field: "assignedBy",
+        headerName: "ASSIGNED BY",
+        width: 120,
+
+        renderCell: (params) => (
+          <Typography variant="body2" noWrap title={params.value || ""}>
+            {params.value || "--"}
+          </Typography>
+        ),
+      },
+
+      // ===================================================
+      // DEPARTMENT
+      // ===================================================
+
+      {
+        field: "department",
+        headerName: "DEPARTMENT",
+        width: 120,
+
+        renderCell: (params) => (
+          <Typography variant="body2" noWrap title={params.value || ""}>
+            {params.value || "--"}
+          </Typography>
+        ),
+      },
+
+      // ===================================================
+      // TASK ORDER
+      // ===================================================
+
+      {
+        field: "taskOrder",
+        headerName: "TASK ORDER",
+        width: 95,
+        align: "center",
+        headerAlign: "center",
+
+        renderCell: (params) => {
+          if (params.row.taskType !== TASK_TYPE.DAILY) {
+            return "--";
+          }
+
+          return (
+            <Typography variant="body2" fontWeight={700}>
+              {params.value || "--"}
+            </Typography>
+          );
+        },
+      },
+
+      // ===================================================
+      // PRIORITY
+      // ===================================================
+
+      {
+        field: "priority",
+        headerName: "PRIORITY",
+        width: 100,
+
+        renderCell: (params) => {
+          if (params.row.taskType !== TASK_TYPE.DELEGATION) {
+            return "--";
+          }
+
+          return (
+            <Chip
+              size="small"
+              label={params.value || "--"}
+              color={priorityColor[params.value] || "default"}
+              sx={{
+                height: 24,
+                fontSize: "0.7rem",
+              }}
+            />
+          );
+        },
+      },
+
+      // ===================================================
+      // DUE TIME
+      // ===================================================
+
+      {
+        field: "dueTime",
+        headerName: "DUE TIME",
+        width: 90,
+
+        renderCell: (params) => (
+          <Typography variant="body2">{params.value || "--"}</Typography>
+        ),
+      },
+
+      // ===================================================
+      // ACTIVE
+      // ===================================================
+
+      {
+        field: "active",
+        headerName: "ACTIVE",
+        width: 95,
+
+        renderCell: (params) => {
+          const active = isTaskActive(params.value);
+
+          return (
+            <Chip
+              size="small"
+              label={active ? "Active" : "Inactive"}
+              color={active ? "success" : "default"}
+              variant={active ? "filled" : "outlined"}
+              sx={{
+                height: 24,
+                fontSize: "0.7rem",
+              }}
+            />
+          );
+        },
+      },
+
+      // ===================================================
+      // CREATED AT
+      // ===================================================
+
+      {
+        field: "createdAt",
+        headerName: "CREATED AT",
+        width: 155,
+
+        renderCell: (params) => (
+          <Typography variant="body2" noWrap title={params.value || ""}>
+            {params.value || "--"}
+          </Typography>
+        ),
+      },
+
+      // ===================================================
+      // UPDATED AT
+      // ===================================================
+
+      {
+        field: "updatedAt",
+        headerName: "UPDATED AT",
+        width: 155,
+
+        renderCell: (params) => (
+          <Typography variant="body2" noWrap title={params.value || ""}>
+            {params.value || "--"}
+          </Typography>
+        ),
+      },
+
+      // ===================================================
+      // ACTION
+      // ===================================================
+
+      {
+        field: "actions",
+        headerName: "ACTION",
+        width: 75,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+
+        renderCell: (params) => (
+          <IconButton size="small" onClick={() => handleOpenEdit(params.row)}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+        ),
+      },
+    ],
+    [employees],
+  );
+
+  // =======================================================
+  // DATAGRID ROWS
+  // =======================================================
+
+  const rows = useMemo(() => {
+    return tasks.map((task) => ({
+      ...task,
+
+      // DataGrid requires unique id
+      id: task.taskId,
+    }));
+  }, [tasks]);
+
+  // =======================================================
   // RENDER
   // =======================================================
 
   return (
     <Box sx={{ p: 3 }}>
-
       {/* =================================================
           HEADER
       ================================================= */}
 
       <Stack
-        direction={{ xs: "column", sm: "row" }}
+        direction={{
+          xs: "column",
+          sm: "row",
+        }}
         justifyContent="space-between"
         alignItems={{
           xs: "flex-start",
@@ -337,20 +668,12 @@ const handleSubmit = async () => {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography
-            variant="h5"
-            fontWeight={700}
-          >
+          <Typography variant="h5" fontWeight={700}>
             Task Management
           </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 0.5 }}
-          >
-            Manage recurring daily tasks and delegated
-            employee tasks
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Manage recurring daily tasks and delegated employee tasks
           </Typography>
         </Box>
 
@@ -367,17 +690,13 @@ const handleSubmit = async () => {
           KPI CARDS
       ================================================= */}
 
-      <Grid
-        container
-        spacing={2}
-        sx={{ mb: 3 }}
-      >
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* TOTAL */}
 
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper
             sx={{
-              p: 2.5,
+              p: 2,
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
@@ -389,18 +708,11 @@ const handleSubmit = async () => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Total Tasks
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  sx={{ mt: 0.5 }}
-                >
+                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
                   {totalTasks}
                 </Typography>
               </Box>
@@ -415,7 +727,7 @@ const handleSubmit = async () => {
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper
             sx={{
-              p: 2.5,
+              p: 2,
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
@@ -427,18 +739,11 @@ const handleSubmit = async () => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Active Tasks
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  sx={{ mt: 0.5 }}
-                >
+                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
                   {activeTasks}
                 </Typography>
               </Box>
@@ -453,7 +758,7 @@ const handleSubmit = async () => {
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper
             sx={{
-              p: 2.5,
+              p: 2,
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
@@ -465,18 +770,11 @@ const handleSubmit = async () => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Inactive Tasks
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  sx={{ mt: 0.5 }}
-                >
+                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
                   {inactiveTasks}
                 </Typography>
               </Box>
@@ -488,8 +786,8 @@ const handleSubmit = async () => {
       </Grid>
 
       {/* =================================================
-          TASK TABLE
-      ================================================= */}
+    TASK TABLE
+================================================= */}
 
       <Paper
         sx={{
@@ -499,272 +797,78 @@ const handleSubmit = async () => {
           borderColor: "divider",
         }}
       >
-        <Box sx={{ p: 2.5 }}>
-          <Typography
-            variant="h6"
-            fontWeight={700}
-          >
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h6" fontWeight={700}>
             Tasks
           </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 0.5 }}
-          >
-            Manage recurring daily tasks and one-time
-            delegated tasks.
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Manage recurring daily tasks and one-time delegated tasks.
           </Typography>
         </Box>
 
         <Divider />
 
-        <Box sx={{ overflowX: "auto" }}>
+        {/* =================================================
+      DATAGRID
+  ================================================= */}
 
-          <Box sx={{ minWidth: 1050 }}>
+        <Box
+          sx={{
+            width: "100%",
+            height: 500,
+          }}
+        >
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            loading={loading}
+            disableRowSelectionOnClick
+            rowHeight={42}
+            columnHeaderHeight={40}
+            hideFooter
+            sx={{
+              border: 0,
 
-            {/* TABLE HEADER */}
+              // DataGrid itself handles both scrolls
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: "action.hover",
+              },
 
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns:
-                  "100px 1.5fr 120px 140px 130px 100px 90px 70px",
-                alignItems: "center",
-                px: 2,
-                py: 1.5,
-                bgcolor: "action.hover",
-              }}
-            >
-              <Typography
-                variant="caption"
-                fontWeight={700}
-              >
-                TASK ID
-              </Typography>
+              "& .MuiDataGrid-columnHeaderTitle": {
+                fontWeight: 700,
+                fontSize: "0.72rem",
+              },
 
-              <Typography
-                variant="caption"
-                fontWeight={700}
-              >
-                TASK
-              </Typography>
+              "& .MuiDataGrid-cell": {
+                fontSize: "0.8rem",
+                py: 0.5,
+              },
 
-              <Typography
-                variant="caption"
-                fontWeight={700}
-              >
-                TYPE
-              </Typography>
+              "& .MuiDataGrid-row:hover": {
+                backgroundColor: "action.hover",
+              },
 
-              <Typography
-                variant="caption"
-                fontWeight={700}
-              >
-                ASSIGNED TO
-              </Typography>
+              "& .MuiDataGrid-cell:focus": {
+                outline: "none",
+              },
 
-              <Typography
-                variant="caption"
-                fontWeight={700}
-              >
-                DEPARTMENT
-              </Typography>
+              "& .MuiDataGrid-cell:focus-within": {
+                outline: "none",
+              },
 
-              <Typography
-                variant="caption"
-                fontWeight={700}
-              >
-                PRIORITY
-              </Typography>
+              // Compact scrollbar
+              "& ::-webkit-scrollbar": {
+                width: "8px",
+                height: "8px",
+              },
 
-              <Typography
-                variant="caption"
-                fontWeight={700}
-              >
-                STATUS
-              </Typography>
-
-              <Typography
-                variant="caption"
-                fontWeight={700}
-                textAlign="center"
-              >
-                ACTION
-              </Typography>
-            </Box>
-
-            {/* LOADING */}
-
-            {loading && (
-              <Box sx={{ p: 3 }}>
-                <Typography
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  Loading tasks...
-                </Typography>
-              </Box>
-            )}
-
-            {/* EMPTY */}
-
-            {!loading && tasks.length === 0 && (
-              <Box sx={{ p: 4 }}>
-                <Typography
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  No tasks found.
-                </Typography>
-              </Box>
-            )}
-
-            {/* TASK ROWS */}
-
-            {!loading &&
-              tasks.map((task) => {
-                const active = isTaskActive(
-                  task.active
-                );
-
-                const employee = employees.find(
-                  (item) =>
-                    item.userId === task.assignedTo
-                );
-
-                return (
-                  <Box
-                    key={task.taskId}
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "100px 1.5fr 120px 140px 130px 100px 90px 70px",
-                      alignItems: "center",
-                      px: 2,
-                      py: 1.5,
-                      borderTop: "1px solid",
-                      borderColor: "divider",
-
-                      "&:hover": {
-                        bgcolor: "action.hover",
-                      },
-                    }}
-                  >
-                    {/* TASK ID */}
-
-                    <Typography
-                      variant="body2"
-                      fontWeight={600}
-                    >
-                      {task.taskId}
-                    </Typography>
-
-                    {/* TASK */}
-
-                    <Box>
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                      >
-                        {task.taskName}
-                      </Typography>
-
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                      >
-                        {task.description || "--"}
-                      </Typography>
-                    </Box>
-
-                    {/* TYPE */}
-
-                    <Chip
-                      size="small"
-                      label={
-                        task.taskType ===
-                        TASK_TYPE.DELEGATION
-                          ? "Delegation"
-                          : "Daily"
-                      }
-                      color={
-                        task.taskType ===
-                        TASK_TYPE.DELEGATION
-                          ? "warning"
-                          : "info"
-                      }
-                      variant="outlined"
-                    />
-
-                    {/* ASSIGNED TO */}
-
-                    <Typography variant="body2">
-                      {employee?.name ||
-                        task.assignedTo ||
-                        "--"}
-                    </Typography>
-
-                    {/* DEPARTMENT */}
-
-                    <Typography variant="body2">
-                      {task.department || "--"}
-                    </Typography>
-
-                    {/* PRIORITY */}
-
-                    <Chip
-                      size="small"
-                      label={
-                        task.priority || "Medium"
-                      }
-                      color={
-                        priorityColor[
-                          task.priority
-                        ] || "default"
-                      }
-                    />
-
-                    {/* STATUS */}
-
-                    <Chip
-                      size="small"
-                      label={
-                        active
-                          ? "Active"
-                          : "Inactive"
-                      }
-                      color={
-                        active
-                          ? "success"
-                          : "default"
-                      }
-                      variant={
-                        active
-                          ? "filled"
-                          : "outlined"
-                      }
-                    />
-
-                    {/* ACTION */}
-
-                    <Stack
-                      direction="row"
-                      justifyContent="center"
-                    >
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          handleOpenEdit(task)
-                        }
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Stack>
-                  </Box>
-                );
-              })}
-          </Box>
+              "& ::-webkit-scrollbar-thumb": {
+                borderRadius: "4px",
+                backgroundColor: "rgba(0,0,0,0.25)",
+              },
+            }}
+          />
         </Box>
       </Paper>
 
@@ -772,11 +876,7 @@ const handleSubmit = async () => {
           CREATE / EDIT DRAWER
       ================================================= */}
 
-      <Drawer
-        anchor="right"
-        open={drawerOpen}
-        onClose={handleCloseDrawer}
-      >
+      <Drawer anchor="right" open={drawerOpen} onClose={handleCloseDrawer}>
         <Box
           sx={{
             width: {
@@ -788,13 +888,8 @@ const handleSubmit = async () => {
         >
           {/* TITLE */}
 
-          <Typography
-            variant="h6"
-            fontWeight={700}
-          >
-            {editingTask
-              ? "Edit Task"
-              : "Create Task"}
+          <Typography variant="h6" fontWeight={700}>
+            {editingTask ? "Edit Task" : "Create Task"}
           </Typography>
 
           <Typography
@@ -811,48 +906,39 @@ const handleSubmit = async () => {
           </Typography>
 
           <Stack spacing={2}>
-
-            {/* TASK TYPE */}
+            {/* =========================================
+                TASK TYPE
+            ========================================= */}
 
             <TextField
               select
               label="Task Type"
               fullWidth
               value={form.taskType}
-              onChange={(e) =>
-                handleTaskTypeChange(
-                  e.target.value
-                )
-              }
+              onChange={(e) => handleTaskTypeChange(e.target.value)}
             >
-              <MenuItem value={TASK_TYPE.DAILY}>
-                Daily Task
-              </MenuItem>
+              <MenuItem value={TASK_TYPE.DAILY}>Daily Task</MenuItem>
 
-              <MenuItem
-                value={TASK_TYPE.DELEGATION}
-              >
-                Delegation Task
-              </MenuItem>
+              <MenuItem value={TASK_TYPE.DELEGATION}>Delegation Task</MenuItem>
             </TextField>
 
-            {/* DESCRIPTION */}
+            {/* =========================================
+                DESCRIPTION
+            ========================================= */}
 
             <TextField
               label="Description"
+              required
               fullWidth
               multiline
               minRows={3}
               value={form.description}
-              onChange={(e) =>
-                handleChange(
-                  "description",
-                  e.target.value
-                )
-              }
+              onChange={(e) => handleChange("description", e.target.value)}
             />
 
-            {/* ASSIGNED TO */}
+            {/* =========================================
+                ASSIGNED TO
+            ========================================= */}
 
             <TextField
               select
@@ -860,24 +946,18 @@ const handleSubmit = async () => {
               required
               fullWidth
               value={form.assignedTo}
-              onChange={(e) =>
-                handleEmployeeChange(
-                  e.target.value
-                )
-              }
+              onChange={(e) => handleEmployeeChange(e.target.value)}
             >
               {employees.map((employee) => (
-                <MenuItem
-                  key={employee.userId}
-                  value={employee.userId}
-                >
-                  {employee.name} (
-                  {employee.userId})
+                <MenuItem key={employee.userId} value={employee.userId}>
+                  {employee.name} ({employee.userId})
                 </MenuItem>
               ))}
             </TextField>
 
-            {/* DEPARTMENT */}
+            {/* =========================================
+                DEPARTMENT
+            ========================================= */}
 
             <TextField
               label="Department"
@@ -888,72 +968,76 @@ const handleSubmit = async () => {
               }}
             />
 
-            {/* PRIORITY */}
+            {/* =========================================
+                TASK ORDER - DAILY ONLY
+            ========================================= */}
 
-            <TextField
-              select
-              label="Priority"
-              fullWidth
-              value={form.priority}
-              onChange={(e) =>
-                handleChange(
-                  "priority",
-                  e.target.value
-                )
-              }
-            >
-              <MenuItem value="Low">
-                Low
-              </MenuItem>
+            {form.taskType === TASK_TYPE.DAILY && (
+              <TextField
+                label="Task Order"
+                type="number"
+                required
+                fullWidth
+                value={form.taskOrder}
+                onChange={(e) => handleChange("taskOrder", e.target.value)}
+                inputProps={{
+                  min: 1,
+                }}
+                helperText="Sequence in which the daily task should be performed"
+              />
+            )}
 
-              <MenuItem value="Medium">
-                Medium
-              </MenuItem>
+            {/* =========================================
+                PRIORITY - DELEGATION ONLY
+            ========================================= */}
 
-              <MenuItem value="High">
-                High
-              </MenuItem>
+            {form.taskType === TASK_TYPE.DELEGATION && (
+              <TextField
+                select
+                label="Priority"
+                required
+                fullWidth
+                value={form.priority}
+                onChange={(e) => handleChange("priority", e.target.value)}
+              >
+                <MenuItem value="Low">Low</MenuItem>
 
-              <MenuItem value="Urgent">
-                Urgent
-              </MenuItem>
-            </TextField>
+                <MenuItem value="Medium">Medium</MenuItem>
 
-            {/* DUE TIME */}
+                <MenuItem value="High">High</MenuItem>
+
+                <MenuItem value="Urgent">Urgent</MenuItem>
+              </TextField>
+            )}
+
+            {/* =========================================
+                DUE TIME
+            ========================================= */}
 
             <TextField
               label="Due Time"
               type="time"
               fullWidth
               value={form.dueTime}
-              onChange={(e) =>
-                handleChange(
-                  "dueTime",
-                  e.target.value
-                )
-              }
+              onChange={(e) => handleChange("dueTime", e.target.value)}
               InputLabelProps={{
                 shrink: true,
               }}
             />
 
-            {/* ACTIVE */}
+            {/* =========================================
+                ACTIVE
+            ========================================= */}
 
             <FormControlLabel
               control={
                 <Switch
                   checked={form.active}
-                  onChange={(e) =>
-                    handleChange(
-                      "active",
-                      e.target.checked
-                    )
-                  }
+                  onChange={(e) => handleChange("active", e.target.checked)}
                 />
               }
               label={
-                form.taskType ===
-                TASK_TYPE.DELEGATION
+                form.taskType === TASK_TYPE.DELEGATION
                   ? "Active Task"
                   : "Active Recurring Task"
               }
@@ -961,19 +1045,15 @@ const handleSubmit = async () => {
 
             <Divider />
 
-            {/* ACTIONS */}
+            {/* =========================================
+                ACTIONS
+            ========================================= */}
 
-            <Stack
-              direction="row"
-              spacing={1.5}
-              justifyContent="flex-end"
-            >
+            <Stack direction="row" spacing={1.5} justifyContent="flex-end">
               <Button
                 variant="outlined"
                 onClick={handleCloseDrawer}
-                disabled={
-                  creating || updating
-                }
+                disabled={creating || updating}
               >
                 Cancel
               </Button>
@@ -981,9 +1061,7 @@ const handleSubmit = async () => {
               <Button
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={
-                  creating || updating
-                }
+                disabled={creating || updating}
               >
                 {creating
                   ? "Creating..."
@@ -994,7 +1072,6 @@ const handleSubmit = async () => {
                       : "Create Task"}
               </Button>
             </Stack>
-
           </Stack>
         </Box>
       </Drawer>

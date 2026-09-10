@@ -1,3 +1,4 @@
+import EmployeeDashboard from "../components/daily-tasks/EmployeeDashboard";
 import AdminDashBoard from "../components/dashboards/admin/AdminDashBoard";
 import BillingDashBoard from "../components/dashboards/BillingDashBoard";
 import DispatchDashBoard from "../components/dashboards/DispatchDashBoard";
@@ -10,4 +11,5 @@ export const DASHBOARD_COMPONENTS = {
   supervisor: MerchandiserDashBoard,
   dispatch: DispatchDashBoard,
   billing: BillingDashBoard,
+  employee:EmployeeDashboard
 };

@@ -21,6 +21,7 @@ import AdminProduction from "./pages/admin/AdminProduction";
 import JobWorkOrders from "./pages/Production/JobWorkOrders";
 import AnalysisPage from "./pages/admin/AnalysisPage";
 import DailyTaskAdmin from "./pages/daily-tasks/admin/DailyTaskAdmin";
+import DailyTaskEmployee from "./pages/daily-tasks/employee/DailyTaskEmployee";
 
 function App() {
 
@@ -104,6 +105,10 @@ function App() {
           <Route
           path="/admin/daily-tasks"
           element={<DailyTaskAdmin/>}
+        />
+          <Route
+          path="/employee/daily-tasks"
+          element={<DailyTaskEmployee/>}
         />
 
       </Route>
