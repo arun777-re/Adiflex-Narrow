@@ -1,8 +1,7 @@
-import { precacheAndRoute } from "workbox-precaching";
+import { precacheAndRoute,createHandlerBoundToURL } from "workbox-precaching";
 import { clientsClaim } from "workbox-core";
 import {
   NavigationRoute,
-  createHandlerBoundToURL,
   registerRoute
 } from "workbox-routing";
 
