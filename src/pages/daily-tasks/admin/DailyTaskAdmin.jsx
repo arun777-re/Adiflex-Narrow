@@ -34,6 +34,7 @@ import {
 } from "../../../redux/slices/dailtTask.slice.jsx";
 
 import { getAllUsersData } from "../../../redux/slices/authSlices.jsx";
+import ViewScoreOfEmployes from "./ViewScoreOfEmployes.jsx";
 
 // =========================================================
 // TASK TYPES
@@ -111,6 +112,9 @@ const DailyTaskAdmin = () => {
   const [editingTask, setEditingTask] = useState(null);
 
   const [form, setForm] = useState(initialForm);
+
+
+  const [viewScore,setViewScore] = useState(false);
 
   // =======================================================
   // FETCH TASKS + USERS
@@ -653,7 +657,10 @@ const DailyTaskAdmin = () => {
       {/* =================================================
           HEADER
       ================================================= */}
+            {/* if view card then show score of employess */}
+      {viewScore ?  <ViewScoreOfEmployes onBack={()=>setViewScore(prev=> !prev)}/> : (
 
+<>
       <Stack
         direction={{
           xs: "column",
@@ -676,6 +683,11 @@ const DailyTaskAdmin = () => {
             Manage recurring daily tasks and delegated employee tasks
           </Typography>
         </Box>
+        <Button variant="contained"
+        onClick={()=> setViewScore(prev => !prev)}
+        >
+          View Score Card
+        </Button>
 
         <Button
           variant="contained"
@@ -1075,6 +1087,10 @@ const DailyTaskAdmin = () => {
           </Stack>
         </Box>
       </Drawer>
+</>
+      )} 
+
+
     </Box>
   );
 };
