@@ -1,15 +1,20 @@
-
 import React from "react";
+
 import {
   Box,
   Card,
+  CardActions,
   CardContent,
   Chip,
   Divider,
   Grid,
+  IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
+
+import EditIcon from "@mui/icons-material/Edit";
 
 const InfoItem = ({ label, value }) => (
   <Box>
@@ -37,9 +42,12 @@ const InfoItem = ({ label, value }) => (
   </Box>
 );
 
-const SalesOrderCard = ({ row }) => {
-  const isProductionCompleted = row.productionstatus === "Completed";
-  const isDispatched = row.dispatchstatus === "Dispatched";
+const SalesOrderCard = ({ row, onEdit }) => {
+  const isProductionCompleted =
+    row.productionstatus === "Completed";
+
+  const isDispatched =
+    row.dispatchstatus === "Dispatched";
 
   return (
     <Card
@@ -59,6 +67,7 @@ const SalesOrderCard = ({ row }) => {
     >
       <CardContent sx={{ p: 2 }}>
         {/* ================= HEADER ================= */}
+
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -90,8 +99,16 @@ const SalesOrderCard = ({ row }) => {
           </Box>
 
           <Chip
-            label={isProductionCompleted ? "Completed" : "Pending Production"}
-            color={isProductionCompleted ? "success" : "warning"}
+            label={
+              isProductionCompleted
+                ? "Completed"
+                : "Pending Production"
+            }
+            color={
+              isProductionCompleted
+                ? "success"
+                : "warning"
+            }
             size="small"
             variant="outlined"
             sx={{
@@ -102,6 +119,7 @@ const SalesOrderCard = ({ row }) => {
         </Stack>
 
         {/* ================= PRODUCT ================= */}
+
         <Typography
           variant="subtitle1"
           sx={{
@@ -113,7 +131,13 @@ const SalesOrderCard = ({ row }) => {
           {row.product || "-"}
         </Typography>
 
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap mb={2}>
+        <Stack
+          direction="row"
+          spacing={1}
+          flexWrap="wrap"
+          useFlexGap
+          mb={2}
+        >
           <Chip
             label={`SKU: ${row.skucode || "-"}`}
             size="small"
@@ -136,9 +160,13 @@ const SalesOrderCard = ({ row }) => {
         <Divider sx={{ mb: 2 }} />
 
         {/* ================= MAIN INFO ================= */}
+
         <Grid container spacing={2}>
           <Grid item xs={6}>
-            <InfoItem label="Date" value={row.date} />
+            <InfoItem
+              label="Date"
+              value={row.date}
+            />
           </Grid>
 
           <Grid item xs={6}>
@@ -151,35 +179,45 @@ const SalesOrderCard = ({ row }) => {
           <Grid item xs={6}>
             <InfoItem
               label="Final Rate"
-              value={`₹ ${Number(row.finalrate || 0).toFixed(2)}`}
+              value={`₹ ${Number(
+                row.finalrate || 0
+              ).toFixed(2)}`}
             />
           </Grid>
 
           <Grid item xs={6}>
             <InfoItem
               label="Opening FG"
-              value={`${row.openingFgQty || 0} ${row.unit || ""}`}
+              value={`${row.openingFgQty || 0} ${
+                row.unit || ""
+              }`}
             />
           </Grid>
 
           <Grid item xs={6}>
             <InfoItem
               label="Production"
-              value={`${row.productionQty || 0} ${row.unit || ""}`}
+              value={`${row.productionQty || 0} ${
+                row.unit || ""
+              }`}
             />
           </Grid>
 
           <Grid item xs={6}>
             <InfoItem
               label="Manufactured"
-              value={`${row.manufacturedQty || 0} ${row.unit || ""}`}
+              value={`${row.manufacturedQty || 0} ${
+                row.unit || ""
+              }`}
             />
           </Grid>
 
           <Grid item xs={6}>
             <InfoItem
               label="Dispatched"
-              value={`${row.dispatchedQty || 0} ${row.unit || ""}`}
+              value={`${row.dispatchedQty || 0} ${
+                row.unit || ""
+              }`}
             />
           </Grid>
 
@@ -194,13 +232,17 @@ const SalesOrderCard = ({ row }) => {
         <Divider sx={{ my: 2 }} />
 
         {/* ================= STATUS ================= */}
+
         <Stack spacing={1}>
           <Stack
             direction="row"
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography variant="body2" fontWeight={600}>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+            >
               Production
             </Typography>
 
@@ -210,7 +252,11 @@ const SalesOrderCard = ({ row }) => {
                   ? "Completed"
                   : "Pending Production"
               }
-              color={isProductionCompleted ? "success" : "warning"}
+              color={
+                isProductionCompleted
+                  ? "success"
+                  : "warning"
+              }
               size="small"
             />
           </Stack>
@@ -220,13 +266,24 @@ const SalesOrderCard = ({ row }) => {
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography variant="body2" fontWeight={600}>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+            >
               Dispatch
             </Typography>
 
             <Chip
-              label={isDispatched ? "Dispatched" : "Pending Dispatch"}
-              color={isDispatched ? "success" : "warning"}
+              label={
+                isDispatched
+                  ? "Dispatched"
+                  : "Pending Dispatch"
+              }
+              color={
+                isDispatched
+                  ? "success"
+                  : "warning"
+              }
               size="small"
             />
           </Stack>
@@ -235,6 +292,7 @@ const SalesOrderCard = ({ row }) => {
         <Divider sx={{ my: 2 }} />
 
         {/* ================= LOCATIONS ================= */}
+
         <Stack spacing={1.5}>
           <InfoItem
             label="Shipping Location"
@@ -245,6 +303,7 @@ const SalesOrderCard = ({ row }) => {
             label="Billing Location"
             value={row.billinglocation}
           />
+
           <InfoItem
             label="Route"
             value={row.route}
@@ -256,9 +315,40 @@ const SalesOrderCard = ({ row }) => {
           />
         </Stack>
       </CardContent>
+
+      {/* ================= EDIT ACTION ================= */}
+
+      <CardActions
+        sx={{
+          px: 2,
+          py: 1.2,
+          borderTop: "1px solid #eeeeee",
+          backgroundColor: "#fafafa",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Tooltip title="Edit Sales Order">
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={() => onEdit?.(row)}
+            aria-label={`Edit sales order ${row.soNo}`}
+            sx={{
+              border: "1px solid",
+              borderColor: "primary.main",
+              borderRadius: 2,
+              "&:hover": {
+                backgroundColor: "primary.main",
+                color: "#fff",
+              },
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </CardActions>
     </Card>
   );
 };
 
 export default SalesOrderCard;
-

@@ -44,9 +44,13 @@ export const addSalesOrder = createAsyncThunk(
 export const editSalesOrder = createAsyncThunk(
   "salesOrders/update",
   async ({ soNo, payload }, { rejectWithValue }) => {
+    if(!soNo){
+      throw new Error("Sales Order No is required");
+    }
     try {
-      const data = await updateSalesOrder(soNo, payload);
-      return data.order;
+console.log("SoNo..................",soNo)
+      const data = await updateSalesOrder({soNO:soNo, payload:payload});
+      return data.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || error.message

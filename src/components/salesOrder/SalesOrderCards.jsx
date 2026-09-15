@@ -1,9 +1,12 @@
-
 import { Box, CircularProgress, Grid, Typography } from "@mui/material";
 
 import SalesOrderCard from "./SalesOrderCard";
 
-const SalesOrderCards = ({ rows = [], loading = false }) => {
+const SalesOrderCards = ({
+  rows = [],
+  loading = false,
+  onEdit,
+}) => {
   if (loading) {
     return (
       <Box
@@ -46,7 +49,10 @@ const SalesOrderCards = ({ rows = [], loading = false }) => {
           sm={6}
           lg={4}
         >
-          <SalesOrderCard row={row} />
+          <SalesOrderCard
+            row={row}
+            onEdit={onEdit}
+          />
         </Grid>
       ))}
     </Grid>

@@ -27,6 +27,7 @@ import SalesOrderTable from "../../components/salesOrder/SalesOrderTable";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSalesOrders } from "../../redux/slices/salesOrderSlice";
 import SalesOrderCards from "../../components/salesOrder/SalesOrderCards";
+import EditSalesOrderDialog from "../../components/salesOrder/EditSalesOrderDialog";
 
 const SalesOrder = () => {
   const dispatch = useDispatch();
@@ -39,6 +40,30 @@ const SalesOrder = () => {
   const [dateFilter, setDateFilter] = useState("All");
   const [division, setDivision] = useState("All");
   const [isTable, setTable] = useState(false);
+  // ================= EDIT SALES ORDER =================
+
+const [editOpen, setEditOpen] = useState(false);
+const [selectedOrder, setSelectedOrder] = useState(null);
+
+const handleEdit = (row) => {
+  console.log("Editing Sales Order:", row);
+
+  setSelectedOrder(row);
+  setEditOpen(true);
+};
+
+const handleEditClose = () => {
+  setEditOpen(false);
+  setSelectedOrder(null);
+};
+
+const handleEditSuccess = () => {
+  // Fresh data after update
+  dispatch(fetchSalesOrders());
+
+  setEditOpen(false);
+  setSelectedOrder(null);
+};
 
   useEffect(() => {
     dispatch(fetchSalesOrders());
@@ -492,12 +517,18 @@ const SalesOrder = () => {
           {isTable ? (
             <SalesOrderTable rows={filteredRows} loading={loading} />
           ) : (
-            <SalesOrderCards rows={filteredRows} loading={loading} />
+            <SalesOrderCards rows={filteredRows} loading={loading} onEdit={handleEdit} />
           )}
         </Box>
       </Box>
       {/* print only */}
       <SalesOrderPrint rows={filteredRows} />
+      <EditSalesOrderDialog 
+      open={editOpen}
+      row={selectedOrder}
+      onClose={handleEditClose}
+      onSuccess={handleEditSuccess}
+      />
     </Box>
   );
 };

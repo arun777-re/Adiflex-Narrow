@@ -13,8 +13,9 @@ export const createSalesOrder = async (payload) => {
   return data;
 };
 
-export const updateSalesOrder = async (payload,soNO) => {
-  const { data } = await api.post(`/sales-orders/${soNO}/status`, {
+export const updateSalesOrder = async ({payload,soNO}) => {
+  console.log("soNo2..............",soNO,"payload.....",payload);
+  const { data } = await api.patch(`/sales-orders/update/${soNO}`, {
     action: "updateSalesOrder",
     ...payload,
   });
