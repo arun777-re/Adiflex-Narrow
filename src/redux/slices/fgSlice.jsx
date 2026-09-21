@@ -5,6 +5,7 @@ import {
   consumeFGStock,
   addFGStock,
   allFGInventory,
+  updateFGStock,
 } from "../../services/fgApi";
 
 // ==========================================
@@ -75,6 +76,20 @@ export const addFG = createAsyncThunk(
     }
   },
 );
+
+
+// update fg stock 
+export const updateFG = createAsyncThunk("fg/update",
+  async({skucode,newFGQty},{rejectWithValue})=>{
+    console.log("fgggggfgfgfgfgfgfggf........",newFGQty)
+    try {
+      const res = await updateFGStock({skucode,newFGQty});
+      return res;
+    } catch (error) {
+       return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+)
 
 const initialState = {
   fgStock: null,
@@ -178,6 +193,11 @@ const fgSlice = createSlice({
       .addCase(addFG.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(updateFG.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.error = null;
       });
   },
 });

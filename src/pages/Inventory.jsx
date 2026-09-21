@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   Box,
@@ -7,38 +7,106 @@ import {
   Grid,
   TextField,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 
-import RefreshIcon from "@mui/icons-material/Refresh";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllFG, fetchFGAvailableQty } from "../redux/slices/fgSlice";
+import { fetchAllFG, updateFG } from "../redux/slices/fgSlice";
 import InventoryDataGrid from "../components/InventoryDataGrid";
 
 const Inventory = () => {
   const dispatch = useDispatch();
-  useEffect(() => {
-    dispatch(fetchAllFG())
-  }, []);
 
-  const {inventory,loading} = useSelector((state)=> state?.fginventory);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [newFGQty, setNewFGQty] = useState("");
+
+  useEffect(() => {
+    dispatch(fetchAllFG());
+  }, [dispatch]);
+
+  const { inventory, loading } = useSelector(
+    (state) => state?.fginventory
+  );
+
   const { user } = useSelector((state) => state.auth.user);
 
-let finalData = inventory?.data || [];
+  let finalData = inventory?.data || [];
 
-if (user?.division?.toLowerCase() !== "all") {
-  finalData = inventory?.data?.filter(
-    (item) =>
-      item[2]?.trim().toLowerCase() ===
-      user.division.trim().toLowerCase()
-  );
-}
-  const availableFGStock = Array.isArray(finalData) && finalData?.reduce((sum,item)=>sum + Number(item[4] || 0),0)
+  // -----------------------------
+  // Edit Stock
+  // -----------------------------
+  const handleEditStock = (item) => {
+    if (!item) return;
+
+    setSelectedItem(item);
+    setNewFGQty(item[4] ?? "");
+    setEditOpen(true);
+  };
+
+  // -----------------------------
+  // Close Edit Dialog
+  // -----------------------------
+  const handleCloseEdit = () => {
+    setEditOpen(false);
+    setSelectedItem(null);
+    setNewFGQty("");
+  };
+
+  if (user?.division?.toLowerCase() !== "all") {
+    finalData = inventory?.data?.filter(
+      (item) =>
+        item[2]?.trim().toLowerCase() ===
+        user.division.trim().toLowerCase()
+    );
+  }
+
+  const availableFGStock =
+    Array.isArray(finalData)
+      ? finalData.reduce(
+          (sum, item) => sum + Number(item[4] || 0),
+          0
+        )
+      : 0;
+
   const lowStockItemsLength =
-  Array.isArray(finalData)
-    ? finalData?.filter((i) => Number(i[4]) < 100).length
-    : 0;
+    Array.isArray(finalData)
+      ? finalData.filter((i) => Number(i[4]) < 100).length
+      : 0;
 
-    const outOfStockItemsLength = Array.isArray(finalData) ? finalData?.filter((i) => Number(i[4]) <=0 ).length : 0;
+  const outOfStockItemsLength =
+    Array.isArray(finalData)
+      ? finalData.filter((i) => Number(i[4]) <= 0).length
+      : 0;
+
+
+ // update stock functionallity
+const handleUpdateStock = async () => {
+  if (!selectedItem) return;
+  const skucode = selectedItem[0];
+  const qty = Number(newFGQty);
+
+  if (!Number.isFinite(qty) || qty < 0) {
+    return;
+  }
+  try {
+    console.log("fgfgfggfgStock in component bhai......l",qty);
+  const result =  await dispatch(updateFG({skucode,newFGQty:qty})).unwrap();
+    console.log("✅ Stock updated:", result);
+
+    // Close dialog
+    handleCloseEdit();
+
+    // Refresh inventory
+    dispatch(fetchAllFG());
+  } catch (error) {
+    console.error("❌ Stock update failed:", error);
+  }
+};
+
   return (
     <Box p={3}>
       {/* Heading */}
@@ -91,19 +159,73 @@ if (user?.division?.toLowerCase() !== "all") {
             </Typography>
 
             <Typography variant="h5">
-              {lowStockItemsLength}
+              {outOfStockItemsLength}
             </Typography>
           </Paper>
         </Grid>
       </Grid>
 
- 
-
       {/* DataGrid */}
-     
-        <InventoryDataGrid data={finalData || []}
-        loading = { loading}
-        />
+      <InventoryDataGrid
+        data={finalData || []}
+        loading={loading}
+        onEdit={handleEditStock}
+      />
+
+      {/* Edit Stock Dialog */}
+      <Dialog
+        open={editOpen}
+        onClose={handleCloseEdit}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>
+          Edit FG Stock
+        </DialogTitle>
+
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="SKU Code"
+            value={selectedItem?.[0] || ""}
+            disabled
+            margin="normal"
+          />
+
+          <TextField
+            fullWidth
+            label="Current FG Qty"
+            value={selectedItem?.[4] ?? ""}
+            disabled
+            margin="normal"
+          />
+
+          <TextField
+            fullWidth
+            label="New FG Qty"
+            type="number"
+            value={newFGQty}
+            onChange={(e) => setNewFGQty(e.target.value)}
+            margin="normal"
+            inputProps={{ min: 0 }}
+            autoFocus
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleCloseEdit}>
+            Cancel
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleUpdateStock}
+            disabled={newFGQty === ""}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

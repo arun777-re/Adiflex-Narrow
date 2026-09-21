@@ -463,10 +463,8 @@ const ProductionTable = ({ rows = [], loading = false }) => {
       // =================================================
 
       {
-        field: "division",
-
-        headerName: "Division",
-
+        field: "commitedDate",
+        headerName: "CommitedDate",
         width: 120,
       },
 
@@ -476,15 +474,10 @@ const ProductionTable = ({ rows = [], loading = false }) => {
 
       {
         field: "productionTargetQty",
-
         headerName: "Target Qty",
-
         type: "number",
-
         width: 130,
-
         align: "center",
-
         headerAlign: "center",
       },
 
