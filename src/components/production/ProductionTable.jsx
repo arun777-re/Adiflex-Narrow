@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 
 import {
@@ -18,143 +17,13 @@ import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import { DataGrid } from "@mui/x-data-grid";
 
 import UpdateProductionDialog from "./UpdateProductionDialog";
-
-// =====================================================
-// PROCESS ORDER
-// =====================================================
-
-const PROCESS_ORDER = [
-  {
-    key: "warping",
-    label: "Warping",
-    startField: "warpingStartAt",
-    endField: "warpingEndsAt",
-  },
-
-  {
-    key: "filling",
-    label: "Filling",
-    startField: "fillingStartAt",
-    endField: "fillingEndsAt",
-  },
-
-  {
-    key: "machine",
-    label: "Machine",
-    startField: "machineStartsAt",
-    endField: "machineEndsAt",
-  },
-
-  {
-    key: "finishing",
-    label: "Finishing",
-    startField: "finishingStartsAt",
-    endField: "finishingEndsAt",
-  },
-
-  {
-    key: "quality",
-    label: "Quality",
-    startField: "qualityStartsAt",
-    endField: "qualityEndsAt",
-  },
-
-  {
-    key: "rolling",
-    label: "Rolling",
-    startField: "rollingStartsAt",
-    endField: "rollingEndsAt",
-  },
-
-  {
-    key: "packing",
-    label: "Packing",
-    startField: "packingStartsAt",
-    endField: "packingEndsAt",
-  },
-];
-
-// =====================================================
-// GET CURRENT PROCESS
-// =====================================================
-
-const getCurrentProcess = (row) => {
-  // OLD / COMPLETED PRODUCTION CYCLE
-
-  if (
-    row.overAllStatus === "Cycle Completed" ||
-    row.overAllStatus === "Completed" ||
-    row.status === "Cycle Completed" ||
-    row.status === "Completed"
-  ) {
-    return {
-      key: null,
-      label: "Completed",
-      status: "Completed",
-    };
-  }
-
-  const processOrder = [];
-
-  // ===================================================
-  // JOB WORK
-  // ===================================================
-
-  if (row.isJobWork === true) {
-    processOrder.push({
-      key: "jobWork",
-      label: "Job Work",
-      startField: "jobWorkStartTime",
-      endField: "jobWorkEndTime",
-    });
-  }
-
-  // ===================================================
-  // NORMAL PRODUCTION PROCESSES
-  // ===================================================
-
-  processOrder.push(...PROCESS_ORDER);
-
-  // ===================================================
-  // FIND CURRENT PROCESS
-  // ===================================================
-
-  for (const process of processOrder) {
-    const startTime = row[process.startField];
-    const endTime = row[process.endField];
-
-    // COMPLETED
-    if (endTime) {
-      continue;
-    }
-
-    // IN PROGRESS
-    if (startTime) {
-      return {
-        key: process.key,
-        label: process.label,
-        status: "In Progress",
-      };
-    }
-
-    // PENDING
-    return {
-      key: process.key,
-      label: process.label,
-      status: "Pending",
-    };
-  }
-
-  // ===================================================
-  // ALL COMPLETED
-  // ===================================================
-
-  return {
-    key: null,
-    label: "Completed",
-    status: "Completed",
-  };
-};
+import {
+  PROCESS_ORDER,
+  getCurrentProcess,
+} from "../../constant/productionProcess";
+import PrintIcon from "@mui/icons-material/Print";
+import SalesOrderPrint from "../salesOrder/salesorder-print/SalesOrderPrint";
+import { productionPrintColumns } from "../../constant/printColumns/productionPrintColumn";
 
 // =====================================================
 // COMPONENT
@@ -214,27 +83,15 @@ const ProductionTable = ({ rows = [], loading = false }) => {
 
   const filterOptions = useMemo(() => {
     const divisions = [
-      ...new Set(
-        activeRows
-          .map((row) => row.division)
-          .filter(Boolean)
-      ),
+      ...new Set(activeRows.map((row) => row.division).filter(Boolean)),
     ].sort();
 
     const customers = [
-      ...new Set(
-        activeRows
-          .map((row) => row.customer)
-          .filter(Boolean)
-      ),
+      ...new Set(activeRows.map((row) => row.customer).filter(Boolean)),
     ].sort();
 
     const products = [
-      ...new Set(
-        activeRows
-          .map((row) => row.product)
-          .filter(Boolean)
-      ),
+      ...new Set(activeRows.map((row) => row.product).filter(Boolean)),
     ].sort();
 
     return {
@@ -271,8 +128,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
         .toLowerCase();
 
       const matchesSearch =
-        !searchValue ||
-        searchableText.includes(searchValue);
+        !searchValue || searchableText.includes(searchValue);
 
       // =================================================
       // DIVISION
@@ -295,24 +151,21 @@ const ProductionTable = ({ rows = [], loading = false }) => {
       // =================================================
 
       const matchesProduct =
-        productFilter === "all" ||
-        String(row.product || "") === productFilter;
+        productFilter === "all" || String(row.product || "") === productFilter;
 
       // =================================================
       // PROCESS
       // =================================================
 
       const matchesProcess =
-        processFilter === "all" ||
-        currentProcess.key === processFilter;
+        processFilter === "all" || currentProcess.key === processFilter;
 
       // =================================================
       // STATUS
       // =================================================
 
       const matchesStatus =
-        statusFilter === "all" ||
-        currentProcess.status === statusFilter;
+        statusFilter === "all" || currentProcess.status === statusFilter;
 
       // =================================================
       // QUICK FILTER
@@ -321,13 +174,11 @@ const ProductionTable = ({ rows = [], loading = false }) => {
       let matchesQuickFilter = true;
 
       if (quickFilter === "ready") {
-        matchesQuickFilter =
-          currentProcess.status === "Pending";
+        matchesQuickFilter = currentProcess.status === "Pending";
       }
 
       if (quickFilter === "progress") {
-        matchesQuickFilter =
-          currentProcess.status === "In Progress";
+        matchesQuickFilter = currentProcess.status === "In Progress";
       }
 
       // =================================================
@@ -522,8 +373,8 @@ const ProductionTable = ({ rows = [], loading = false }) => {
                 process.status === "Completed"
                   ? "success"
                   : process.status === "In Progress"
-                  ? "info"
-                  : "warning"
+                    ? "info"
+                    : "warning"
               }
               size="small"
             />
@@ -557,13 +408,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             color = "success";
           }
 
-          return (
-            <Chip
-              label={process.status}
-              color={color}
-              size="small"
-            />
-          );
+          return <Chip label={process.status} color={color} size="small" />;
         },
       },
 
@@ -587,11 +432,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
 
           if (process.status === "Completed") {
             return (
-              <Chip
-                label="Production Completed"
-                color="success"
-                size="small"
-              />
+              <Chip label="Production Completed" color="success" size="small" />
             );
           }
 
@@ -604,11 +445,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
                 color="primary"
                 size="small"
                 onClick={() =>
-                  handleProcessAction(
-                    params.row,
-                    "start",
-                    process.key
-                  )
+                  handleProcessAction(params.row, "start", process.key)
                 }
               >
                 Start {process.label}
@@ -625,11 +462,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
                 color="success"
                 size="small"
                 onClick={() =>
-                  handleProcessAction(
-                    params.row,
-                    "complete",
-                    process.key
-                  )
+                  handleProcessAction(params.row, "complete", process.key)
                 }
               >
                 Complete {process.label}
@@ -641,7 +474,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
         },
       },
     ],
-    []
+    [],
   );
 
   // =====================================================
@@ -675,27 +508,31 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             sx={{ mb: 2 }}
           >
             <Box>
-              <Typography
-                variant="h6"
-                fontWeight={700}
-              >
+              <Typography variant="h6" fontWeight={700}>
                 Production Planning
               </Typography>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-              >
-                Find production cycles that need
-                attention
+              <Typography variant="body2" color="text.secondary">
+                Find production cycles that need attention
               </Typography>
             </Box>
 
-            <Chip
-              label={`${filteredRows.length} Production Cycles`}
-              color="primary"
-              variant="outlined"
-            />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Chip
+                label={`${filteredRows.length} Production Cycles`}
+                color="primary"
+                variant="outlined"
+              />
+
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<PrintIcon />}
+                onClick={() => window.print()}
+              >
+                Print
+              </Button>
+            </Stack>
           </Stack>
 
           {/* =============================================
@@ -707,9 +544,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             size="small"
             placeholder="Search SO No, Customer, Product, Cycle ID..."
             value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
+            onChange={(e) => setSearch(e.target.value)}
             sx={{ mb: 2 }}
             InputProps={{
               startAdornment: (
@@ -742,24 +577,15 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               size="small"
               label="Division"
               value={divisionFilter}
-              onChange={(e) =>
-                setDivisionFilter(e.target.value)
-              }
+              onChange={(e) => setDivisionFilter(e.target.value)}
             >
-              <MenuItem value="all">
-                All Divisions
-              </MenuItem>
+              <MenuItem value="all">All Divisions</MenuItem>
 
-              {filterOptions.divisions.map(
-                (division) => (
-                  <MenuItem
-                    key={division}
-                    value={division}
-                  >
-                    {division}
-                  </MenuItem>
-                )
-              )}
+              {filterOptions.divisions.map((division) => (
+                <MenuItem key={division} value={division}>
+                  {division}
+                </MenuItem>
+              ))}
             </TextField>
 
             {/* CUSTOMER */}
@@ -769,24 +595,15 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               size="small"
               label="Customer"
               value={customerFilter}
-              onChange={(e) =>
-                setCustomerFilter(e.target.value)
-              }
+              onChange={(e) => setCustomerFilter(e.target.value)}
             >
-              <MenuItem value="all">
-                All Customers
-              </MenuItem>
+              <MenuItem value="all">All Customers</MenuItem>
 
-              {filterOptions.customers.map(
-                (customer) => (
-                  <MenuItem
-                    key={customer}
-                    value={customer}
-                  >
-                    {customer}
-                  </MenuItem>
-                )
-              )}
+              {filterOptions.customers.map((customer) => (
+                <MenuItem key={customer} value={customer}>
+                  {customer}
+                </MenuItem>
+              ))}
             </TextField>
 
             {/* PRODUCT */}
@@ -796,24 +613,15 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               size="small"
               label="Product"
               value={productFilter}
-              onChange={(e) =>
-                setProductFilter(e.target.value)
-              }
+              onChange={(e) => setProductFilter(e.target.value)}
             >
-              <MenuItem value="all">
-                All Products
-              </MenuItem>
+              <MenuItem value="all">All Products</MenuItem>
 
-              {filterOptions.products.map(
-                (product) => (
-                  <MenuItem
-                    key={product}
-                    value={product}
-                  >
-                    {product}
-                  </MenuItem>
-                )
-              )}
+              {filterOptions.products.map((product) => (
+                <MenuItem key={product} value={product}>
+                  {product}
+                </MenuItem>
+              ))}
             </TextField>
 
             {/* PROCESS */}
@@ -823,26 +631,17 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               size="small"
               label="Process"
               value={processFilter}
-              onChange={(e) =>
-                setProcessFilter(e.target.value)
-              }
+              onChange={(e) => setProcessFilter(e.target.value)}
             >
-              <MenuItem value="all">
-                All Processes
-              </MenuItem>
+              <MenuItem value="all">All Processes</MenuItem>
 
               {PROCESS_ORDER.map((process) => (
-                <MenuItem
-                  key={process.key}
-                  value={process.key}
-                >
+                <MenuItem key={process.key} value={process.key}>
                   {process.label}
                 </MenuItem>
               ))}
 
-              <MenuItem value="jobWork">
-                Job Work
-              </MenuItem>
+              <MenuItem value="jobWork">Job Work</MenuItem>
             </TextField>
 
             {/* STATUS */}
@@ -852,21 +651,13 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               size="small"
               label="Status"
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value)
-              }
+              onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <MenuItem value="all">
-                All Status
-              </MenuItem>
+              <MenuItem value="all">All Status</MenuItem>
 
-              <MenuItem value="Pending">
-                Pending
-              </MenuItem>
+              <MenuItem value="Pending">Pending</MenuItem>
 
-              <MenuItem value="In Progress">
-                In Progress
-              </MenuItem>
+              <MenuItem value="In Progress">In Progress</MenuItem>
             </TextField>
           </Box>
 
@@ -894,44 +685,26 @@ const ProductionTable = ({ rows = [], loading = false }) => {
 
             <Button
               size="small"
-              variant={
-                quickFilter === "all"
-                  ? "contained"
-                  : "outlined"
-              }
-              onClick={() =>
-                setQuickFilter("all")
-              }
+              variant={quickFilter === "all" ? "contained" : "outlined"}
+              onClick={() => setQuickFilter("all")}
             >
               All
             </Button>
 
             <Button
               size="small"
-              variant={
-                quickFilter === "ready"
-                  ? "contained"
-                  : "outlined"
-              }
+              variant={quickFilter === "ready" ? "contained" : "outlined"}
               color="warning"
-              onClick={() =>
-                setQuickFilter("ready")
-              }
+              onClick={() => setQuickFilter("ready")}
             >
               Ready to Start
             </Button>
 
             <Button
               size="small"
-              variant={
-                quickFilter === "progress"
-                  ? "contained"
-                  : "outlined"
-              }
+              variant={quickFilter === "progress" ? "contained" : "outlined"}
               color="info"
-              onClick={() =>
-                setQuickFilter("progress")
-              }
+              onClick={() => setQuickFilter("progress")}
             >
               In Progress
             </Button>
@@ -942,9 +715,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               size="small"
               variant="outlined"
               color="error"
-              startIcon={
-                <FilterAltOffIcon />
-              }
+              startIcon={<FilterAltOffIcon />}
               onClick={handleResetFilters}
               sx={{ ml: "auto" }}
             >
@@ -968,9 +739,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             rows={filteredRows}
             columns={columns}
             loading={loading}
-            getRowId={(row) =>
-              row.id || row.cycleID
-            }
+            getRowId={(row) => row.id || row.cycleID}
             disableRowSelectionOnClick
             density="compact"
             pageSizeOptions={[10, 20, 50]}
@@ -1000,7 +769,23 @@ const ProductionTable = ({ rows = [], loading = false }) => {
           />
         </Box>
       </Box>
+      {/* =================================================
+          PRINT ONLY
+      ================================================= */}
 
+      <Box className="production-print-only">
+        <SalesOrderPrint
+          title="PRODUCTION PLANNING REPORT"
+          rows={filteredRows}
+          columns={productionPrintColumns}
+          meta={[
+            {
+              label: "Production Cycles",
+              value: filteredRows.length,
+            },
+          ]}
+        />
+      </Box>
       {/* =================================================
           PROCESS DIALOG
       ================================================= */}
@@ -1017,4 +802,3 @@ const ProductionTable = ({ rows = [], loading = false }) => {
 };
 
 export default ProductionTable;
-

@@ -30,6 +30,7 @@ import EditSalesOrderDialog from "../../components/salesOrder/EditSalesOrderDial
 
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSalesOrders } from "../../redux/slices/salesOrderSlice";
+import { salesOrderColumns } from "../../constant/printColumns/salesPrintColumns";
 
 const SalesOrder = () => {
   const dispatch = useDispatch();
@@ -602,11 +603,10 @@ const SalesOrder = () => {
 
       <Box
         className="sales-order-print-only"
-        sx={{
-          display: "none",
-        }}
+ 
       >
-        <SalesOrderPrint rows={filteredRows} />
+        <SalesOrderPrint title="SALES ORDER REPORT" rows={filteredRows}
+        columns={salesOrderColumns} />
       </Box>
 
       {/* =========================================
