@@ -192,15 +192,15 @@ console.table(
 
       {
         field: "dispatchQty",
-        headerName: "Dispatch Qty",
-        width: 140,
+        headerName: "DispatchQty",
+        width: 120,
         type: "number",
       },
 
       {
         field: "availableQty",
         headerName: "Available Qty",
-        width: 140,
+        width: 120,
         type: "number",
       },
 
@@ -224,13 +224,6 @@ console.table(
         headerName: "Created At",
         width: 170,
       },
-
-      {
-        field: "updatedAt",
-        headerName: "Updated At",
-        width: 170,
-      },
-
       {
         field: "action",
         headerName: "Action",

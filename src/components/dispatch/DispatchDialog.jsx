@@ -51,11 +51,11 @@ const DispatchDialog = ({
         product: order.product,
         vehicleNo: data.vehicleNo.trim(),
         driverName: data.driverName.trim(),
-        partyPO:order.partyPO,
+        partyPO: order.partyPO,
         freight,
-        customer:order.customer,
+        customer: order.customer,
         freightRs: freight ? Number(data.freightRs) : 0,
-
+        boxes: data.boxes,
         dispatchQty: Number(data.dispatchQty),
       }),
     );
@@ -158,6 +158,40 @@ const DispatchDialog = ({
               required: "Driver Name is required",
               validate: (value) =>
                 value.trim() !== "" || "Driver Name is required",
+            })}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label="Boxes / Cartridge"
+            margin="normal"
+            inputProps={{
+              min: 1,
+              step: 1,
+            }}
+            error={!!errors.boxes}
+            helperText={errors.boxes?.message}
+            {...register("boxes", {
+              required: "Boxes / Cartridge is required",
+
+              valueAsNumber: true,
+
+              min: {
+                value: 1,
+                message: "Boxes / Cartridge must be at least 1",
+              },
+
+              validate: (value) => {
+                if (
+                  value === undefined ||
+                  value === null ||
+                  Number.isNaN(Number(value))
+                ) {
+                  return "Please enter valid Boxes / Cartridge";
+                }
+
+                return true;
+              },
             })}
           />
           <TextField

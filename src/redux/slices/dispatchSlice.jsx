@@ -31,6 +31,7 @@ export const dispatchOrder = createAsyncThunk(
   "dispatch/dispatchOrder",
 
   async (payload, thunkAPI) => {
+    console.log("payload from dispatch page.....",payload)
     try {
       const response = await api.post(
         "/dispatch",

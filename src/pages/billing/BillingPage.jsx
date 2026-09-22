@@ -162,13 +162,13 @@ const BillingPage = () => {
       {
         field: "soNo",
         headerName: "SO No",
-        width: 130,
+        width: 80,
       },
 
       {
         field: "skuCode",
-        headerName: "SKU Code",
-        width: 120,
+        headerName: "SKUCode",
+        width: 80,
       },
       {
         field: "shippinglocation",
@@ -183,7 +183,7 @@ const BillingPage = () => {
       {
         field: "product",
         headerName: "Product",
-        minWidth: 240,
+        minWidth: 200,
         flex: 1,
       },
 
@@ -196,25 +196,43 @@ const BillingPage = () => {
       {
         field: "partyPO",
         headerName: "Party PO",
-        width: 120,
+        width: 80,
       },
 
       {
         field: "route",
         headerName: "Route",
-        width: 120,
+        width: 140,
       },
 
       {
         field: "division",
         headerName: "Division",
-        width: 110,
+        width: 80,
       },
 
       {
         field: "dispatchQty",
         headerName: "Dispatch Qty",
-        width: 120,
+        width: 100,
+        type: "number",
+      },
+      {
+        field: "vehicleNo",
+        headerName: "VehicleNo",
+        width: 100,
+        type: "number",
+      },
+      {
+        field: "driverName",
+        headerName: "DriverName",
+        width: 100,
+        type: "number",
+      },
+      {
+        field: "boxes",
+        headerName: "Box/Cartridge",
+        width: 100,
         type: "number",
       },
 
