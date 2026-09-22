@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+
 import {
   Box,
   Paper,
@@ -12,94 +13,150 @@ import {
   Stack,
   Autocomplete,
 } from "@mui/material";
-import PrintIcon from "@mui/icons-material/Print";
-import SalesOrderPrint from "../../components/salesOrder/salesorder-print/SalesOrderPrint";
-import  "../../components/salesOrder/salesorder-print/SalesOrderPrint.css";
 
+import PrintIcon from "@mui/icons-material/Print";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 
+import SalesOrderPrint from "../../components/salesOrder/salesorder-print/SalesOrderPrint";
+import "../../components/salesOrder/salesorder-print/SalesOrderPrint.css";
+
 import SalesOrderTable from "../../components/salesOrder/SalesOrderTable";
+import SalesOrderCards from "../../components/salesOrder/SalesOrderCards";
+import EditSalesOrderDialog from "../../components/salesOrder/EditSalesOrderDialog";
 
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSalesOrders } from "../../redux/slices/salesOrderSlice";
-import SalesOrderCards from "../../components/salesOrder/SalesOrderCards";
-import EditSalesOrderDialog from "../../components/salesOrder/EditSalesOrderDialog";
 
 const SalesOrder = () => {
   const dispatch = useDispatch();
 
-  const { salesOrders, loading } = useSelector((state) => state.salesOrder);
+  const { salesOrders = [], loading } = useSelector(
+    (state) => state.salesOrder,
+  );
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [customer, setCustomer] = useState("All");
   const [dateFilter, setDateFilter] = useState("All");
   const [division, setDivision] = useState("All");
-  const [isTable, setTable] = useState(false);
-  // ================= EDIT SALES ORDER =================
 
-const [editOpen, setEditOpen] = useState(false);
-const [selectedOrder, setSelectedOrder] = useState(null);
+  // Table by default = better for large datasets
+  const [isTable, setTable] = useState(true);
 
-const handleEdit = (row) => {
-  console.log("Editing Sales Order:", row);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
-  setSelectedOrder(row);
-  setEditOpen(true);
-};
+  // --------------------------------------------------
+  // FETCH SALES ORDERS
+  // --------------------------------------------------
 
-const handleEditClose = () => {
-  setEditOpen(false);
-  setSelectedOrder(null);
-};
-
-const handleEditSuccess = () => {
-  // Fresh data after update
-  dispatch(fetchSalesOrders());
-
-  setEditOpen(false);
-  setSelectedOrder(null);
-};
-
-  useEffect(() => {
+  const loadSalesOrders = useCallback(() => {
     dispatch(fetchSalesOrders());
   }, [dispatch]);
 
-  console.log("salesOrders12345", salesOrders);
-  const customers = [
-    "All",
-    ...new Set(salesOrders.map((item) => item.customer).filter(Boolean)),
-  ];
+  useEffect(() => {
+    loadSalesOrders();
+  }, [loadSalesOrders]);
 
-  const totalOrders = salesOrders.length;
+  // --------------------------------------------------
+  // EDIT
+  // --------------------------------------------------
 
-  const pendingOrders = salesOrders.filter(
-    (item) =>
-      item.productionstatus === "Pending Production" ||
-      item.dispatchstatus === "Pending Dispatch",
-  ).length;
+  const handleEdit = useCallback((row) => {
+    setSelectedOrder(row);
+    setEditOpen(true);
+  }, []);
 
-  const completedOrders = salesOrders.filter(
-    (item) =>
-      item.productionstatus === "Completed" &&
-      item.dispatchstatus === "Dispatched",
-  ).length;
+  const handleEditClose = useCallback(() => {
+    setEditOpen(false);
+    setSelectedOrder(null);
+  }, []);
 
-  const cancelledOrders = salesOrders.filter(
-    (item) => item.status === "Cancelled",
-  ).length;
+  const handleEditSuccess = useCallback(() => {
+    setEditOpen(false);
+    setSelectedOrder(null);
 
-  const filteredRows = useMemo(() => {
-    const normalize = (value) =>
-      String(value ?? "")
+    // Refresh only after successful edit
+    dispatch(fetchSalesOrders());
+  }, [dispatch]);
+
+  // --------------------------------------------------
+  // CUSTOMERS
+  // --------------------------------------------------
+
+  const customers = useMemo(() => {
+    const customerSet = new Set();
+
+    for (const item of salesOrders) {
+      if (item.customer) {
+        customerSet.add(item.customer);
+      }
+    }
+
+    return ["All", ...customerSet];
+  }, [salesOrders]);
+
+  // --------------------------------------------------
+  // KPI
+  // --------------------------------------------------
+
+  const summary = useMemo(() => {
+    let pending = 0;
+    let completed = 0;
+    let cancelled = 0;
+
+    for (const item of salesOrders) {
+      const productionStatus = String(item.productionstatus || "")
         .trim()
         .toLowerCase();
 
-    // Today's local date: YYYY-MM-DD
+      const dispatchStatus = String(item.dispatchstatus || "")
+        .trim()
+        .toLowerCase();
+
+      const orderStatus = String(item.status || "")
+        .trim()
+        .toLowerCase();
+
+      if (
+        productionStatus === "pending production" ||
+        dispatchStatus === "pending dispatch"
+      ) {
+        pending++;
+      }
+
+      if (productionStatus === "completed" && dispatchStatus === "dispatched") {
+        completed++;
+      }
+
+      if (orderStatus === "cancelled") {
+        cancelled++;
+      }
+    }
+
+    return {
+      total: salesOrders.length,
+      pending,
+      completed,
+      cancelled,
+    };
+  }, [salesOrders]);
+
+  // --------------------------------------------------
+  // FILTER
+  // --------------------------------------------------
+
+  const filteredRows = useMemo(() => {
+    const normalizedSearch = String(search).trim().toLowerCase();
+
+    const normalizedCustomer = String(customer).trim().toLowerCase();
+
+    const normalizedDivision = String(division).trim().toLowerCase();
+
     const today = new Date();
 
     const todayStr = [
@@ -108,28 +165,19 @@ const handleEditSuccess = () => {
       String(today.getDate()).padStart(2, "0"),
     ].join("-");
 
-    // Start of current week - Sunday
     const startOfWeek = new Date(today);
     startOfWeek.setHours(0, 0, 0, 0);
+
     startOfWeek.setDate(today.getDate() - today.getDay());
 
-    // End of current week
     const endOfWeek = new Date(startOfWeek);
+
     endOfWeek.setDate(startOfWeek.getDate() + 6);
+
     endOfWeek.setHours(23, 59, 59, 999);
 
-    // Start of current month
-    const startOfMonth = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      1,
-      0,
-      0,
-      0,
-      0,
-    );
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    // End of current month
     const endOfMonth = new Date(
       today.getFullYear(),
       today.getMonth() + 1,
@@ -141,393 +189,435 @@ const handleEditSuccess = () => {
     );
 
     return salesOrders.filter((row) => {
-      const searchText = normalize(search);
+      // -------------------------
+      // SEARCH
+      // -------------------------
 
-      // ================= SEARCH =================
       const matchesSearch =
-        searchText === "" ||
-        normalize(row.soNo).includes(searchText) ||
-        normalize(row.customer).includes(searchText) ||
-        normalize(row.product).includes(searchText);
+        !normalizedSearch ||
+        String(row.soNo || "")
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        String(row.customer || "")
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        String(row.product || "")
+          .toLowerCase()
+          .includes(normalizedSearch);
 
-      // ================= STATUS =================
-      const matchesStatus =
-        status === "All" ||
-        (status === "Pending" &&
-          (normalize(row.productionstatus) === "pending production" ||
-            normalize(row.dispatchstatus) === "pending dispatch")) ||
-        (status === "Completed" &&
-          normalize(row.productionstatus) === "completed" &&
-          normalize(row.dispatchstatus) === "dispatched");
+      if (!matchesSearch) return false;
 
-      // ================= CUSTOMER =================
-      const matchesCustomer =
-        customer === "All" || normalize(row.customer) === normalize(customer);
+      // -------------------------
+      // STATUS
+      // -------------------------
 
-      // ================= DIVISION =================
-      const matchesDivision =
-        division === "All" || normalize(row.division) === normalize(division);
+      if (status !== "All") {
+        const productionStatus = String(row.productionstatus || "")
+          .trim()
+          .toLowerCase();
 
-      // ================= DATE =================
-      let matchesDate = true;
+        const dispatchStatus = String(row.dispatchstatus || "")
+          .trim()
+          .toLowerCase();
 
-      if (row.date && dateFilter !== "All") {
-        // Keep date as YYYY-MM-DD without UTC conversion
-        const rowDateStr = String(row.date).slice(0, 10);
+        if (status === "Pending") {
+          const pending =
+            productionStatus === "pending production" ||
+            dispatchStatus === "pending dispatch";
 
-        if (dateFilter === "Today") {
-          matchesDate = rowDateStr === todayStr;
+          if (!pending) return false;
         }
 
-        if (dateFilter === "This Week") {
-          const [year, month, day] = rowDateStr.split("-").map(Number);
+        if (status === "Completed") {
+          const completed =
+            productionStatus === "completed" && dispatchStatus === "dispatched";
 
-          const orderDate = new Date(year, month - 1, day);
-
-          matchesDate = orderDate >= startOfWeek && orderDate <= endOfWeek;
-        }
-
-        if (dateFilter === "This Month") {
-          const [year, month, day] = rowDateStr.split("-").map(Number);
-
-          const orderDate = new Date(year, month - 1, day);
-
-          matchesDate = orderDate >= startOfMonth && orderDate <= endOfMonth;
+          if (!completed) return false;
         }
       }
 
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesCustomer &&
-        matchesDivision &&
-        matchesDate
-      );
+      // -------------------------
+      // CUSTOMER
+      // -------------------------
+
+      if (
+        normalizedCustomer !== "all" &&
+        String(row.customer || "")
+          .trim()
+          .toLowerCase() !== normalizedCustomer
+      ) {
+        return false;
+      }
+
+      // -------------------------
+      // DIVISION
+      // -------------------------
+
+      if (
+        normalizedDivision !== "all" &&
+        String(row.division || "")
+          .trim()
+          .toLowerCase() !== normalizedDivision
+      ) {
+        return false;
+      }
+
+      // -------------------------
+      // DATE
+      // -------------------------
+
+      if (dateFilter !== "All" && row.date) {
+        const rowDateStr = String(row.date).slice(0, 10);
+
+        if (dateFilter === "Today" && rowDateStr !== todayStr) {
+          return false;
+        }
+
+        if (dateFilter === "This Week" || dateFilter === "This Month") {
+          const [year, month, day] = rowDateStr.split("-").map(Number);
+
+          const rowDate = new Date(year, month - 1, day);
+
+          if (
+            dateFilter === "This Week" &&
+            (rowDate < startOfWeek || rowDate > endOfWeek)
+          ) {
+            return false;
+          }
+
+          if (
+            dateFilter === "This Month" &&
+            (rowDate < startOfMonth || rowDate > endOfMonth)
+          ) {
+            return false;
+          }
+        }
+      }
+
+      return true;
     });
   }, [salesOrders, search, status, customer, division, dateFilter]);
+
+  // --------------------------------------------------
+  // REFRESH
+  // --------------------------------------------------
+
+  const handleRefresh = useCallback(() => {
+    dispatch(fetchSalesOrders());
+  }, [dispatch]);
+
+  // --------------------------------------------------
+  // PRINT
+  // --------------------------------------------------
+
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
 
   return (
     <Box
       sx={{
-        p: { xs: 2, md: 3 },
+        p: {
+          xs: 2,
+          md: 3,
+        },
         bgcolor: "#f5f7fb",
         minHeight: "100vh",
-        height: "auto",
       }}
     >
+      {/* =========================================
+          HEADER
+      ========================================= */}
+
       <Stack
         direction={{
           xs: "column",
-          sm: "row",
+          md: "row",
         }}
         justifyContent="space-between"
         alignItems={{
-          xs: "flex-start",
-          sm: "center",
+          xs: "stretch",
+          md: "center",
         }}
-        mb={3}
         spacing={2}
+        mb={3}
       >
         <Box>
-          <Typography variant="h4" fontWeight={700}>
+          <Typography variant="h5" fontWeight={700}>
             Sales Orders
           </Typography>
 
-          <Typography color="text.secondary">
-            Manage all customer sales orders
+          <Typography variant="body2" color="text.secondary">
+            Manage and track all sales orders
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<RefreshIcon />}
-          onClick={() => dispatch(fetchSalesOrders())}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            px: 3,
-          }}
-        >
-          Refresh
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<PrintIcon />}
+            onClick={handlePrint}
+          >
+            Print
+          </Button>
+        </Stack>
       </Stack>
 
+      {/* =========================================
+          KPI CARDS
+      ========================================= */}
+
       <Grid container spacing={2} mb={3}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card elevation={2}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 <Box>
-                  <Typography color="text.secondary">Total Orders</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Orders
+                  </Typography>
 
                   <Typography variant="h4" fontWeight={700}>
-                    {totalOrders}
+                    {summary.total}
                   </Typography>
                 </Box>
 
-                <ShoppingCartIcon color="primary" sx={{ fontSize: 42 }} />
+                <ShoppingCartIcon />
               </Stack>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card elevation={2}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 <Box>
-                  <Typography color="text.secondary">Pending</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Pending
+                  </Typography>
 
                   <Typography variant="h4" fontWeight={700}>
-                    {pendingOrders}
+                    {summary.pending}
                   </Typography>
                 </Box>
 
-                <PendingActionsIcon color="warning" sx={{ fontSize: 42 }} />
+                <PendingActionsIcon />
               </Stack>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card elevation={2}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 <Box>
-                  <Typography color="text.secondary">Completed</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Completed
+                  </Typography>
 
                   <Typography variant="h4" fontWeight={700}>
-                    {completedOrders}
+                    {summary.completed}
                   </Typography>
                 </Box>
 
-                <CheckCircleIcon color="success" sx={{ fontSize: 42 }} />
+                <CheckCircleIcon />
               </Stack>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card elevation={2}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
             <CardContent>
-              <Stack direction="row" justifyContent="space-between">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 <Box>
-                  <Typography color="text.secondary">Cancelled</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Cancelled
+                  </Typography>
 
                   <Typography variant="h4" fontWeight={700}>
-                    {cancelledOrders}
+                    {summary.cancelled}
                   </Typography>
                 </Box>
 
-                <CancelIcon color="error" sx={{ fontSize: 42 }} />
+                <CancelIcon />
               </Stack>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
+      {/* =========================================
+          FILTERS
+      ========================================= */}
+
       <Paper
-        elevation={0}
         sx={{
-          p: { xs: 2, sm: 2.5, md: 3 },
-          borderRadius: 3,
+          p: 2,
           mb: 3,
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#fff",
         }}
       >
-        {/* ================= FILTERS ================= */}
-        <Grid container spacing={2}>
-          {/* Search */}
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={3}>
             <TextField
               fullWidth
               size="small"
               label="Search"
-              placeholder="SO No / Customer / Product"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </Grid>
 
-          {/* Status */}
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+          <Grid item xs={12} sm={6} md={2}>
             <TextField
-              fullWidth
               select
+              fullWidth
               size="small"
               label="Status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
-              {["All", "Pending", "Completed"].map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
-                </MenuItem>
-              ))}
+              <MenuItem value="All">All</MenuItem>
+
+              <MenuItem value="Pending">Pending</MenuItem>
+
+              <MenuItem value="Completed">Completed</MenuItem>
             </TextField>
           </Grid>
 
-          {/* Division */}
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+          <Grid item xs={12} sm={6} md={2}>
+            <Autocomplete
+              size="small"
+              options={customers}
+              value={customer}
+              onChange={(_, value) => setCustomer(value || "All")}
+              renderInput={(params) => (
+                <TextField {...params} label="Customer" />
+              )}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={2}>
             <TextField
-              fullWidth
               select
+              fullWidth
               size="small"
               label="Division"
               value={division}
               onChange={(e) => setDivision(e.target.value)}
             >
               <MenuItem value="All">All</MenuItem>
-              <MenuItem value="Woven">Woven</MenuItem>
-              <MenuItem value="Crochet">Crochet</MenuItem>
+
+              <MenuItem value="WOVEN">WOVEN</MenuItem>
+
+              <MenuItem value="CROCHET">CROCHET</MenuItem>
             </TextField>
           </Grid>
 
-          {/* Customer */}
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            <Autocomplete
-              freeSolo
-              options={customers}
-              value={customer === "All" ? null : customer}
-              onChange={(event, newValue) => {
-                setCustomer(newValue || "All");
-              }}
-              onInputChange={(event, newInputValue) => {
-                setCustomer(newInputValue || "All");
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  fullWidth
-                  size="small"
-                  label="Customer"
-                  placeholder="Select or type customer"
-                />
-              )}
-            />
-          </Grid>
-
-          {/* Date */}
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+          <Grid item xs={12} sm={6} md={2}>
             <TextField
-              fullWidth
               select
+              fullWidth
               size="small"
               label="Date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
             >
               <MenuItem value="All">All</MenuItem>
+
               <MenuItem value="Today">Today</MenuItem>
+
               <MenuItem value="This Week">This Week</MenuItem>
+
               <MenuItem value="This Month">This Month</MenuItem>
             </TextField>
           </Grid>
 
-          {/* ================= ACTIONS ================= */}
-          <Grid
-            size={{ xs: 12 }}
-            sx={{
-              display: "flex",
-              justifyContent: {
-                xs: "stretch",
-                sm: "flex-end",
-              },
-              mt: 0.5,
-            }}
-          >
-            <Stack
-              direction={{
-                xs: "column",
-                sm: "row",
-              }}
-              spacing={1.5}
-              sx={{
-                width: {
-                  xs: "100%",
-                  sm: "auto",
-                },
-              }}
+          <Grid item xs={12} md={1}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setTable((prev) => !prev)}
             >
-              {/* Refresh */}
-              <Button
-                variant="contained"
-                startIcon={<RefreshIcon />}
-                onClick={() => dispatch(fetchSalesOrders())}
-                sx={{
-                  height: 40,
-                  minWidth: { xs: "100%", sm: 130 },
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Refresh
-              </Button>
-
-              {/* Print */}
-              <Button
-                variant="outlined"
-                startIcon={<PrintIcon />}
-                onClick={() => window.print()}
-                sx={{
-                  height: 40,
-                  minWidth: { xs: "100%", sm: 130 },
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Print
-              </Button>
-
-              {/* View Toggle */}
-              <Button
-                variant="outlined"
-                onClick={() => setTable((prev) => !prev)}
-                sx={{
-                  height: 40,
-                  minWidth: { xs: "100%", sm: 130 },
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                {isTable ? "Card View" : "Table View"}
-              </Button>
-            </Stack>
+              {isTable ? "Cards" : "Table"}
+            </Button>
           </Grid>
         </Grid>
       </Paper>
 
-      {/* Sales Order Table */}
+      {/* =========================================
+          RESULTS
+      ========================================= */}
+
       <Box
         className="sales-order-print-area"
         sx={{
           width: "100%",
+          minWidth: 0,
         }}
       >
-        <Box
-          sx={{
-            overflowX: "auto",
-            minWidth: 0,
-          }}
-        >
-          {isTable ? (
-            <SalesOrderTable rows={filteredRows} loading={loading} />
-          ) : (
-            <SalesOrderCards rows={filteredRows} loading={loading} onEdit={handleEdit} />
-          )}
-        </Box>
+        {isTable ? (
+          <SalesOrderTable rows={filteredRows} loading={loading} />
+        ) : (
+          <SalesOrderCards
+            rows={filteredRows}
+            loading={loading}
+            onEdit={handleEdit}
+          />
+        )}
       </Box>
-      {/* print only */}
-      <SalesOrderPrint rows={filteredRows} />
-      <EditSalesOrderDialog 
-      open={editOpen}
-      row={selectedOrder}
-      onClose={handleEditClose}
-      onSuccess={handleEditSuccess}
+
+      {/* =========================================
+          PRINT COMPONENT
+          IMPORTANT:
+          Do NOT render on normal page load
+      ========================================= */}
+
+      <Box
+        className="sales-order-print-only"
+        sx={{
+          display: "none",
+        }}
+      >
+        <SalesOrderPrint rows={filteredRows} />
+      </Box>
+
+      {/* =========================================
+          EDIT
+      ========================================= */}
+
+      <EditSalesOrderDialog
+        open={editOpen}
+        row={selectedOrder}
+        onClose={handleEditClose}
+        onSuccess={handleEditSuccess}
       />
     </Box>
   );
