@@ -89,7 +89,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
           userID: userID.trim(),
           startDate,
           endDate,
-        })
+        }),
       ).unwrap();
 
       console.log("📊 WEEKLY PERFORMANCE:", result);
@@ -99,40 +99,24 @@ const ViewScoreOfEmployes = ({ onBack }) => {
       setSearchedEmployee({
         userId: data?.userID || userID,
 
-        name:
-          data?.employeeName ||
-          data?.userName ||
-          data?.userID ||
-          userID,
+        name: data?.employeeName || data?.userName || data?.userID || userID,
 
-        department:
-          data?.division ||
-          data?.department ||
-          "--",
+        department: data?.division || data?.department || "--",
 
-        assigned:
-          Number(data?.summary?.assigned || 0),
+        assigned: Number(data?.summary?.assigned || 0),
 
-        completed:
-          Number(data?.summary?.completed || 0),
+        completed: Number(data?.summary?.completed || 0),
 
-        pending:
-          Number(data?.summary?.pending || 0),
+        pending: Number(data?.summary?.pending || 0),
 
-        onTime:
-          Number(data?.summary?.onTime || 0),
+        onTime: Number(data?.summary?.onTime || 0),
 
-        late:
-          Number(data?.summary?.late || 0),
+        late: Number(data?.summary?.late || 0),
 
-        score:
-          Number(data?.summary?.score || 0),
+        score: Number(data?.summary?.score || 0),
       });
     } catch (error) {
-      console.error(
-        "❌ Weekly performance error:",
-        error
-      );
+      console.error("❌ Weekly performance error:", error);
 
       setSearchedEmployee(null);
     }
@@ -170,30 +154,17 @@ const ViewScoreOfEmployes = ({ onBack }) => {
     return {
       totalEmployees: 1,
 
-      averageScore: Number(
-        weeklySummary.score || 0
-      ),
+      averageScore: Number(weeklySummary.score || 0),
 
-      topScore: Number(
-        weeklySummary.score || 0
-      ),
+      topScore: Number(weeklySummary.score || 0),
 
-      topEmployee:
-        searchedEmployee.name ||
-        searchedEmployee.userId ||
-        "--",
+      topEmployee: searchedEmployee.name || searchedEmployee.userId || "--",
 
-      totalAssigned: Number(
-        weeklySummary.assigned || 0
-      ),
+      totalAssigned: Number(weeklySummary.assigned || 0),
 
-      totalCompleted: Number(
-        weeklySummary.completed || 0
-      ),
+      totalCompleted: Number(weeklySummary.completed || 0),
 
-      totalPending: Number(
-        weeklySummary.pending || 0
-      ),
+      totalPending: Number(weeklySummary.pending || 0),
     };
   }, [weeklySummary, searchedEmployee]);
 
@@ -219,11 +190,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               {params.value || "--"}
             </Typography>
 
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              noWrap
-            >
+            <Typography variant="caption" color="text.secondary" noWrap>
               {params.row.userId || "--"}
             </Typography>
           </Box>
@@ -236,11 +203,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         width: 130,
 
         renderCell: (params) => (
-          <Chip
-            size="small"
-            label={params.value || "--"}
-            variant="outlined"
-          />
+          <Chip size="small" label={params.value || "--"} variant="outlined" />
         ),
       },
 
@@ -260,11 +223,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         headerAlign: "center",
 
         renderCell: (params) => (
-          <Typography
-            variant="body2"
-            fontWeight={700}
-            color="success.main"
-          >
+          <Typography variant="body2" fontWeight={700} color="success.main">
             {params.value || 0}
           </Typography>
         ),
@@ -282,9 +241,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             variant="body2"
             fontWeight={700}
             color={
-              Number(params.value || 0) > 0
-                ? "error.main"
-                : "success.main"
+              Number(params.value || 0) > 0 ? "error.main" : "success.main"
             }
           >
             {params.value || 0}
@@ -300,11 +257,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         headerAlign: "center",
 
         renderCell: (params) => (
-          <Typography
-            variant="body2"
-            fontWeight={700}
-            color="success.main"
-          >
+          <Typography variant="body2" fontWeight={700} color="success.main">
             {params.value || 0}
           </Typography>
         ),
@@ -322,9 +275,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             variant="body2"
             fontWeight={700}
             color={
-              Number(params.value || 0) > 0
-                ? "warning.main"
-                : "success.main"
+              Number(params.value || 0) > 0 ? "warning.main" : "success.main"
             }
           >
             {params.value || 0}
@@ -345,11 +296,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
           const color = getScoreColor(score);
 
           return (
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-            >
+            <Stack direction="row" spacing={1} alignItems="center">
               <Typography
                 variant="body1"
                 fontWeight={800}
@@ -369,7 +316,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         },
       },
     ],
-    []
+    [],
   );
 
   // =======================================================
@@ -382,7 +329,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         ...employee,
         id: employee.userId,
       })),
-    [employees]
+    [employees],
   );
 
   // =======================================================
@@ -425,18 +372,16 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         ),
       },
     ],
-    []
+    [],
   );
 
   const pendingTaskRows = useMemo(
     () =>
       (pendingTasks || []).map((task, index) => ({
         ...task,
-        id:
-          `${task.taskID || "TASK"}-` +
-          `${task.taskDate || index}`,
+        id: `${task.taskID || "TASK"}-` + `${task.taskDate || index}`,
       })),
-    [pendingTasks]
+    [pendingTasks],
   );
 
   // =======================================================
@@ -463,25 +408,15 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-          >
+          <Stack direction="row" spacing={1} alignItems="center">
             {onBack && (
-              <IconButton
-                size="small"
-                onClick={onBack}
-              >
+              <IconButton size="small" onClick={onBack}>
                 <ArrowBackIcon />
               </IconButton>
             )}
 
             <Box>
-              <Typography
-                variant="h5"
-                fontWeight={700}
-              >
+              <Typography variant="h5" fontWeight={700}>
                 Weekly Employee Performance
               </Typography>
 
@@ -526,9 +461,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             label="Employee User ID"
             placeholder="USER0008"
             value={userID}
-            onChange={(e) =>
-              setUserID(e.target.value)
-            }
+            onChange={(e) => setUserID(e.target.value)}
             sx={{
               minWidth: 190,
             }}
@@ -539,9 +472,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             type="date"
             label="Start Date"
             value={startDate}
-            onChange={(e) =>
-              setStartDate(e.target.value)
-            }
+            onChange={(e) => setStartDate(e.target.value)}
             InputLabelProps={{
               shrink: true,
             }}
@@ -552,9 +483,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             type="date"
             label="End Date"
             value={endDate}
-            onChange={(e) =>
-              setEndDate(e.target.value)
-            }
+            onChange={(e) => setEndDate(e.target.value)}
             InputLabelProps={{
               shrink: true,
             }}
@@ -564,34 +493,20 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             variant="contained"
             startIcon={
               loading ? (
-                <CircularProgress
-                  size={18}
-                  color="inherit"
-                />
+                <CircularProgress size={18} color="inherit" />
               ) : (
                 <SearchIcon />
               )
             }
             onClick={handleSearch}
-            disabled={
-              loading ||
-              !userID.trim() ||
-              !startDate ||
-              !endDate
-            }
+            disabled={loading || !userID.trim() || !startDate || !endDate}
           >
-            {loading
-              ? "Loading..."
-              : "Get Performance"}
+            {loading ? "Loading..." : "Get Performance"}
           </Button>
         </Stack>
 
         {error && (
-          <Typography
-            variant="body2"
-            color="error"
-            sx={{ mt: 1.5 }}
-          >
+          <Typography variant="body2" color="error" sx={{ mt: 1.5 }}>
             {error}
           </Typography>
         )}
@@ -601,11 +516,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
           SUMMARY CARDS
       ================================================= */}
 
-      <Grid
-        container
-        spacing={2}
-        sx={{ mb: 3 }}
-      >
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* EMPLOYEES */}
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -623,18 +534,11 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Employees
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  sx={{ mt: 0.5 }}
-                >
+                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
                   {summary.totalEmployees}
                 </Typography>
               </Box>
@@ -661,21 +565,12 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Weekly Score
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  sx={{ mt: 0.5 }}
-                >
-                  {Number(
-                    summary.averageScore || 0
-                  ).toFixed(2)}
+                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
+                  {Number(summary.averageScore || 0).toFixed(2)}
 
                   <Typography
                     component="span"
@@ -709,21 +604,12 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Score
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  sx={{ mt: 0.5 }}
-                >
-                  {Number(
-                    summary.topScore || 0
-                  ).toFixed(2)}
+                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
+                  {Number(summary.topScore || 0).toFixed(2)}
                 </Typography>
               </Box>
 
@@ -749,18 +635,11 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Tasks Completed
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  sx={{ mt: 0.5 }}
-                >
+                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
                   {summary.totalCompleted}
 
                   <Typography
@@ -805,45 +684,28 @@ const ViewScoreOfEmployes = ({ onBack }) => {
           justifyContent="space-between"
         >
           <Box>
-            <Typography
-              variant="subtitle1"
-              fontWeight={700}
-            >
+            <Typography variant="subtitle1" fontWeight={700}>
               Weekly Score
             </Typography>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.5 }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               Score is currently based on task completion percentage.
             </Typography>
           </Box>
 
-          <Stack
-            direction="row"
-            spacing={1}
-            flexWrap="wrap"
-          >
+          <Stack direction="row" spacing={1} flexWrap="wrap">
             <Chip
-              label={`Completed ${
-                weeklySummary?.completed || 0
-              }`}
+              label={`Completed ${weeklySummary?.completed || 0}`}
               color="success"
             />
 
             <Chip
-              label={`Pending ${
-                weeklySummary?.pending || 0
-              }`}
+              label={`Pending ${weeklySummary?.pending || 0}`}
               color="error"
             />
 
             <Chip
-              label={`Completion ${
-                weeklySummary?.completionPercentage || 0
-              }%`}
+              label={`Completion ${weeklySummary?.completionPercentage || 0}%`}
               color="primary"
             />
           </Stack>
@@ -856,36 +718,69 @@ const ViewScoreOfEmployes = ({ onBack }) => {
 
       <Paper
         sx={{
-          borderRadius: 3,
+          borderRadius: 2,
           overflow: "hidden",
           border: "1px solid",
           borderColor: "divider",
-          mb: 3,
+          mb: 2,
+          boxShadow: "none",
         }}
       >
-        <Box sx={{ p: 2 }}>
-          <Typography
-            variant="h6"
-            fontWeight={700}
-          >
-            Employee Scorecard
-          </Typography>
+        {/* Header */}
+        <Box
+          sx={{
+            px: 1.5,
+            py: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1.5,
+            minHeight: 52,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="subtitle2"
+              fontWeight={700}
+              sx={{ lineHeight: 1.2 }}
+            >
+              Employee Scorecard
+            </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 0.5 }}
-          >
-            Weekly task completion and performance
-          </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.68rem" }}
+            >
+              Task completion performance
+            </Typography>
+          </Box>
+
+          {searchedEmployee && (
+            <Chip
+              label={`${searchedEmployee.name} • ${searchedEmployee.userId}`}
+              size="small"
+              variant="outlined"
+              sx={{
+                height: 24,
+                fontSize: "0.68rem",
+                fontWeight: 600,
+                borderRadius: 1,
+                "& .MuiChip-label": {
+                  px: 1,
+                },
+              }}
+            />
+          )}
         </Box>
 
         <Divider />
 
+        {/* Content */}
         <Box
           sx={{
             width: "100%",
-            height: searchedEmployee ? 500 : 220,
+            height: searchedEmployee ? 215 : 72,
           }}
         >
           {!searchedEmployee ? (
@@ -898,7 +793,9 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               }}
             >
               <Typography
+                variant="caption"
                 color="text.secondary"
+                sx={{ fontSize: "0.7rem" }}
               >
                 Enter Employee User ID and date range to view performance.
               </Typography>
@@ -908,47 +805,49 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               rows={rows}
               columns={columns}
               disableRowSelectionOnClick
-              rowHeight={52}
-              columnHeaderHeight={42}
+              rowHeight={36}
+              columnHeaderHeight={32}
               hideFooter
               sx={{
                 border: 0,
 
                 "& .MuiDataGrid-columnHeaders": {
                   backgroundColor: "action.hover",
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
                 },
 
                 "& .MuiDataGrid-columnHeaderTitle": {
                   fontWeight: 700,
-                  fontSize: "0.72rem",
+                  fontSize: "0.65rem",
                 },
 
                 "& .MuiDataGrid-cell": {
-                  fontSize: "0.8rem",
-                  py: 0.5,
+                  fontSize: "0.7rem",
+                  py: 0,
                 },
 
                 "& .MuiDataGrid-row:hover": {
                   backgroundColor: "action.hover",
                 },
 
-                "& .MuiDataGrid-cell:focus": {
+                "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": {
                   outline: "none",
                 },
 
-                "& .MuiDataGrid-cell:focus-within": {
-                  outline: "none",
-                },
+                "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within":
+                  {
+                    outline: "none",
+                  },
 
                 "& ::-webkit-scrollbar": {
-                  width: "8px",
-                  height: "8px",
+                  width: "5px",
+                  height: "5px",
                 },
 
                 "& ::-webkit-scrollbar-thumb": {
                   borderRadius: "4px",
-                  backgroundColor:
-                    "rgba(0,0,0,0.25)",
+                  backgroundColor: "rgba(0,0,0,0.18)",
                 },
               }}
             />
@@ -975,10 +874,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             alignItems="center"
           >
             <Box>
-              <Typography
-                variant="h6"
-                fontWeight={700}
-              >
+              <Typography variant="h6" fontWeight={700}>
                 Pending Tasks
               </Typography>
 
@@ -993,11 +889,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
 
             <Chip
               label={`${pendingTasks.length} Pending`}
-              color={
-                pendingTasks.length > 0
-                  ? "error"
-                  : "success"
-              }
+              color={pendingTasks.length > 0 ? "error" : "success"}
               variant="outlined"
             />
           </Stack>
@@ -1008,10 +900,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         <Box
           sx={{
             width: "100%",
-            height:
-              pendingTasks.length > 0
-                ? 400
-                : 180,
+            height: pendingTasks.length > 0 ? 400 : 180,
           }}
         >
           {pendingTasks.length === 0 ? (
@@ -1022,10 +911,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
                 height: "100%",
               }}
             >
-              <Typography
-                color="success.main"
-                fontWeight={600}
-              >
+              <Typography color="success.main" fontWeight={600}>
                 No pending tasks 🎉
               </Typography>
             </Stack>
