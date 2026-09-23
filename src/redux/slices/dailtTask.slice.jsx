@@ -113,12 +113,31 @@ export const completeDailyTasks = createAsyncThunk(
 
       return rejectWithValue(
         error.response?.data?.message ||
-          "Failed to complete daily task"
+          `Failed to complete daily task`
       );
     }
   }
 );
  
+
+export const getPendingOrdersOfEMployee = createAsyncThunk('/daily-tasks-log/pending',async({userID,startDate,endDate},{
+  rejectWithValue
+})=>{
+  try {
+    const res = await api.get(`/daily-tasks/get-score/?userID=${userID}&startDate=${startDate}&endDate=${endDate}`);
+    return res.data;
+  } catch (error) {
+     console.error(
+        "❌ completeDailyTasks error:",
+        error
+      );
+
+      return rejectWithValue(
+        error.response?.data?.message ||
+          `Failed to complete daily task`
+      );
+  }
+})
 
 // =========================================================
 // INITIAL STATE
@@ -126,6 +145,8 @@ export const completeDailyTasks = createAsyncThunk(
 const initialState = {
   tasks: [],
   employeeTasks:[],
+  pendingTasks:[],
+  weeklySummary:null,
   loading: false,
   creating: false,
   updating: false,
@@ -247,7 +268,52 @@ const dailyTaskSlice = createSlice({
         state.loading = false;
       })
       
-      ;
+       .addCase(
+      getPendingOrdersOfEMployee.pending,
+      (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      }
+    )
+
+    // =========================================================
+    // GET PENDING TASKS / WEEKLY SCORE - FULFILLED
+    // =========================================================
+    .addCase(
+      getPendingOrdersOfEMployee.fulfilled,
+      (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.error = null;
+
+        state.message =
+          action.payload?.message || "";
+
+        state.pendingTasks =
+          action.payload?.data?.pendingTasks || [];
+
+        // Agar summary bhi Redux mein rakhna hai
+        state.weeklySummary =
+          action.payload?.data?.summary || null;
+      }
+    )
+
+    // =========================================================
+    // GET PENDING TASKS / WEEKLY SCORE - REJECTED
+    // =========================================================
+    .addCase(
+      getPendingOrdersOfEMployee.rejected,
+      (state, action) => {
+        state.loading = false;
+        state.success = false;
+
+        state.error =
+          action.payload || "Failed to get pending tasks";
+
+        state.pendingTasks = [];
+      }
+    );
   },
 });
 

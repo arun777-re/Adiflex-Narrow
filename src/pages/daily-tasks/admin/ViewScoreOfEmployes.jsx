@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   Box,
@@ -10,69 +11,20 @@ import {
   IconButton,
   Grid,
   Divider,
+  TextField,
+  CircularProgress,
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import SearchIcon from "@mui/icons-material/Search";
 
-// =========================================================
-// TEMPORARY DUMMY DATA
-// =========================================================
-
-const dummyEmployees = [
-  {
-    userId: "USER0008",
-    name: "Employee One",
-    department: "WOVEN",
-    assigned: 25,
-    completed: 23,
-    pending: 2,
-    onTime: 21,
-    late: 2,
-    score: 89,
-  },
-  {
-    userId: "USER0009",
-    name: "Employee Two",
-    department: "CROCHET",
-    assigned: 30,
-    completed: 27,
-    pending: 3,
-    onTime: 25,
-    late: 2,
-    score: 87,
-  },
-  {
-    userId: "USER0010",
-    name: "Employee Three",
-    department: "WOVEN",
-    assigned: 22,
-    completed: 20,
-    pending: 2,
-    onTime: 18,
-    late: 2,
-    score: 84,
-  },
-  {
-    userId: "USER0011",
-    name: "Employee Four",
-    department: "CROCHET",
-    assigned: 28,
-    completed: 20,
-    pending: 8,
-    onTime: 17,
-    late: 3,
-    score: 71,
-  },
-];
-
+import { getPendingOrdersOfEMployee } from "../../../redux/slices/dailtTask.slice";
 // =========================================================
 // HELPERS
 // =========================================================
@@ -95,46 +47,115 @@ const getScoreLabel = (score) => {
 // =========================================================
 
 const ViewScoreOfEmployes = ({ onBack }) => {
-  // =======================================================
-  // WEEK STATE
-  // =======================================================
-
-  const [weekOffset, setWeekOffset] = useState(0);
+  const dispatch = useDispatch();
 
   // =======================================================
-  // TEMP DATA
+  // REDUX
   // =======================================================
 
-  const employees = dummyEmployees;
+  const {
+    pendingTasks = [],
+    weeklySummary = null,
+    loading = false,
+    error = null,
+  } = useSelector((state) => state.dailyTask);
 
   // =======================================================
-  // WEEK LABEL
+  // SEARCH STATE
   // =======================================================
 
-  const weekLabel = useMemo(() => {
-    if (weekOffset === 0) {
-      return "Current Week";
+  const [userID, setUserID] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const [searchedEmployee, setSearchedEmployee] = useState(null);
+
+  // =======================================================
+  // SEARCH PERFORMANCE
+  // =======================================================
+
+  const handleSearch = async () => {
+    if (!userID.trim()) {
+      return;
     }
 
-    if (weekOffset === -1) {
-      return "Previous Week";
+    if (!startDate || !endDate) {
+      return;
     }
 
-    if (weekOffset === 1) {
-      return "Next Week";
+    try {
+      const result = await dispatch(
+        getPendingOrdersOfEMployee({
+          userID: userID.trim(),
+          startDate,
+          endDate,
+        })
+      ).unwrap();
+
+      console.log("📊 WEEKLY PERFORMANCE:", result);
+
+      const data = result?.data;
+
+      setSearchedEmployee({
+        userId: data?.userID || userID,
+
+        name:
+          data?.employeeName ||
+          data?.userName ||
+          data?.userID ||
+          userID,
+
+        department:
+          data?.division ||
+          data?.department ||
+          "--",
+
+        assigned:
+          Number(data?.summary?.assigned || 0),
+
+        completed:
+          Number(data?.summary?.completed || 0),
+
+        pending:
+          Number(data?.summary?.pending || 0),
+
+        onTime:
+          Number(data?.summary?.onTime || 0),
+
+        late:
+          Number(data?.summary?.late || 0),
+
+        score:
+          Number(data?.summary?.score || 0),
+      });
+    } catch (error) {
+      console.error(
+        "❌ Weekly performance error:",
+        error
+      );
+
+      setSearchedEmployee(null);
+    }
+  };
+
+  // =======================================================
+  // EMPLOYEE DATA
+  // =======================================================
+
+  const employees = useMemo(() => {
+    if (!searchedEmployee) {
+      return [];
     }
 
-    return `${Math.abs(weekOffset)} Week${
-      Math.abs(weekOffset) > 1 ? "s" : ""
-    } ${weekOffset < 0 ? "Ago" : "Ahead"}`;
-  }, [weekOffset]);
+    return [searchedEmployee];
+  }, [searchedEmployee]);
 
   // =======================================================
   // SUMMARY
   // =======================================================
 
   const summary = useMemo(() => {
-    if (!employees.length) {
+    if (!searchedEmployee || !weeklySummary) {
       return {
         totalEmployees: 0,
         averageScore: 0,
@@ -142,39 +163,39 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         topEmployee: "--",
         totalAssigned: 0,
         totalCompleted: 0,
+        totalPending: 0,
       };
     }
 
-    const totalEmployees = employees.length;
-
-    const totalScore = employees.reduce(
-      (sum, employee) => sum + Number(employee.score || 0),
-      0,
-    );
-
-    const totalAssigned = employees.reduce(
-      (sum, employee) => sum + Number(employee.assigned || 0),
-      0,
-    );
-
-    const totalCompleted = employees.reduce(
-      (sum, employee) => sum + Number(employee.completed || 0),
-      0,
-    );
-
-    const topEmployee = [...employees].sort(
-      (a, b) => Number(b.score || 0) - Number(a.score || 0),
-    )[0];
-
     return {
-      totalEmployees,
-      averageScore: Math.round(totalScore / totalEmployees),
-      topScore: topEmployee?.score || 0,
-      topEmployee: topEmployee?.name || "--",
-      totalAssigned,
-      totalCompleted,
+      totalEmployees: 1,
+
+      averageScore: Number(
+        weeklySummary.score || 0
+      ),
+
+      topScore: Number(
+        weeklySummary.score || 0
+      ),
+
+      topEmployee:
+        searchedEmployee.name ||
+        searchedEmployee.userId ||
+        "--",
+
+      totalAssigned: Number(
+        weeklySummary.assigned || 0
+      ),
+
+      totalCompleted: Number(
+        weeklySummary.completed || 0
+      ),
+
+      totalPending: Number(
+        weeklySummary.pending || 0
+      ),
     };
-  }, [employees]);
+  }, [weeklySummary, searchedEmployee]);
 
   // =======================================================
   // DATAGRID COLUMNS
@@ -185,7 +206,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
       {
         field: "name",
         headerName: "EMPLOYEE",
-        width: 180,
+        width: 200,
 
         renderCell: (params) => (
           <Box>
@@ -198,8 +219,12 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               {params.value || "--"}
             </Typography>
 
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {params.row.userId}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+            >
+              {params.row.userId || "--"}
             </Typography>
           </Box>
         ),
@@ -208,10 +233,14 @@ const ViewScoreOfEmployes = ({ onBack }) => {
       {
         field: "department",
         headerName: "DEPARTMENT",
-        width: 120,
+        width: 130,
 
         renderCell: (params) => (
-          <Chip size="small" label={params.value || "--"} variant="outlined" />
+          <Chip
+            size="small"
+            label={params.value || "--"}
+            variant="outlined"
+          />
         ),
       },
 
@@ -231,7 +260,11 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         headerAlign: "center",
 
         renderCell: (params) => (
-          <Typography variant="body2" fontWeight={700} color="success.main">
+          <Typography
+            variant="body2"
+            fontWeight={700}
+            color="success.main"
+          >
             {params.value || 0}
           </Typography>
         ),
@@ -249,7 +282,9 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             variant="body2"
             fontWeight={700}
             color={
-              Number(params.value || 0) > 0 ? "error.main" : "success.main"
+              Number(params.value || 0) > 0
+                ? "error.main"
+                : "success.main"
             }
           >
             {params.value || 0}
@@ -265,7 +300,11 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         headerAlign: "center",
 
         renderCell: (params) => (
-          <Typography variant="body2" fontWeight={700} color="success.main">
+          <Typography
+            variant="body2"
+            fontWeight={700}
+            color="success.main"
+          >
             {params.value || 0}
           </Typography>
         ),
@@ -283,7 +322,9 @@ const ViewScoreOfEmployes = ({ onBack }) => {
             variant="body2"
             fontWeight={700}
             color={
-              Number(params.value || 0) > 0 ? "warning.main" : "success.main"
+              Number(params.value || 0) > 0
+                ? "warning.main"
+                : "success.main"
             }
           >
             {params.value || 0}
@@ -294,27 +335,33 @@ const ViewScoreOfEmployes = ({ onBack }) => {
       {
         field: "score",
         headerName: "SCORE",
-        width: 130,
+        width: 170,
         align: "center",
         headerAlign: "center",
 
         renderCell: (params) => {
           const score = Number(params.value || 0);
 
+          const color = getScoreColor(score);
+
           return (
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+            >
               <Typography
                 variant="body1"
                 fontWeight={800}
-                color={`${getScoreColor(score)}.main`}
+                color={`${color}.main`}
               >
-                {score}
+                {score.toFixed(2)}
               </Typography>
 
               <Chip
                 size="small"
                 label={getScoreLabel(score)}
-                color={getScoreColor(score)}
+                color={color}
                 variant="outlined"
               />
             </Stack>
@@ -322,7 +369,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         },
       },
     ],
-    [],
+    []
   );
 
   // =======================================================
@@ -335,7 +382,61 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         ...employee,
         id: employee.userId,
       })),
-    [employees],
+    [employees]
+  );
+
+  // =======================================================
+  // PENDING TASK COLUMNS
+  // =======================================================
+
+  const pendingTaskColumns = useMemo(
+    () => [
+      {
+        field: "taskID",
+        headerName: "TASK ID",
+        width: 150,
+      },
+
+      {
+        field: "taskName",
+        headerName: "TASK NAME",
+        flex: 1,
+        minWidth: 220,
+      },
+
+      {
+        field: "taskDate",
+        headerName: "DATE",
+        width: 130,
+      },
+
+      {
+        field: "status",
+        headerName: "STATUS",
+        width: 150,
+
+        renderCell: (params) => (
+          <Chip
+            size="small"
+            label="NOT COMPLETED"
+            color="error"
+            variant="outlined"
+          />
+        ),
+      },
+    ],
+    []
+  );
+
+  const pendingTaskRows = useMemo(
+    () =>
+      (pendingTasks || []).map((task, index) => ({
+        ...task,
+        id:
+          `${task.taskID || "TASK"}-` +
+          `${task.taskDate || index}`,
+      })),
+    [pendingTasks]
   );
 
   // =======================================================
@@ -344,9 +445,9 @@ const ViewScoreOfEmployes = ({ onBack }) => {
 
   return (
     <Box>
-      {/* ===================================================
+      {/* =================================================
           HEADER
-      =================================================== */}
+      ================================================= */}
 
       <Stack
         direction={{
@@ -362,15 +463,25 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+          >
             {onBack && (
-              <IconButton size="small" onClick={onBack}>
+              <IconButton
+                size="small"
+                onClick={onBack}
+              >
                 <ArrowBackIcon />
               </IconButton>
             )}
 
             <Box>
-              <Typography variant="h5" fontWeight={700}>
+              <Typography
+                variant="h5"
+                fontWeight={700}
+              >
                 Weekly Employee Performance
               </Typography>
 
@@ -379,45 +490,122 @@ const ViewScoreOfEmployes = ({ onBack }) => {
                 color="text.secondary"
                 sx={{ mt: 0.5 }}
               >
-                Employee task performance for the selected week
+                Employee task performance for the selected period
               </Typography>
             </Box>
           </Stack>
         </Box>
-
-        {/* =================================================
-            WEEK NAVIGATION
-        ================================================= */}
-
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ChevronLeftIcon />}
-            onClick={() => setWeekOffset((prev) => prev - 1)}
-          >
-            Previous
-          </Button>
-
-          <Chip label={weekLabel} color="primary" variant="outlined" />
-
-          <Button
-            variant="outlined"
-            size="small"
-            endIcon={<ChevronRightIcon />}
-            onClick={() => setWeekOffset((prev) => prev + 1)}
-            disabled={weekOffset >= 0}
-          >
-            Next
-          </Button>
-        </Stack>
       </Stack>
 
-      {/* ===================================================
-          SUMMARY CARDS
-      =================================================== */}
+      {/* =================================================
+          SEARCH FILTER
+      ================================================= */}
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Paper
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: 3,
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Stack
+          direction={{
+            xs: "column",
+            md: "row",
+          }}
+          spacing={2}
+          alignItems={{
+            xs: "stretch",
+            md: "center",
+          }}
+        >
+          <TextField
+            size="small"
+            label="Employee User ID"
+            placeholder="USER0008"
+            value={userID}
+            onChange={(e) =>
+              setUserID(e.target.value)
+            }
+            sx={{
+              minWidth: 190,
+            }}
+          />
+
+          <TextField
+            size="small"
+            type="date"
+            label="Start Date"
+            value={startDate}
+            onChange={(e) =>
+              setStartDate(e.target.value)
+            }
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+
+          <TextField
+            size="small"
+            type="date"
+            label="End Date"
+            value={endDate}
+            onChange={(e) =>
+              setEndDate(e.target.value)
+            }
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+
+          <Button
+            variant="contained"
+            startIcon={
+              loading ? (
+                <CircularProgress
+                  size={18}
+                  color="inherit"
+                />
+              ) : (
+                <SearchIcon />
+              )
+            }
+            onClick={handleSearch}
+            disabled={
+              loading ||
+              !userID.trim() ||
+              !startDate ||
+              !endDate
+            }
+          >
+            {loading
+              ? "Loading..."
+              : "Get Performance"}
+          </Button>
+        </Stack>
+
+        {error && (
+          <Typography
+            variant="body2"
+            color="error"
+            sx={{ mt: 1.5 }}
+          >
+            {error}
+          </Typography>
+        )}
+      </Paper>
+
+      {/* =================================================
+          SUMMARY CARDS
+      ================================================= */}
+
+      <Grid
+        container
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
         {/* EMPLOYEES */}
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -435,11 +623,18 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               alignItems="center"
             >
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Employees
                 </Typography>
 
-                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="h4"
+                  fontWeight={700}
+                  sx={{ mt: 0.5 }}
+                >
                   {summary.totalEmployees}
                 </Typography>
               </Box>
@@ -449,7 +644,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
           </Paper>
         </Grid>
 
-        {/* AVERAGE SCORE */}
+        {/* SCORE */}
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper
@@ -466,12 +661,22 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               alignItems="center"
             >
               <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Average Score
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  Weekly Score
                 </Typography>
 
-                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
-                  {summary.averageScore}
+                <Typography
+                  variant="h4"
+                  fontWeight={700}
+                  sx={{ mt: 0.5 }}
+                >
+                  {Number(
+                    summary.averageScore || 0
+                  ).toFixed(2)}
+
                   <Typography
                     component="span"
                     variant="body2"
@@ -504,12 +709,21 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               alignItems="center"
             >
               <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Top Score
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  Score
                 </Typography>
 
-                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
-                  {summary.topScore}
+                <Typography
+                  variant="h4"
+                  fontWeight={700}
+                  sx={{ mt: 0.5 }}
+                >
+                  {Number(
+                    summary.topScore || 0
+                  ).toFixed(2)}
                 </Typography>
               </Box>
 
@@ -518,7 +732,7 @@ const ViewScoreOfEmployes = ({ onBack }) => {
           </Paper>
         </Grid>
 
-        {/* TOTAL COMPLETION */}
+        {/* COMPLETION */}
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper
@@ -535,12 +749,20 @@ const ViewScoreOfEmployes = ({ onBack }) => {
               alignItems="center"
             >
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Tasks Completed
                 </Typography>
 
-                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="h4"
+                  fontWeight={700}
+                  sx={{ mt: 0.5 }}
+                >
                   {summary.totalCompleted}
+
                   <Typography
                     component="span"
                     variant="body2"
@@ -557,9 +779,9 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         </Grid>
       </Grid>
 
-      {/* ===================================================
+      {/* =================================================
           SCORE FORMULA
-      =================================================== */}
+      ================================================= */}
 
       <Paper
         sx={{
@@ -583,26 +805,160 @@ const ViewScoreOfEmployes = ({ onBack }) => {
           justifyContent="space-between"
         >
           <Box>
-            <Typography variant="subtitle1" fontWeight={700}>
-              Weekly Score Formula
+            <Typography
+              variant="subtitle1"
+              fontWeight={700}
+            >
+              Weekly Score
             </Typography>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Completion 60% + On-Time 30% + Consistency 10%
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.5 }}
+            >
+              Score is currently based on task completion percentage.
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            <Chip label="Completion 60" color="primary" />
-            <Chip label="On-Time 30" color="success" />
-            <Chip label="Consistency 10" color="warning" />
+          <Stack
+            direction="row"
+            spacing={1}
+            flexWrap="wrap"
+          >
+            <Chip
+              label={`Completed ${
+                weeklySummary?.completed || 0
+              }`}
+              color="success"
+            />
+
+            <Chip
+              label={`Pending ${
+                weeklySummary?.pending || 0
+              }`}
+              color="error"
+            />
+
+            <Chip
+              label={`Completion ${
+                weeklySummary?.completionPercentage || 0
+              }%`}
+              color="primary"
+            />
           </Stack>
         </Stack>
       </Paper>
 
-      {/* ===================================================
+      {/* =================================================
           EMPLOYEE TABLE
-      =================================================== */}
+      ================================================= */}
+
+      <Paper
+        sx={{
+          borderRadius: 3,
+          overflow: "hidden",
+          border: "1px solid",
+          borderColor: "divider",
+          mb: 3,
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Typography
+            variant="h6"
+            fontWeight={700}
+          >
+            Employee Scorecard
+          </Typography>
+
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 0.5 }}
+          >
+            Weekly task completion and performance
+          </Typography>
+        </Box>
+
+        <Divider />
+
+        <Box
+          sx={{
+            width: "100%",
+            height: searchedEmployee ? 500 : 220,
+          }}
+        >
+          {!searchedEmployee ? (
+            <Stack
+              alignItems="center"
+              justifyContent="center"
+              sx={{
+                height: "100%",
+                px: 2,
+              }}
+            >
+              <Typography
+                color="text.secondary"
+              >
+                Enter Employee User ID and date range to view performance.
+              </Typography>
+            </Stack>
+          ) : (
+            <DataGrid
+              rows={rows}
+              columns={columns}
+              disableRowSelectionOnClick
+              rowHeight={52}
+              columnHeaderHeight={42}
+              hideFooter
+              sx={{
+                border: 0,
+
+                "& .MuiDataGrid-columnHeaders": {
+                  backgroundColor: "action.hover",
+                },
+
+                "& .MuiDataGrid-columnHeaderTitle": {
+                  fontWeight: 700,
+                  fontSize: "0.72rem",
+                },
+
+                "& .MuiDataGrid-cell": {
+                  fontSize: "0.8rem",
+                  py: 0.5,
+                },
+
+                "& .MuiDataGrid-row:hover": {
+                  backgroundColor: "action.hover",
+                },
+
+                "& .MuiDataGrid-cell:focus": {
+                  outline: "none",
+                },
+
+                "& .MuiDataGrid-cell:focus-within": {
+                  outline: "none",
+                },
+
+                "& ::-webkit-scrollbar": {
+                  width: "8px",
+                  height: "8px",
+                },
+
+                "& ::-webkit-scrollbar-thumb": {
+                  borderRadius: "4px",
+                  backgroundColor:
+                    "rgba(0,0,0,0.25)",
+                },
+              }}
+            />
+          )}
+        </Box>
+      </Paper>
+
+      {/* =================================================
+          PENDING TASKS
+      ================================================= */}
 
       <Paper
         sx={{
@@ -613,13 +969,38 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         }}
       >
         <Box sx={{ p: 2 }}>
-          <Typography variant="h6" fontWeight={700}>
-            Employee Scorecard
-          </Typography>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Box>
+              <Typography
+                variant="h6"
+                fontWeight={700}
+              >
+                Pending Tasks
+              </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Weekly task completion and punctuality
-          </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.5 }}
+              >
+                Tasks not completed during the selected period
+              </Typography>
+            </Box>
+
+            <Chip
+              label={`${pendingTasks.length} Pending`}
+              color={
+                pendingTasks.length > 0
+                  ? "error"
+                  : "success"
+              }
+              variant="outlined"
+            />
+          </Stack>
         </Box>
 
         <Divider />
@@ -627,56 +1008,73 @@ const ViewScoreOfEmployes = ({ onBack }) => {
         <Box
           sx={{
             width: "100%",
-            height: 500,
+            height:
+              pendingTasks.length > 0
+                ? 400
+                : 180,
           }}
         >
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            disableRowSelectionOnClick
-            rowHeight={52}
-            columnHeaderHeight={42}
-            hideFooter
-            sx={{
-              border: 0,
+          {pendingTasks.length === 0 ? (
+            <Stack
+              alignItems="center"
+              justifyContent="center"
+              sx={{
+                height: "100%",
+              }}
+            >
+              <Typography
+                color="success.main"
+                fontWeight={600}
+              >
+                No pending tasks 🎉
+              </Typography>
+            </Stack>
+          ) : (
+            <DataGrid
+              rows={pendingTaskRows}
+              columns={pendingTaskColumns}
+              disableRowSelectionOnClick
+              rowHeight={48}
+              columnHeaderHeight={42}
+              pageSizeOptions={[10, 25, 50]}
+              initialState={{
+                pagination: {
+                  paginationModel: {
+                    pageSize: 10,
+                    page: 0,
+                  },
+                },
+              }}
+              sx={{
+                border: 0,
 
-              "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "action.hover",
-              },
+                "& .MuiDataGrid-columnHeaders": {
+                  backgroundColor: "action.hover",
+                },
 
-              "& .MuiDataGrid-columnHeaderTitle": {
-                fontWeight: 700,
-                fontSize: "0.72rem",
-              },
+                "& .MuiDataGrid-columnHeaderTitle": {
+                  fontWeight: 700,
+                  fontSize: "0.72rem",
+                },
 
-              "& .MuiDataGrid-cell": {
-                fontSize: "0.8rem",
-                py: 0.5,
-              },
+                "& .MuiDataGrid-cell": {
+                  fontSize: "0.8rem",
+                },
 
-              "& .MuiDataGrid-row:hover": {
-                backgroundColor: "action.hover",
-              },
+                "& .MuiDataGrid-row:hover": {
+                  backgroundColor: "action.hover",
+                },
 
-              "& .MuiDataGrid-cell:focus": {
-                outline: "none",
-              },
+                "& .MuiDataGrid-cell:focus": {
+                  outline: "none",
+                },
 
-              "& .MuiDataGrid-cell:focus-within": {
-                outline: "none",
-              },
-
-              "& ::-webkit-scrollbar": {
-                width: "8px",
-                height: "8px",
-              },
-
-              "& ::-webkit-scrollbar-thumb": {
-                borderRadius: "4px",
-                backgroundColor: "rgba(0,0,0,0.25)",
-              },
-            }}
-          />
+                "& .MuiDataGrid-cell:focus-within": {
+                  outline: "none",
+                },
+              }}
+            />
+          )}
         </Box>
       </Paper>
     </Box>
