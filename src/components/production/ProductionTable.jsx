@@ -1,4 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  addCommitedDateToOrder,
+  getAllProductions,
+} from "../../redux/slices/productionSlice";
 
 import {
   Button,
@@ -24,12 +29,16 @@ import {
 import PrintIcon from "@mui/icons-material/Print";
 import SalesOrderPrint from "../salesOrder/salesorder-print/SalesOrderPrint";
 import { productionPrintColumns } from "../../constant/printColumns/productionPrintColumn";
+import toast from "react-hot-toast";
 
 // =====================================================
 // COMPONENT
 // =====================================================
 
 const ProductionTable = ({ rows = [], loading = false }) => {
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth?.user?.user);
+
   const [open, setOpen] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -227,6 +236,55 @@ const ProductionTable = ({ rows = [], loading = false }) => {
   };
 
   // =====================================================
+  // UPDATE COMMITTED DATE
+  // =====================================================
+
+  const handleCommittedDateChange = useCallback(
+    async (row, committedDate) => {
+      console.log("📅 DATE SELECTED:", committedDate);
+
+      if (!committedDate) {
+        toast.error("Please select committed date");
+        return;
+      }
+
+      try {
+        const result = await dispatch(
+          addCommitedDateToOrder({
+            cycleID: row.cycleID,
+            division: row.division,
+            committedDate: committedDate,
+            updatedBy: user?.userName || user?.name || "",
+          }),
+        ).unwrap();
+
+        toast.success(result?.message || "Committed date updated successfully");
+        await dispatch(getAllProductions(row.division)).unwrap();
+      } catch (error) {
+        console.error("❌ Committed date update error:", error);
+
+        let errorMessage = "Failed to update committed date";
+
+        if (typeof error === "string") {
+          errorMessage = error;
+        } else if (error?.message) {
+          errorMessage =
+            typeof error.message === "string"
+              ? error.message
+              : JSON.stringify(error.message);
+        } else if (error?.error) {
+          errorMessage =
+            typeof error.error === "string"
+              ? error.error
+              : JSON.stringify(error.error);
+        }
+
+        toast.error(errorMessage);
+      }
+    },
+    [dispatch, user],
+  );
+  // =====================================================
   // OPEN DIALOG
   // =====================================================
 
@@ -312,11 +370,52 @@ const ProductionTable = ({ rows = [], loading = false }) => {
       // =================================================
       // DIVISION
       // =================================================
-
       {
-        field: "commitedDate",
-        headerName: "CommitedDate",
-        width: 120,
+        field: "committedDate",
+        headerName: "Committed Date",
+        width: 170,
+        sortable: false,
+
+        renderCell: (params) => {
+          const value = params.row.committedDate || "";
+
+          // Date already available
+          if (value) {
+            return (
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+                onClick={() => handleCommittedDateChange(params.row, value)}
+              >
+                {value}
+              </Typography>
+            );
+          }
+
+          // Date not available → show calendar
+          return (
+            <input
+              type="date"
+              value=""
+              onChange={(e) =>
+                handleCommittedDateChange(params.row, e.target.value)
+              }
+              style={{
+                width: "145px",
+                height: "32px",
+                padding: "4px 8px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                fontSize: "13px",
+                cursor: "pointer",
+              }}
+            />
+          );
+        },
       },
 
       // =================================================
@@ -474,7 +573,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
         },
       },
     ],
-    [],
+    [handleCommittedDateChange],
   );
 
   // =====================================================

@@ -122,3 +122,14 @@ export const completeQualityWithWastage =
     return response.data;
 
   };
+
+  export const addCommitedDate = async({committedDate,updatedBy,cycleID,division})=>{
+    const response = await api.patch('/production/add-commited-date',{
+      committedDate,
+      updatedBy,
+      cycleID,
+      division
+    });
+
+    return response.data;
+  }

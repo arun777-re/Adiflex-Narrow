@@ -116,7 +116,7 @@ export const menuConfig = {
       icon: <AssignmentRoundedIcon />,
     },
     {
-      id: 4,
+      id: 5,
       title: "Job Work Orders",
       path: "/jobwork-orders",
       icon: <AssignmentRoundedIcon />,

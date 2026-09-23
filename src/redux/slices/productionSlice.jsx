@@ -7,6 +7,7 @@ import {
   completeQualityWithWastage,
   getAllProduction,
   getAllJobWorkProductionOrders,
+  addCommitedDate,
 } from "../../services/productionApi";
 
 // fetch production orders by process
@@ -141,6 +142,28 @@ export const completeQuality = createAsyncThunk(
     }
   },
 );
+
+// add commited date to production 
+export const addCommitedDateToOrder = createAsyncThunk('/production/addcommitment',async({committedDate,updatedBy,
+  cycleID,division
+},{rejectWithValue})=>{
+  if(!committedDate){
+    throw new Error("Commited date is required");
+  }
+  console.log("commited date",committedDate)
+  try {
+    const res = await addCommitedDate({
+      committedDate,updatedBy,
+      cycleID,
+      division
+    });
+    return res;
+  } catch (error) {
+    return rejectWithValue(
+        error.response?.data?.message || error.message,
+    )
+  }
+})
 
 // =====================================================
 // INITIAL STATE
@@ -360,6 +383,14 @@ const productionSlice = createSlice({
           state.loading = false;
 
           state.error = action.payload;
+        },
+      )
+      .addCase(
+        addCommitedDateToOrder.fulfilled,
+
+        (state, action) => {
+          state.loading = false;
+          state.error = null;
         },
       );
   },

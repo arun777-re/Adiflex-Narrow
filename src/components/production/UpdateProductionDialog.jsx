@@ -91,8 +91,6 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
 
   // onsubmit function
   const onSubmit = async (data) => {
-   
-
     const updatedBy = user?.name || user?.user?.name || "";
     // ========================================
     // START PROCESS
@@ -102,7 +100,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
       const result = await dispatch(
         startProduction({
           soNo: data.soNo,
-          cycleID:data.cycleID,
+          cycleID: data.cycleID,
 
           product: data.product,
 
@@ -142,7 +140,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
           soNo: data.soNo,
 
           product: data.product,
-          cycleID:data.cycleID,
+          cycleID: data.cycleID,
           process,
 
           division: currentDivision,

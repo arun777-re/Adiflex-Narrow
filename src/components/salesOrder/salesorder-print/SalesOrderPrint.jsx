@@ -1,4 +1,3 @@
-
 const SalesOrderPrint = ({
   rows = [],
   title = "REPORT",
@@ -6,7 +5,7 @@ const SalesOrderPrint = ({
   meta = [],
   footer = true,
 }) => {
-  console.log("rows coming for print..........",rows);
+  console.log("rows coming for print..........", rows);
   const formatValue = (value, column, row) => {
     if (column.render) {
       return column.render(value, row);
@@ -43,7 +42,7 @@ const SalesOrderPrint = ({
       <table>
         <thead>
           <tr>
-            {columns.map((column,index) => (
+            {columns.map((column, index) => (
               <th key={`header-${column.key}-${index}`}>{column.label}</th>
             ))}
           </tr>
@@ -52,7 +51,9 @@ const SalesOrderPrint = ({
         <tbody>
           {rows.length > 0 ? (
             rows.map((row, rowIndex) => (
-              <tr key={`print-row-${row.id ?? row.cycleID ?? rowIndex}-${rowIndex}`}>
+              <tr
+                key={`print-row-${row.id ?? row.cycleID ?? rowIndex}-${rowIndex}`}
+              >
                 {columns.map((column) => (
                   <td key={column.key}>
                     {formatValue(row[column.key], column, row)}
@@ -77,9 +78,7 @@ const SalesOrderPrint = ({
             Total Records: <strong>{rows.length}</strong>
           </span>
 
-          <span>
-            Printed on: {new Date().toLocaleString("en-IN")}
-          </span>
+          <span>Printed on: {new Date().toLocaleString("en-IN")}</span>
         </div>
       )}
     </div>
