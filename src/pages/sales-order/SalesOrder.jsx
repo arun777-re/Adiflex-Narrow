@@ -151,175 +151,165 @@ const SalesOrder = () => {
   // FILTER
   // --------------------------------------------------
 
-  const filteredRows = useMemo(() => {
-    const normalizedSearch = String(search).trim().toLowerCase();
+const filteredRows = useMemo(() => {
+  const normalizedSearch = String(search || "").trim().toLowerCase();
+  const normalizedCustomer = String(customer || "").trim().toLowerCase();
+  const normalizedDivision = String(division || "").trim().toLowerCase();
 
-    const normalizedCustomer = String(customer).trim().toLowerCase();
+  return salesOrders.filter((row) => {
+    // ==========================================
+    // SEARCH
+    // ==========================================
 
-    const normalizedDivision = String(division).trim().toLowerCase();
+    const matchesSearch =
+      !normalizedSearch ||
+      String(row.soNo || "").toLowerCase().includes(normalizedSearch) ||
+      String(row.customer || "").toLowerCase().includes(normalizedSearch) ||
+      String(row.product || "").toLowerCase().includes(normalizedSearch);
 
-    const today = new Date();
-    const startOfWeek = new Date(today);
-    startOfWeek.setHours(0, 0, 0, 0);
+    if (!matchesSearch) return false;
 
-    startOfWeek.setDate(today.getDate() - today.getDay());
+    // ==========================================
+    // STATUS
+    // ==========================================
 
-    const endOfWeek = new Date(startOfWeek);
+    const productionStatus = String(row.productionstatus || "")
+      .trim()
+      .toLowerCase();
 
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    const dispatchStatus = String(row.dispatchstatus || "")
+      .trim()
+      .toLowerCase();
 
-    endOfWeek.setHours(23, 59, 59, 999);
+    const orderStatus = String(row.status || "")
+      .trim()
+      .toLowerCase();
 
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    if (status === "Pending") {
+      const isPending =
+        productionStatus === "pending production" ||
+        dispatchStatus === "pending dispatch";
 
-    const endOfMonth = new Date(
-      today.getFullYear(),
-      today.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
-    );
+      if (!isPending) return false;
+    }
 
-    return salesOrders.filter((row) => {
-      // -------------------------
-      // SEARCH
-      // -------------------------
+    if (status === "Completed") {
+      const isCompleted =
+        productionStatus === "completed" &&
+        dispatchStatus === "dispatched";
 
-      const matchesSearch =
-        !normalizedSearch ||
-        String(row.soNo || "")
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        String(row.customer || "")
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        String(row.product || "")
-          .toLowerCase()
-          .includes(normalizedSearch);
+      if (!isCompleted) return false;
+    }
 
-      if (!matchesSearch) return false;
+    if (status === "Cancelled") {
+      if (orderStatus !== "cancelled") return false;
+    }
 
-      // -------------------------
-      // STATUS
-      // -------------------------
+    // ==========================================
+    // CUSTOMER
+    // ==========================================
 
-      if (status !== "All") {
-        const productionStatus = String(row.productionstatus || "")
-          .trim()
-          .toLowerCase();
+    if (
+      normalizedCustomer !== "all" &&
+      String(row.customer || "").trim().toLowerCase() !==
+        normalizedCustomer
+    ) {
+      return false;
+    }
 
-        const dispatchStatus = String(row.dispatchstatus || "")
-          .trim()
-          .toLowerCase();
+    // ==========================================
+    // DIVISION
+    // ==========================================
 
-        if (status === "Pending") {
-          const pending =
-            productionStatus === "pending production" ||
-            dispatchStatus === "pending dispatch";
+    if (
+      normalizedDivision !== "all" &&
+      String(row.division || "").trim().toLowerCase() !==
+        normalizedDivision
+    ) {
+      return false;
+    }
 
-          if (!pending) return false;
-        }
+    // ==========================================
+    // DATE
+    // ==========================================
 
-        if (status === "Completed") {
-          const completed =
-            productionStatus === "completed" && dispatchStatus === "dispatched";
+    if (dateFilter !== "All") {
+      const rawDate = String(row.date || "").trim();
 
-          if (!completed) return false;
-        }
-      }
+      const parts = rawDate.split("/");
 
-      // -------------------------
-      // CUSTOMER
-      // -------------------------
+      if (parts.length !== 3) return false;
+
+      const day = Number(parts[0]);
+      const month = Number(parts[1]);
+      const year = Number(parts[2]);
 
       if (
-        normalizedCustomer !== "all" &&
-        String(row.customer || "")
-          .trim()
-          .toLowerCase() !== normalizedCustomer
+        !Number.isInteger(day) ||
+        !Number.isInteger(month) ||
+        !Number.isInteger(year)
       ) {
         return false;
       }
 
-      // -------------------------
-      // DIVISION
-      // -------------------------
+      const rowDate = new Date(year, month - 1, day);
 
-      if (
-        normalizedDivision !== "all" &&
-        String(row.division || "")
-          .trim()
-          .toLowerCase() !== normalizedDivision
-      ) {
-        return false;
+      rowDate.setHours(0, 0, 0, 0);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // TODAY
+      if (dateFilter === "Today") {
+        if (rowDate.getTime() !== today.getTime()) {
+          return false;
+        }
       }
 
-      // -------------------------
-      // DATE
-      // -------------------------
+      // THIS WEEK
+      if (dateFilter === "This Week") {
+        const weekStart = new Date(today);
 
-     if (dateFilter !== "All") {
-  const rawDate = String(row.date || "").trim();
+        weekStart.setDate(
+          today.getDate() - today.getDay()
+        );
 
-  // Your API date format: DD/MM/YYYY
-  const parts = rawDate.split("/");
+        weekStart.setHours(0, 0, 0, 0);
 
-  if (parts.length !== 3) {
-    return false;
-  }
+        const weekEnd = new Date(weekStart);
 
-  const day = Number(parts[0]);
-  const month = Number(parts[1]);
-  const year = Number(parts[2]);
+        weekEnd.setDate(
+          weekStart.getDate() + 6
+        );
 
-  if (!day || !month || !year) {
-    return false;
-  }
+        weekEnd.setHours(23, 59, 59, 999);
 
-  const rowDate = new Date(year, month - 1, day);
-  rowDate.setHours(0, 0, 0, 0);
+        if (rowDate < weekStart || rowDate > weekEnd) {
+          return false;
+        }
+      }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+      // THIS MONTH
+      if (dateFilter === "This Month") {
+        if (
+          rowDate.getMonth() !== today.getMonth() ||
+          rowDate.getFullYear() !== today.getFullYear()
+        ) {
+          return false;
+        }
+      }
+    }
 
-  // TODAY
-  if (dateFilter === "Today") {
-    return rowDate.getTime() === today.getTime();
-  }
-
-  // THIS MONTH
-  if (dateFilter === "This Month") {
-    return (
-      year === today.getFullYear() &&
-      month === today.getMonth() + 1
-    );
-  }
-
-  // THIS WEEK
-  if (dateFilter === "This Week") {
-    const weekStart = new Date(today);
-
-    // Sunday = 0
-    weekStart.setDate(
-      today.getDate() - today.getDay()
-    );
-    weekStart.setHours(0, 0, 0, 0);
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(
-      weekStart.getDate() + 6
-    );
-    weekEnd.setHours(23, 59, 59, 999);
-
-    return rowDate >= weekStart && rowDate <= weekEnd;
-  }
-}
-
-      return true;
-    });
-  }, [salesOrders, search, status, customer, division, dateFilter]);
+    return true;
+  });
+}, [
+  salesOrders,
+  search,
+  status,
+  customer,
+  division,
+  dateFilter,
+]);
 
   // --------------------------------------------------
   // REFRESH
