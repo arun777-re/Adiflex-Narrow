@@ -323,9 +323,12 @@ const ProductionTable = ({ rows = [], loading = false }) => {
 
       {
         field: "soNo",
-
         headerName: "SO No",
-
+        width: 130,
+      },
+      {
+        field: "receivedAt",
+        headerName: "Received At",
         width: 130,
       },
 
