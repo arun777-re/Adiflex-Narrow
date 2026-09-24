@@ -159,13 +159,6 @@ const SalesOrder = () => {
     const normalizedDivision = String(division).trim().toLowerCase();
 
     const today = new Date();
-
-    const todayStr = [
-      today.getFullYear(),
-      String(today.getMonth() + 1).padStart(2, "0"),
-      String(today.getDate()).padStart(2, "0"),
-    ].join("-");
-
     const startOfWeek = new Date(today);
     startOfWeek.setHours(0, 0, 0, 0);
 
@@ -267,33 +260,62 @@ const SalesOrder = () => {
       // DATE
       // -------------------------
 
-      if (dateFilter !== "All" && row.date) {
-        const rowDateStr = String(row.date).slice(0, 10);
+     if (dateFilter !== "All") {
+  const rawDate = String(row.date || "").trim();
 
-        if (dateFilter === "Today" && rowDateStr !== todayStr) {
-          return false;
-        }
+  // Your API date format: DD/MM/YYYY
+  const parts = rawDate.split("/");
 
-        if (dateFilter === "This Week" || dateFilter === "This Month") {
-          const [year, month, day] = rowDateStr.split("-").map(Number);
+  if (parts.length !== 3) {
+    return false;
+  }
 
-          const rowDate = new Date(year, month - 1, day);
+  const day = Number(parts[0]);
+  const month = Number(parts[1]);
+  const year = Number(parts[2]);
 
-          if (
-            dateFilter === "This Week" &&
-            (rowDate < startOfWeek || rowDate > endOfWeek)
-          ) {
-            return false;
-          }
+  if (!day || !month || !year) {
+    return false;
+  }
 
-          if (
-            dateFilter === "This Month" &&
-            (rowDate < startOfMonth || rowDate > endOfMonth)
-          ) {
-            return false;
-          }
-        }
-      }
+  const rowDate = new Date(year, month - 1, day);
+  rowDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // TODAY
+  if (dateFilter === "Today") {
+    return rowDate.getTime() === today.getTime();
+  }
+
+  // THIS MONTH
+  if (dateFilter === "This Month") {
+    return (
+      year === today.getFullYear() &&
+      month === today.getMonth() + 1
+    );
+  }
+
+  // THIS WEEK
+  if (dateFilter === "This Week") {
+    const weekStart = new Date(today);
+
+    // Sunday = 0
+    weekStart.setDate(
+      today.getDate() - today.getDay()
+    );
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(
+      weekStart.getDate() + 6
+    );
+    weekEnd.setHours(23, 59, 59, 999);
+
+    return rowDate >= weekStart && rowDate <= weekEnd;
+  }
+}
 
       return true;
     });
@@ -601,12 +623,12 @@ const SalesOrder = () => {
           Do NOT render on normal page load
       ========================================= */}
 
-      <Box
-        className="sales-order-print-only"
- 
-      >
-        <SalesOrderPrint title="SALES ORDER REPORT" rows={filteredRows}
-        columns={salesOrderColumns} />
+      <Box className="sales-order-print-only">
+        <SalesOrderPrint
+          title="SALES ORDER REPORT"
+          rows={filteredRows}
+          columns={salesOrderColumns}
+        />
       </Box>
 
       {/* =========================================
