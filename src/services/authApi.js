@@ -6,17 +6,12 @@
 
 export const loginUser = async (payload) => {
 
-  const response = await fetch(`${url}/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+  const response = await api.post(`${url}/login`,payload, {
+    timeout:30000
   });
 
-  const data = await response.json();
 
-  return data;
+  return response.data;
 };
 
 export const getAllUsers = async()=>{
