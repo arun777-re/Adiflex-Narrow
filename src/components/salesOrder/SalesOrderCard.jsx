@@ -96,6 +96,17 @@ const SalesOrderCard = ({ row, onEdit }) => {
             >
               {row.customer || "-"}
             </Typography>
+            <Typography
+              variant="body2"
+              color="text.primary"
+              sx={{
+                mt: 0.5,
+                fontWeight: 600,
+              }}
+            >
+              commited Date
+              {row.commitedDate || "-"}
+            </Typography>
           </Box>
 
           <Chip
