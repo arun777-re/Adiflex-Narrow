@@ -28,15 +28,11 @@ const DailyTaskEmployee = () => {
   const [completingTaskId, setCompletingTaskId] = useState(null);
 
   // Local completed state
-  const [completedTaskIds, setCompletedTaskIds] = useState(
-    new Set()
-  );
+  const [completedTaskIds, setCompletedTaskIds] = useState(new Set());
 
   const dispatch = useDispatch();
 
-  const userID = useSelector(
-    (state) => state.auth?.user?.user?.userID
-  );
+  const userID = useSelector((state) => state.auth?.user?.user?.userID);
 
   // =========================================================
   // FETCH EMPLOYEE TASKS
@@ -49,9 +45,7 @@ const DailyTaskEmployee = () => {
       setLoading(true);
       setError("");
 
-      const result = await dispatch(
-        getDailyTaskEmployees(userID)
-      ).unwrap();
+      const result = await dispatch(getDailyTaskEmployees(userID)).unwrap();
 
       // =====================================================
       // IF BACKEND ALREADY RETURNS completed: true
@@ -61,22 +55,18 @@ const DailyTaskEmployee = () => {
         const completedIds = new Set(
           result
             .filter((task) => task.completed === true)
-            .map((task) => task.taskId)
+            .map((task) => task.taskId),
         );
 
         setCompletedTaskIds(completedIds);
       }
-
     } catch (err) {
-      console.error(
-        "Failed to fetch employee tasks:",
-        err
-      );
+      console.error("Failed to fetch employee tasks:", err);
 
       setError(
         typeof err === "string"
           ? err
-          : err?.message || "Failed to fetch daily tasks"
+          : err?.message || "Failed to fetch daily tasks",
       );
     } finally {
       setLoading(false);
@@ -96,8 +86,7 @@ const DailyTaskEmployee = () => {
   // =========================================================
 
   const tasks = useSelector(
-    (state) =>
-      state.dailyTask.employeeTasks?.data || []
+    (state) => state.dailyTask.employeeTasks?.data || [],
   );
 
   // =========================================================
@@ -106,9 +95,7 @@ const DailyTaskEmployee = () => {
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort(
-      (a, b) =>
-        Number(a.taskOrder || 999) -
-        Number(b.taskOrder || 999)
+      (a, b) => Number(a.taskOrder || 999) - Number(b.taskOrder || 999),
     );
   }, [tasks]);
 
@@ -152,7 +139,7 @@ const DailyTaskEmployee = () => {
         completeDailyTasks({
           taskId,
           userID,
-        })
+        }),
       ).unwrap();
 
       // =====================================================
@@ -171,21 +158,14 @@ const DailyTaskEmployee = () => {
       // FETCH LATEST TASKS
       // =====================================================
 
-      await dispatch(
-        getDailyTaskEmployees(userID)
-      ).unwrap();
-
+      await dispatch(getDailyTaskEmployees(userID)).unwrap();
     } catch (err) {
-      console.error(
-        "Failed to complete daily task:",
-        err
-      );
+      console.error("Failed to complete daily task:", err);
 
       setError(
         typeof err === "string"
           ? err
-          : err?.message ||
-              "Failed to complete daily task"
+          : err?.message || "Failed to complete daily task",
       );
     } finally {
       setCompletingTaskId(null);
@@ -302,11 +282,7 @@ const DailyTaskEmployee = () => {
             bgcolor: "#ffffff",
           }}
         >
-          <Typography
-            variant="h6"
-            fontWeight={600}
-            sx={{ color: "#334155" }}
-          >
+          <Typography variant="h6" fontWeight={600} sx={{ color: "#334155" }}>
             No tasks assigned
           </Typography>
 
@@ -332,11 +308,9 @@ const DailyTaskEmployee = () => {
             // =================================================
 
             const isCompleted =
-              completedTaskIds.has(task.taskId) ||
-              task.completed === true;
+              completedTaskIds.has(task.taskId) || task.completed === true;
 
-            const isCompleting =
-              completingTaskId === task.taskId;
+            const isCompleting = completingTaskId === task.taskId;
 
             // =================================================
             // CARD COLORS
@@ -367,8 +341,7 @@ const DailyTaskEmployee = () => {
 
                   bgcolor: cardBackground,
 
-                  transition:
-                    "all 0.25s ease",
+                  transition: "all 0.25s ease",
 
                   boxShadow: isCompleted
                     ? "0 2px 8px rgba(22, 163, 74, 0.08)"
@@ -391,11 +364,7 @@ const DailyTaskEmployee = () => {
                       TASK INFO
                   ================================================= */}
 
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    alignItems="flex-start"
-                  >
+                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
                     {/* NUMBER / CHECK CIRCLE */}
 
                     <Box
@@ -424,14 +393,11 @@ const DailyTaskEmployee = () => {
 
                         fontWeight: 700,
 
-                        transition:
-                          "all 0.25s ease",
+                        transition: "all 0.25s ease",
                       }}
                     >
                       {isCompleted ? (
-                        <CheckCircleOutlineIcon
-                          fontSize="small"
-                        />
+                        <CheckCircleOutlineIcon fontSize="small" />
                       ) : (
                         index + 1
                       )}
@@ -443,17 +409,11 @@ const DailyTaskEmployee = () => {
                       <Typography
                         fontWeight={700}
                         sx={{
-                          color: isCompleted
-                            ? "#166534"
-                            : "#1e293b",
+                          color: isCompleted ? "#166534" : "#1e293b",
 
-                          textDecoration:
-                            isCompleted
-                              ? "line-through"
-                              : "none",
+                          textDecoration: isCompleted ? "line-through" : "none",
 
-                          transition:
-                            "all 0.25s ease",
+                          transition: "all 0.25s ease",
                         }}
                       >
                         {task.description}
@@ -471,22 +431,14 @@ const DailyTaskEmployee = () => {
                         }}
                       >
                         <Chip
-                          label={
-                            isCompleted
-                              ? "COMPLETED"
-                              : task.taskType
-                          }
+                          label={isCompleted ? "COMPLETED" : task.taskType}
                           size="small"
                           sx={{
                             fontWeight: 600,
 
-                            bgcolor: isCompleted
-                              ? "#dcfce7"
-                              : "#eff6ff",
+                            bgcolor: isCompleted ? "#dcfce7" : "#eff6ff",
 
-                            color: isCompleted
-                              ? "#166534"
-                              : "#1d4ed8",
+                            color: isCompleted ? "#166534" : "#1d4ed8",
                           }}
                         />
 
@@ -503,15 +455,9 @@ const DailyTaskEmployee = () => {
                             size="small"
                             variant="outlined"
                             sx={{
-                              borderColor:
-                                isCompleted
-                                  ? "#86efac"
-                                  : "#cbd5e1",
+                              borderColor: isCompleted ? "#86efac" : "#cbd5e1",
 
-                              color:
-                                isCompleted
-                                  ? "#166534"
-                                  : "#475569",
+                              color: isCompleted ? "#166534" : "#475569",
                             }}
                           />
                         )}
@@ -524,35 +470,17 @@ const DailyTaskEmployee = () => {
                   ================================================= */}
 
                   <Button
-                    variant={
-                      isCompleted
-                        ? "outlined"
-                        : "contained"
-                    }
-                    color={
-                      isCompleted
-                        ? "success"
-                        : "primary"
-                    }
+                    variant={isCompleted ? "outlined" : "contained"}
+                    color={isCompleted ? "success" : "primary"}
                     startIcon={
                       isCompleting ? (
-                        <CircularProgress
-                          size={17}
-                          color="inherit"
-                        />
+                        <CircularProgress size={17} color="inherit" />
                       ) : (
                         <CheckCircleOutlineIcon />
                       )
                     }
-                    onClick={() =>
-                      handleCompleteTask(
-                        task.taskId
-                      )
-                    }
-                    disabled={
-                      isCompleted ||
-                      isCompleting
-                    }
+                    onClick={() => handleCompleteTask(task.taskId)}
+                    disabled={isCompleted || isCompleting}
                     sx={{
                       minWidth: {
                         xs: "100%",
@@ -565,8 +493,7 @@ const DailyTaskEmployee = () => {
 
                       fontWeight: 600,
 
-                      transition:
-                        "all 0.2s ease",
+                      transition: "all 0.2s ease",
                     }}
                   >
                     {isCompleting
@@ -586,4 +513,3 @@ const DailyTaskEmployee = () => {
 };
 
 export default DailyTaskEmployee;
-

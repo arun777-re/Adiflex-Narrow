@@ -9,8 +9,14 @@ import {
 
 import WavingHandIcon from "@mui/icons-material/WavingHand";
 import ChecklistOutlinedIcon from "@mui/icons-material/ChecklistOutlined";
+import useNotification from "../../hooks/useNotification";
 
 const EmployeeDashboard = () => {
+
+  // employee notification listener
+  useNotification({
+    event:"new-notification"
+  });
   return (
     <Box
       sx={{

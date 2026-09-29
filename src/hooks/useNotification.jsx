@@ -24,11 +24,10 @@ const useNotification = ({
     console.log("👤 User:", authUser);
 
     const joinRoom = () => {
-      console.log("🚪 Joining Room:", authUser.role, authUser.division);
+      console.log("🚪 Joining Room:", authUser.userID);
 
       socket.emit("join-room", {
-        role: authUser.role,
-        division: authUser.division,
+       userID:authUser.userID
       });
     };
 

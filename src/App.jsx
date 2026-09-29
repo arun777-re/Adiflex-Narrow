@@ -22,6 +22,7 @@ import JobWorkOrders from "./pages/Production/JobWorkOrders";
 import AnalysisPage from "./pages/admin/AnalysisPage";
 import DailyTaskAdmin from "./pages/daily-tasks/admin/DailyTaskAdmin";
 import DailyTaskEmployee from "./pages/daily-tasks/employee/DailyTaskEmployee";
+import DelegationTask from "./pages/daily-tasks/employee/DelegationTask";
 
 function App() {
 
@@ -109,6 +110,10 @@ function App() {
           <Route
           path="/employee/daily-tasks"
           element={<DailyTaskEmployee/>}
+        />
+          <Route
+          path="/employee/delegation"
+          element={<DelegationTask/>}
         />
 
       </Route>

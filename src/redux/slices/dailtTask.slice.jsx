@@ -137,6 +137,39 @@ export const getPendingOrdersOfEMployee = createAsyncThunk('/daily-tasks-log/pen
           `Failed to complete daily task`
       );
   }
+});
+
+
+export const createDelegationTask = createAsyncThunk('/delegation-task/create',async({description,assignedTo,dueTime}
+  ,{rejectWithValue})=>{
+try {
+  const res = await api.post('/delegation-tasks/create',{
+    description,
+    assignedTo,
+    dueTime
+  });
+
+  return res.data;
+} catch (error) {
+  console.error("create delegation task error",error);
+  return rejectWithValue(error.response?.data?.message 
+    || `Failed to create delegation tasks`
+  )
+}
+});
+
+
+export const getDelegationTasksofEmployee = createAsyncThunk('/get-active-delegation',async({userID},{rejectWithValue})=>{
+try {
+  const res = await api.get(`/delegation-tasks/get-active?userID=${userID}`);
+   console.log("response...",res);
+  return res.data;
+} catch (error) {
+  console.error("create delegation task error",error);
+  return rejectWithValue(error.response?.data?.message 
+    || `Failed to get active delegation tasks`
+  )
+}
 })
 
 // =========================================================
@@ -147,6 +180,7 @@ const initialState = {
   employeeTasks:[],
   pendingTasks:[],
   weeklySummary:null,
+  delegationTasks:[],
   loading: false,
   creating: false,
   updating: false,
@@ -313,7 +347,12 @@ const dailyTaskSlice = createSlice({
 
         state.pendingTasks = [];
       }
-    );
+    )
+    .addCase(getDelegationTasksofEmployee.fulfilled,(state,action)=>{
+         state.delegationTasks = action.payload;
+         state.error = null;
+         state.loading = false;
+    });
   },
 });
 

@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   Box,
@@ -18,7 +25,6 @@ import {
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
-
 import { useDispatch, useSelector } from "react-redux";
 
 import AddIcon from "@mui/icons-material/Add";
@@ -31,27 +37,19 @@ import {
   createDailyTask,
   updateDailyTask,
   fetchDailyTasks,
+  createDelegationTask,
 } from "../../../redux/slices/dailtTask.slice.jsx";
 
 import { getAllUsersData } from "../../../redux/slices/authSlices.jsx";
 import ViewScoreOfEmployes from "./ViewScoreOfEmployes.jsx";
-
-// =========================================================
-// TASK TYPES
-// =========================================================
 
 const TASK_TYPE = {
   DAILY: "DAILY",
   DELEGATION: "DELEGATION",
 };
 
-// =========================================================
-// INITIAL FORM
-// =========================================================
-
-const initialForm = {
+const INITIAL_FORM = {
   taskType: TASK_TYPE.DAILY,
-  description: "",
   assignedTo: "",
   department: "",
   taskOrder: "",
@@ -60,10 +58,6 @@ const initialForm = {
   active: true,
 };
 
-// =========================================================
-// PRIORITY COLORS
-// =========================================================
-
 const priorityColor = {
   Low: "default",
   Medium: "info",
@@ -71,251 +65,329 @@ const priorityColor = {
   Urgent: "error",
 };
 
-// =========================================================
-// ACTIVE VALUE HELPER
-// =========================================================
-
-const isTaskActive = (value) => {
-  return value === true || value === "TRUE" || value === "true";
-};
-
-// =========================================================
-// COMPONENT
-// =========================================================
+const isTaskActive = (value) =>
+  value === true ||
+  value === "TRUE" ||
+  value === "true";
 
 const DailyTaskAdmin = () => {
-  // =======================================================
-  // REDUX
-  // =======================================================
-
   const dispatch = useDispatch();
 
-  const {
-    tasks = [],
-    loading,
-    creating,
-    updating,
-  } = useSelector((state) => state.dailyTask);
+  const { tasks = [], loading, creating, updating } =
+    useSelector((state) => state.dailyTask || {});
 
-  // Logged-in user
-  const authUser = useSelector((state) => state.auth?.user?.user);
+  const authUser = useSelector(
+    (state) => state.auth?.user?.user,
+  );
 
-  // Users
-  const users = useSelector((state) => state.auth?.users?.data || []);
+  const users = useSelector(
+    (state) => state.auth?.users?.data || [],
+  );
 
-  // =======================================================
-  // LOCAL UI STATE
-  // =======================================================
+  // =========================================================
+  // STATE
+  // =========================================================
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-
   const [editingTask, setEditingTask] = useState(null);
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [viewScore, setViewScore] = useState(false);
 
-  const [form, setForm] = useState(initialForm);
+  // =========================================================
+  // DESCRIPTION IS KEPT OUTSIDE REACT STATE
+  // IMPORTANT: typing description will NOT call setForm()
+  // =========================================================
 
+  const descriptionRef = useRef(null);
 
-  const [viewScore,setViewScore] = useState(false);
-
-  // =======================================================
-  // FETCH TASKS + USERS
-  // =======================================================
+  // =========================================================
+  // INITIAL DATA
+  // =========================================================
 
   useEffect(() => {
     dispatch(fetchDailyTasks());
     dispatch(getAllUsersData());
   }, [dispatch]);
 
-  // =======================================================
+  // =========================================================
   // EMPLOYEES
-  // =======================================================
+  // =========================================================
 
   const employees = useMemo(() => {
-    return users?.map((user) => ({
-      userId: user.userID,
-      name: user.name,
-      department: user.division,
-      role: user.role,
+    if (!Array.isArray(users)) return [];
+
+    return users.map((user) => ({
+      userId: user?.userID || "",
+      name: user?.name || "",
+      department: user?.division || "",
+      role: user?.role || "",
     }));
   }, [users]);
 
-  // =======================================================
-  // DEBUG
-  // =======================================================
-
-  console.log("👤 Auth User:", authUser);
-  console.log("👥 Employees:", employees);
-  console.log("📋 Tasks:", tasks);
-
-  // =======================================================
+  // =========================================================
   // KPI
-  // =======================================================
+  // =========================================================
 
-  const totalTasks = tasks.length;
+  const totalTasks = Array.isArray(tasks)
+    ? tasks.length
+    : 0;
 
-  const activeTasks = useMemo(
-    () => tasks.filter((task) => isTaskActive(task.active)).length,
-    [tasks],
+  const activeTasks = useMemo(() => {
+    if (!Array.isArray(tasks)) return 0;
+
+    return tasks.filter((task) =>
+      isTaskActive(task?.active),
+    ).length;
+  }, [tasks]);
+
+  const inactiveTasks =
+    totalTasks - activeTasks;
+
+  // =========================================================
+  // NORMAL FORM CHANGE
+  // DESCRIPTION IS NEVER SENT HERE
+  // =========================================================
+
+  const handleChange = useCallback(
+    (field, value) => {
+      // Description intentionally bypasses React state.
+      if (field === "description") {
+        return;
+      }
+
+      setForm((prev) => {
+        if (prev[field] === value) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [field]: value,
+        };
+      });
+    },
+    [],
   );
 
-  const inactiveTasks = totalTasks - activeTasks;
+  // =========================================================
+  // TASK TYPE
+  // =========================================================
 
-  // =======================================================
-  // FORM CHANGE
-  // =======================================================
+  const handleTaskTypeChange = useCallback(
+    (taskType) => {
+      setForm((prev) => {
+        const priority =
+          taskType === TASK_TYPE.DAILY
+            ? ""
+            : prev.priority || "Medium";
 
-  const handleChange = (field, value) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+        const taskOrder =
+          taskType === TASK_TYPE.DELEGATION
+            ? ""
+            : prev.taskOrder || "";
 
-  // =======================================================
-  // TASK TYPE CHANGE
-  // =======================================================
+        if (
+          prev.taskType === taskType &&
+          prev.priority === priority &&
+          prev.taskOrder === taskOrder
+        ) {
+          return prev;
+        }
 
-  const handleTaskTypeChange = (taskType) => {
-    setForm((prev) => ({
-      ...prev,
-      taskType,
+        return {
+          ...prev,
+          taskType,
+          priority,
+          taskOrder,
+        };
+      });
+    },
+    [],
+  );
 
-      // Daily ke liye priority nahi
-      priority: taskType === TASK_TYPE.DAILY ? "" : prev.priority || "Medium",
+  // =========================================================
+  // EMPLOYEE
+  // =========================================================
 
-      // Delegation ke liye task order nahi
-      taskOrder: taskType === TASK_TYPE.DELEGATION ? "" : prev.taskOrder || "",
-    }));
-  };
+  const handleEmployeeChange = useCallback(
+    (userId) => {
+      const employee = employees.find(
+        (item) => item.userId === userId,
+      );
 
-  // =======================================================
-  // EMPLOYEE CHANGE
-  // =======================================================
+      const department =
+        employee?.department || "";
 
-  const handleEmployeeChange = (userId) => {
-    const employee = employees.find((item) => item.userId === userId);
+      setForm((prev) => {
+        if (
+          prev.assignedTo === userId &&
+          prev.department === department
+        ) {
+          return prev;
+        }
 
-    setForm((prev) => ({
-      ...prev,
-      assignedTo: userId,
-      department: employee?.department || "",
-    }));
-  };
+        return {
+          ...prev,
+          assignedTo: userId,
+          department,
+        };
+      });
+    },
+    [employees],
+  );
 
-  // =======================================================
-  // OPEN CREATE
-  // =======================================================
+  // =========================================================
+  // CREATE
+  // =========================================================
 
-  const handleOpenCreate = () => {
+  const handleOpenCreate = useCallback(() => {
     setEditingTask(null);
 
     setForm({
-      ...initialForm,
-      taskType: TASK_TYPE.DAILY,
-      priority: "",
+      ...INITIAL_FORM,
     });
 
+    // Clear uncontrolled textarea manually
+    if (descriptionRef.current) {
+      descriptionRef.current.value = "";
+    }
+
     setDrawerOpen(true);
-  };
+  }, []);
 
-  // =======================================================
-  // OPEN EDIT
-  // =======================================================
+  // =========================================================
+  // EDIT
+  // =========================================================
 
-  const handleOpenEdit = (task) => {
-    setEditingTask(task);
+  const handleOpenEdit = useCallback(
+    (task) => {
+      if (!task) return;
+
+      setEditingTask(task);
+
+      setForm({
+        taskType:
+          task.taskType || TASK_TYPE.DAILY,
+        assignedTo: task.assignedTo || "",
+        department: task.department || "",
+        taskOrder: task.taskOrder || "",
+        priority: task.priority || "",
+        dueTime: task.dueTime || "",
+        active: isTaskActive(task.active),
+      });
+
+      // Set description without React state
+      requestAnimationFrame(() => {
+        if (descriptionRef.current) {
+          descriptionRef.current.value =
+            task.description || "";
+        }
+      });
+
+      setDrawerOpen(true);
+    },
+    [],
+  );
+
+  // =========================================================
+  // CLOSE
+  // =========================================================
+
+  const handleCloseDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    setEditingTask(null);
 
     setForm({
-      taskType: task.taskType || TASK_TYPE.DAILY,
-
-      description: task.description || "",
-
-      assignedTo: task.assignedTo || "",
-
-      department: task.department || "",
-
-      taskOrder: task.taskOrder || "",
-
-      priority: task.priority || "",
-
-      dueTime: task.dueTime || "",
-
-      active: isTaskActive(task.active),
+      ...INITIAL_FORM,
     });
 
-    setDrawerOpen(true);
-  };
+    if (descriptionRef.current) {
+      descriptionRef.current.value = "";
+    }
+  }, []);
 
-  // =======================================================
-  // CREATE / UPDATE
-  // =======================================================
+  // =========================================================
+  // SUBMIT
+  // =========================================================
 
-  const handleSubmit = async () => {
-    // Description validation
-    if (!form.description.trim()) {
-      console.warn("Description is required");
+  const handleSubmit = useCallback(async () => {
+    const description =
+      descriptionRef.current?.value?.trim() || "";
+
+    if (!description) {
+      console.warn(
+        "Description is required",
+      );
       return;
     }
 
-    // Assigned employee validation
     if (!form.assignedTo) {
-      console.warn("Assigned To is required");
+      console.warn(
+        "Assigned To is required",
+      );
       return;
     }
 
-    // Daily task order validation
-    if (form.taskType === TASK_TYPE.DAILY && !form.taskOrder) {
-      console.warn("Task Order is required for Daily Task");
+    if (
+      form.taskType === TASK_TYPE.DAILY &&
+      !form.taskOrder
+    ) {
+      console.warn(
+        "Task Order is required for Daily Task",
+      );
       return;
     }
 
-    // Delegation priority validation
-    if (form.taskType === TASK_TYPE.DELEGATION && !form.priority) {
-      console.warn("Priority is required for Delegation Task");
+    if (
+      form.taskType === TASK_TYPE.DELEGATION &&
+      !form.priority
+    ) {
+      console.warn(
+        "Priority is required for Delegation Task",
+      );
       return;
     }
 
     try {
-      // =====================================================
-      // TASK DATA
-      // =====================================================
-
       const taskData = {
         taskType: form.taskType,
-
-        description: form.description.trim(),
-
+        description,
         assignedTo: form.assignedTo,
-
-        // Logged-in admin
-        assignedBy: authUser?.userId,
-
+        assignedBy: authUser?.userId || "",
         department: form.department,
 
-        // Daily only
-        taskOrder: form.taskType === TASK_TYPE.DAILY ? form.taskOrder : "",
+        taskOrder:
+          form.taskType === TASK_TYPE.DAILY
+            ? form.taskOrder
+            : "",
 
-        // Delegation only
-        priority: form.taskType === TASK_TYPE.DELEGATION ? form.priority : "",
+        priority:
+          form.taskType === TASK_TYPE.DELEGATION
+            ? form.priority
+            : "",
 
         dueTime: form.dueTime,
-
         active: form.active,
       };
 
-      console.log("📤 Task Data:", taskData);
-
-      // =====================================================
-      // CREATE
-      // =====================================================
+      console.log(
+        "📤 Task Data:",
+        taskData,
+      );
 
       if (!editingTask) {
-        await dispatch(createDailyTask(taskData)).unwrap();
-      }
-
-      // =====================================================
-      // UPDATE
-      // =====================================================
-      else {
+        if (
+          form.taskType === TASK_TYPE.DAILY
+        ) {
+          await dispatch(
+            createDailyTask(taskData),
+          ).unwrap();
+        } else {
+          await dispatch(
+            createDelegationTask(taskData),
+          ).unwrap();
+        }
+      } else {
         await dispatch(
           updateDailyTask({
             taskId: editingTask.taskId,
@@ -324,67 +396,56 @@ const DailyTaskAdmin = () => {
         ).unwrap();
       }
 
-      // =====================================================
-      // REFRESH
-      // =====================================================
+      await dispatch(
+        fetchDailyTasks(),
+      ).unwrap();
 
-      await dispatch(fetchDailyTasks());
-
-      // =====================================================
-      // RESET
-      // =====================================================
-
-      setDrawerOpen(false);
-      setEditingTask(null);
-      setForm(initialForm);
+      handleCloseDrawer();
     } catch (error) {
-      console.error("❌ Daily Task submit error:", error);
+      console.error(
+        "❌ Daily Task submit error:",
+        error,
+      );
     }
-  };
+  }, [
+    form,
+    authUser,
+    editingTask,
+    dispatch,
+    handleCloseDrawer,
+  ]);
 
-  // =======================================================
-  // CLOSE DRAWER
-  // =======================================================
-
-  const handleCloseDrawer = () => {
-    setDrawerOpen(false);
-    setEditingTask(null);
-    setForm(initialForm);
-  };
-
-  // =======================================================
-  // DATAGRID COLUMNS
-  // =======================================================
+  // =========================================================
+  // COLUMNS
+  // =========================================================
 
   const columns = useMemo(
     () => [
-      // ===================================================
-      // TASK ID
-      // ===================================================
-
       {
         field: "taskId",
         headerName: "TASK ID",
         width: 100,
-        sortable: true,
       },
-
-      // ===================================================
-      // TASK TYPE
-      // ===================================================
 
       {
         field: "taskType",
         headerName: "TASK TYPE",
         width: 115,
-
         renderCell: (params) => (
           <Chip
             size="small"
             label={
-              params.value === TASK_TYPE.DELEGATION ? "Delegation" : "Daily"
+              params.value ===
+              TASK_TYPE.DELEGATION
+                ? "Delegation"
+                : "Daily"
             }
-            color={params.value === TASK_TYPE.DELEGATION ? "warning" : "info"}
+            color={
+              params.value ===
+              TASK_TYPE.DELEGATION
+                ? "warning"
+                : "info"
+            }
             variant="outlined"
             sx={{
               height: 24,
@@ -394,16 +455,10 @@ const DailyTaskAdmin = () => {
         ),
       },
 
-      // ===================================================
-      // DESCRIPTION
-      // ===================================================
-
       {
         field: "description",
         headerName: "DESCRIPTION",
         width: 260,
-        sortable: true,
-
         renderCell: (params) => (
           <Typography
             variant="body2"
@@ -416,19 +471,16 @@ const DailyTaskAdmin = () => {
         ),
       },
 
-      // ===================================================
-      // ASSIGNED TO
-      // ===================================================
-
       {
         field: "assignedTo",
         headerName: "ASSIGNED TO",
         width: 155,
-
         renderCell: (params) => {
-          const employee = employees.find(
-            (item) => item.userId === params.value,
-          );
+          const employee =
+            employees.find(
+              (item) =>
+                item.userId === params.value,
+            );
 
           return (
             <Box
@@ -441,13 +493,23 @@ const DailyTaskAdmin = () => {
                 variant="body2"
                 fontWeight={600}
                 noWrap
-                title={employee?.name || params.value || ""}
+                title={
+                  employee?.name ||
+                  params.value ||
+                  ""
+                }
               >
-                {employee?.name || params.value || "--"}
+                {employee?.name ||
+                  params.value ||
+                  "--"}
               </Typography>
 
               {employee?.role && (
-                <Typography variant="caption" color="text.secondary" noWrap>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  noWrap
+                >
                   {employee.role}
                 </Typography>
               )}
@@ -456,41 +518,35 @@ const DailyTaskAdmin = () => {
         },
       },
 
-      // ===================================================
-      // ASSIGNED BY
-      // ===================================================
-
       {
         field: "assignedBy",
         headerName: "ASSIGNED BY",
         width: 120,
-
         renderCell: (params) => (
-          <Typography variant="body2" noWrap title={params.value || ""}>
+          <Typography
+            variant="body2"
+            noWrap
+            title={params.value || ""}
+          >
             {params.value || "--"}
           </Typography>
         ),
       },
-
-      // ===================================================
-      // DEPARTMENT
-      // ===================================================
 
       {
         field: "department",
         headerName: "DEPARTMENT",
         width: 120,
-
         renderCell: (params) => (
-          <Typography variant="body2" noWrap title={params.value || ""}>
+          <Typography
+            variant="body2"
+            noWrap
+            title={params.value || ""}
+          >
             {params.value || "--"}
           </Typography>
         ),
       },
-
-      // ===================================================
-      // TASK ORDER
-      // ===================================================
 
       {
         field: "taskOrder",
@@ -498,31 +554,34 @@ const DailyTaskAdmin = () => {
         width: 95,
         align: "center",
         headerAlign: "center",
-
         renderCell: (params) => {
-          if (params.row.taskType !== TASK_TYPE.DAILY) {
+          if (
+            params.row.taskType !==
+            TASK_TYPE.DAILY
+          ) {
             return "--";
           }
 
           return (
-            <Typography variant="body2" fontWeight={700}>
+            <Typography
+              variant="body2"
+              fontWeight={700}
+            >
               {params.value || "--"}
             </Typography>
           );
         },
       },
 
-      // ===================================================
-      // PRIORITY
-      // ===================================================
-
       {
         field: "priority",
         headerName: "PRIORITY",
         width: 100,
-
         renderCell: (params) => {
-          if (params.row.taskType !== TASK_TYPE.DELEGATION) {
+          if (
+            params.row.taskType !==
+            TASK_TYPE.DELEGATION
+          ) {
             return "--";
           }
 
@@ -530,7 +589,11 @@ const DailyTaskAdmin = () => {
             <Chip
               size="small"
               label={params.value || "--"}
-              color={priorityColor[params.value] || "default"}
+              color={
+                priorityColor[
+                  params.value
+                ] || "default"
+              }
               sx={{
                 height: 24,
                 fontSize: "0.7rem",
@@ -539,39 +602,44 @@ const DailyTaskAdmin = () => {
           );
         },
       },
-
-      // ===================================================
-      // DUE TIME
-      // ===================================================
 
       {
         field: "dueTime",
         headerName: "DUE TIME",
         width: 90,
-
         renderCell: (params) => (
-          <Typography variant="body2">{params.value || "--"}</Typography>
+          <Typography variant="body2">
+            {params.value || "--"}
+          </Typography>
         ),
       },
-
-      // ===================================================
-      // ACTIVE
-      // ===================================================
 
       {
         field: "active",
         headerName: "ACTIVE",
         width: 95,
-
         renderCell: (params) => {
-          const active = isTaskActive(params.value);
+          const active =
+            isTaskActive(params.value);
 
           return (
             <Chip
               size="small"
-              label={active ? "Active" : "Inactive"}
-              color={active ? "success" : "default"}
-              variant={active ? "filled" : "outlined"}
+              label={
+                active
+                  ? "Active"
+                  : "Inactive"
+              }
+              color={
+                active
+                  ? "success"
+                  : "default"
+              }
+              variant={
+                active
+                  ? "filled"
+                  : "outlined"
+              }
               sx={{
                 height: 24,
                 fontSize: "0.7rem",
@@ -581,41 +649,35 @@ const DailyTaskAdmin = () => {
         },
       },
 
-      // ===================================================
-      // CREATED AT
-      // ===================================================
-
       {
         field: "createdAt",
         headerName: "CREATED AT",
         width: 155,
-
         renderCell: (params) => (
-          <Typography variant="body2" noWrap title={params.value || ""}>
+          <Typography
+            variant="body2"
+            noWrap
+            title={params.value || ""}
+          >
             {params.value || "--"}
           </Typography>
         ),
       },
-
-      // ===================================================
-      // UPDATED AT
-      // ===================================================
 
       {
         field: "updatedAt",
         headerName: "UPDATED AT",
         width: 155,
-
         renderCell: (params) => (
-          <Typography variant="body2" noWrap title={params.value || ""}>
+          <Typography
+            variant="body2"
+            noWrap
+            title={params.value || ""}
+          >
             {params.value || "--"}
           </Typography>
         ),
       },
-
-      // ===================================================
-      // ACTION
-      // ===================================================
 
       {
         field: "actions",
@@ -624,43 +686,58 @@ const DailyTaskAdmin = () => {
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
-
         renderCell: (params) => (
-          <IconButton size="small" onClick={() => handleOpenEdit(params.row)}>
+          <IconButton
+            size="small"
+            onClick={() =>
+              handleOpenEdit(params.row)
+            }
+          >
             <EditIcon fontSize="small" />
           </IconButton>
         ),
       },
     ],
-    [employees],
+    [employees, handleOpenEdit],
   );
 
-  // =======================================================
-  // DATAGRID ROWS
-  // =======================================================
+  // =========================================================
+  // ROWS
+  // =========================================================
 
   const rows = useMemo(() => {
+    if (!Array.isArray(tasks)) return [];
+
     return tasks.map((task) => ({
       ...task,
-
-      // DataGrid requires unique id
       id: task.taskId,
     }));
   }, [tasks]);
 
-  // =======================================================
-  // RENDER
-  // =======================================================
+  // =========================================================
+  // SCORE SCREEN
+  // =========================================================
+
+  if (viewScore) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <ViewScoreOfEmployes
+          onBack={() =>
+            setViewScore(false)
+          }
+        />
+      </Box>
+    );
+  }
+
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* =================================================
-          HEADER
-      ================================================= */}
-            {/* if view card then show score of employess */}
-      {viewScore ?  <ViewScoreOfEmployes onBack={()=>setViewScore(prev=> !prev)}/> : (
+      {/* HEADER */}
 
-<>
       <Stack
         direction={{
           xs: "column",
@@ -675,36 +752,53 @@ const DailyTaskAdmin = () => {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={700}>
+          <Typography
+            variant="h5"
+            fontWeight={700}
+          >
             Task Management
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Manage recurring daily tasks and delegated employee tasks
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 0.5 }}
+          >
+            Manage recurring daily tasks
+            and delegated employee tasks
           </Typography>
         </Box>
-        <Button variant="contained"
-        onClick={()=> setViewScore(prev => !prev)}
-        >
-          View Score Card
-        </Button>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreate}
+        <Stack
+          direction="row"
+          spacing={1}
         >
-          Create Task
-        </Button>
+          <Button
+            variant="outlined"
+            onClick={() =>
+              setViewScore(true)
+            }
+          >
+            View Score Card
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreate}
+          >
+            Create Task
+          </Button>
+        </Stack>
       </Stack>
 
-      {/* =================================================
-          KPI CARDS
-      ================================================= */}
+      {/* KPI */}
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {/* TOTAL */}
-
+      <Grid
+        container
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper
             sx={{
@@ -720,11 +814,17 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Total Tasks
                 </Typography>
 
-                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="h4"
+                  fontWeight={700}
+                >
                   {totalTasks}
                 </Typography>
               </Box>
@@ -734,8 +834,6 @@ const DailyTaskAdmin = () => {
           </Paper>
         </Grid>
 
-        {/* ACTIVE */}
-
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper
             sx={{
@@ -751,11 +849,17 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Active Tasks
                 </Typography>
 
-                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="h4"
+                  fontWeight={700}
+                >
                   {activeTasks}
                 </Typography>
               </Box>
@@ -765,8 +869,6 @@ const DailyTaskAdmin = () => {
           </Paper>
         </Grid>
 
-        {/* INACTIVE */}
-
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper
             sx={{
@@ -782,11 +884,17 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Inactive Tasks
                 </Typography>
 
-                <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="h4"
+                  fontWeight={700}
+                >
                   {inactiveTasks}
                 </Typography>
               </Box>
@@ -797,9 +905,7 @@ const DailyTaskAdmin = () => {
         </Grid>
       </Grid>
 
-      {/* =================================================
-    TASK TABLE
-================================================= */}
+      {/* TABLE */}
 
       <Paper
         sx={{
@@ -810,20 +916,23 @@ const DailyTaskAdmin = () => {
         }}
       >
         <Box sx={{ p: 2 }}>
-          <Typography variant="h6" fontWeight={700}>
+          <Typography
+            variant="h6"
+            fontWeight={700}
+          >
             Tasks
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Manage recurring daily tasks and one-time delegated tasks.
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            Manage recurring daily tasks
+            and one-time delegated tasks.
           </Typography>
         </Box>
 
         <Divider />
-
-        {/* =================================================
-      DATAGRID
-  ================================================= */}
 
         <Box
           sx={{
@@ -842,53 +951,46 @@ const DailyTaskAdmin = () => {
             sx={{
               border: 0,
 
-              // DataGrid itself handles both scrolls
               "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "action.hover",
+                backgroundColor:
+                  "action.hover",
               },
 
-              "& .MuiDataGrid-columnHeaderTitle": {
-                fontWeight: 700,
-                fontSize: "0.72rem",
-              },
+              "& .MuiDataGrid-columnHeaderTitle":
+                {
+                  fontWeight: 700,
+                  fontSize: "0.72rem",
+                },
 
               "& .MuiDataGrid-cell": {
                 fontSize: "0.8rem",
-                py: 0.5,
               },
 
               "& .MuiDataGrid-row:hover": {
-                backgroundColor: "action.hover",
+                backgroundColor:
+                  "action.hover",
               },
 
               "& .MuiDataGrid-cell:focus": {
                 outline: "none",
               },
 
-              "& .MuiDataGrid-cell:focus-within": {
-                outline: "none",
-              },
-
-              // Compact scrollbar
-              "& ::-webkit-scrollbar": {
-                width: "8px",
-                height: "8px",
-              },
-
-              "& ::-webkit-scrollbar-thumb": {
-                borderRadius: "4px",
-                backgroundColor: "rgba(0,0,0,0.25)",
-              },
+              "& .MuiDataGrid-cell:focus-within":
+                {
+                  outline: "none",
+                },
             }}
           />
         </Box>
       </Paper>
 
-      {/* =================================================
-          CREATE / EDIT DRAWER
-      ================================================= */}
+      {/* DRAWER */}
 
-      <Drawer anchor="right" open={drawerOpen} onClose={handleCloseDrawer}>
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={handleCloseDrawer}
+      >
         <Box
           sx={{
             width: {
@@ -898,10 +1000,13 @@ const DailyTaskAdmin = () => {
             p: 3,
           }}
         >
-          {/* TITLE */}
-
-          <Typography variant="h6" fontWeight={700}>
-            {editingTask ? "Edit Task" : "Create Task"}
+          <Typography
+            variant="h6"
+            fontWeight={700}
+          >
+            {editingTask
+              ? "Edit Task"
+              : "Create Task"}
           </Typography>
 
           <Typography
@@ -912,45 +1017,72 @@ const DailyTaskAdmin = () => {
               mb: 3,
             }}
           >
-            {form.taskType === TASK_TYPE.DELEGATION
+            {form.taskType ===
+            TASK_TYPE.DELEGATION
               ? "Create a one-time task and assign it to an employee."
               : "Create a recurring task that remains assigned every working day until deactivated."}
           </Typography>
 
           <Stack spacing={2}>
-            {/* =========================================
-                TASK TYPE
-            ========================================= */}
+            {/* TASK TYPE */}
 
             <TextField
               select
               label="Task Type"
               fullWidth
               value={form.taskType}
-              onChange={(e) => handleTaskTypeChange(e.target.value)}
+              onChange={(e) =>
+                handleTaskTypeChange(
+                  e.target.value,
+                )
+              }
             >
-              <MenuItem value={TASK_TYPE.DAILY}>Daily Task</MenuItem>
+              <MenuItem
+                value={TASK_TYPE.DAILY}
+              >
+                Daily Task
+              </MenuItem>
 
-              <MenuItem value={TASK_TYPE.DELEGATION}>Delegation Task</MenuItem>
+              <MenuItem
+                value={TASK_TYPE.DELEGATION}
+              >
+                Delegation Task
+              </MenuItem>
             </TextField>
 
-            {/* =========================================
-                DESCRIPTION
-            ========================================= */}
+            {/* DESCRIPTION */}
 
-            <TextField
-              label="Description"
-              required
-              fullWidth
-              multiline
-              minRows={3}
-              value={form.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-            />
+            <Box>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 0.5 }}
+              >
+                Description *
+              </Typography>
 
-            {/* =========================================
-                ASSIGNED TO
-            ========================================= */}
+              <textarea
+                ref={descriptionRef}
+                defaultValue=""
+                rows={4}
+                placeholder="Enter task description..."
+                style={{
+                  width: "100%",
+                  minHeight: "110px",
+                  padding: "12px",
+                  fontSize: "16px",
+                  fontFamily: "inherit",
+                  border:
+                    "1px solid #c4c4c4",
+                  borderRadius: "6px",
+                  boxSizing: "border-box",
+                  resize: "vertical",
+                  outline: "none",
+                }}
+              />
+            </Box>
+
+            {/* ASSIGNED TO */}
 
             <TextField
               select
@@ -958,18 +1090,24 @@ const DailyTaskAdmin = () => {
               required
               fullWidth
               value={form.assignedTo}
-              onChange={(e) => handleEmployeeChange(e.target.value)}
+              onChange={(e) =>
+                handleEmployeeChange(
+                  e.target.value,
+                )
+              }
             >
               {employees.map((employee) => (
-                <MenuItem key={employee.userId} value={employee.userId}>
-                  {employee.name} ({employee.userId})
+                <MenuItem
+                  key={employee.userId}
+                  value={employee.userId}
+                >
+                  {employee.name} (
+                  {employee.userId})
                 </MenuItem>
               ))}
             </TextField>
 
-            {/* =========================================
-                DEPARTMENT
-            ========================================= */}
+            {/* DEPARTMENT */}
 
             <TextField
               label="Department"
@@ -980,76 +1118,95 @@ const DailyTaskAdmin = () => {
               }}
             />
 
-            {/* =========================================
-                TASK ORDER - DAILY ONLY
-            ========================================= */}
+            {/* TASK ORDER */}
 
-            {form.taskType === TASK_TYPE.DAILY && (
+            {form.taskType ===
+              TASK_TYPE.DAILY && (
               <TextField
                 label="Task Order"
                 type="number"
                 required
                 fullWidth
                 value={form.taskOrder}
-                onChange={(e) => handleChange("taskOrder", e.target.value)}
-                inputProps={{
-                  min: 1,
-                }}
-                helperText="Sequence in which the daily task should be performed"
+                onChange={(e) =>
+                  handleChange(
+                    "taskOrder",
+                    e.target.value,
+                  )
+                }
               />
             )}
 
-            {/* =========================================
-                PRIORITY - DELEGATION ONLY
-            ========================================= */}
+            {/* PRIORITY */}
 
-            {form.taskType === TASK_TYPE.DELEGATION && (
+            {form.taskType ===
+              TASK_TYPE.DELEGATION && (
               <TextField
                 select
                 label="Priority"
                 required
                 fullWidth
                 value={form.priority}
-                onChange={(e) => handleChange("priority", e.target.value)}
+                onChange={(e) =>
+                  handleChange(
+                    "priority",
+                    e.target.value,
+                  )
+                }
               >
-                <MenuItem value="Low">Low</MenuItem>
+                <MenuItem value="Low">
+                  Low
+                </MenuItem>
 
-                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="Medium">
+                  Medium
+                </MenuItem>
 
-                <MenuItem value="High">High</MenuItem>
+                <MenuItem value="High">
+                  High
+                </MenuItem>
 
-                <MenuItem value="Urgent">Urgent</MenuItem>
+                <MenuItem value="Urgent">
+                  Urgent
+                </MenuItem>
               </TextField>
             )}
 
-            {/* =========================================
-                DUE TIME
-            ========================================= */}
+            {/* DUE TIME */}
 
             <TextField
               label="Due Time"
               type="time"
               fullWidth
               value={form.dueTime}
-              onChange={(e) => handleChange("dueTime", e.target.value)}
+              onChange={(e) =>
+                handleChange(
+                  "dueTime",
+                  e.target.value,
+                )
+              }
               InputLabelProps={{
                 shrink: true,
               }}
             />
 
-            {/* =========================================
-                ACTIVE
-            ========================================= */}
+            {/* ACTIVE */}
 
             <FormControlLabel
               control={
                 <Switch
                   checked={form.active}
-                  onChange={(e) => handleChange("active", e.target.checked)}
+                  onChange={(e) =>
+                    handleChange(
+                      "active",
+                      e.target.checked,
+                    )
+                  }
                 />
               }
               label={
-                form.taskType === TASK_TYPE.DELEGATION
+                form.taskType ===
+                TASK_TYPE.DELEGATION
                   ? "Active Task"
                   : "Active Recurring Task"
               }
@@ -1057,15 +1214,19 @@ const DailyTaskAdmin = () => {
 
             <Divider />
 
-            {/* =========================================
-                ACTIONS
-            ========================================= */}
+            {/* BUTTONS */}
 
-            <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+            <Stack
+              direction="row"
+              spacing={1.5}
+              justifyContent="flex-end"
+            >
               <Button
                 variant="outlined"
                 onClick={handleCloseDrawer}
-                disabled={creating || updating}
+                disabled={
+                  creating || updating
+                }
               >
                 Cancel
               </Button>
@@ -1073,7 +1234,9 @@ const DailyTaskAdmin = () => {
               <Button
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={creating || updating}
+                disabled={
+                  creating || updating
+                }
               >
                 {creating
                   ? "Creating..."
@@ -1087,12 +1250,8 @@ const DailyTaskAdmin = () => {
           </Stack>
         </Box>
       </Drawer>
-</>
-      )} 
-
-
     </Box>
   );
 };
 
-export default DailyTaskAdmin;
+export default memo(DailyTaskAdmin);
