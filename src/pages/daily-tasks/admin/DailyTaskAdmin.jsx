@@ -1,11 +1,4 @@
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Box,
@@ -42,6 +35,7 @@ import {
 
 import { getAllUsersData } from "../../../redux/slices/authSlices.jsx";
 import ViewScoreOfEmployes from "./ViewScoreOfEmployes.jsx";
+import toast from "react-hot-toast";
 
 const TASK_TYPE = {
   DAILY: "DAILY",
@@ -66,23 +60,21 @@ const priorityColor = {
 };
 
 const isTaskActive = (value) =>
-  value === true ||
-  value === "TRUE" ||
-  value === "true";
+  value === true || value === "TRUE" || value === "true";
 
 const DailyTaskAdmin = () => {
   const dispatch = useDispatch();
 
-  const { tasks = [], loading, creating, updating } =
-    useSelector((state) => state.dailyTask || {});
+  const {
+    tasks = [],
+    loading,
+    creating,
+    updating,
+  } = useSelector((state) => state.dailyTask || {});
 
-  const authUser = useSelector(
-    (state) => state.auth?.user?.user,
-  );
+  const authUser = useSelector((state) => state.auth?.user?.user);
 
-  const users = useSelector(
-    (state) => state.auth?.users?.data || [],
-  );
+  const users = useSelector((state) => state.auth?.users?.data || []);
 
   // =========================================================
   // STATE
@@ -99,6 +91,7 @@ const DailyTaskAdmin = () => {
   // =========================================================
 
   const descriptionRef = useRef(null);
+  const deduplicationRef = useRef(false);
 
   // =========================================================
   // INITIAL DATA
@@ -128,82 +121,67 @@ const DailyTaskAdmin = () => {
   // KPI
   // =========================================================
 
-  const totalTasks = Array.isArray(tasks)
-    ? tasks.length
-    : 0;
+  const totalTasks = Array.isArray(tasks) ? tasks.length : 0;
 
   const activeTasks = useMemo(() => {
     if (!Array.isArray(tasks)) return 0;
 
-    return tasks.filter((task) =>
-      isTaskActive(task?.active),
-    ).length;
+    return tasks.filter((task) => isTaskActive(task?.active)).length;
   }, [tasks]);
 
-  const inactiveTasks =
-    totalTasks - activeTasks;
+  const inactiveTasks = totalTasks - activeTasks;
 
   // =========================================================
   // NORMAL FORM CHANGE
   // DESCRIPTION IS NEVER SENT HERE
   // =========================================================
 
-  const handleChange = useCallback(
-    (field, value) => {
-      // Description intentionally bypasses React state.
-      if (field === "description") {
-        return;
+  const handleChange = useCallback((field, value) => {
+    // Description intentionally bypasses React state.
+    if (field === "description") {
+      return;
+    }
+
+    setForm((prev) => {
+      if (prev[field] === value) {
+        return prev;
       }
 
-      setForm((prev) => {
-        if (prev[field] === value) {
-          return prev;
-        }
-
-        return {
-          ...prev,
-          [field]: value,
-        };
-      });
-    },
-    [],
-  );
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
+  }, []);
 
   // =========================================================
   // TASK TYPE
   // =========================================================
 
-  const handleTaskTypeChange = useCallback(
-    (taskType) => {
-      setForm((prev) => {
-        const priority =
-          taskType === TASK_TYPE.DAILY
-            ? ""
-            : prev.priority || "Medium";
+  const handleTaskTypeChange = useCallback((taskType) => {
+    setForm((prev) => {
+      const priority =
+        taskType === TASK_TYPE.DAILY ? "" : prev.priority || "Medium";
 
-        const taskOrder =
-          taskType === TASK_TYPE.DELEGATION
-            ? ""
-            : prev.taskOrder || "";
+      const taskOrder =
+        taskType === TASK_TYPE.DELEGATION ? "" : prev.taskOrder || "";
 
-        if (
-          prev.taskType === taskType &&
-          prev.priority === priority &&
-          prev.taskOrder === taskOrder
-        ) {
-          return prev;
-        }
+      if (
+        prev.taskType === taskType &&
+        prev.priority === priority &&
+        prev.taskOrder === taskOrder
+      ) {
+        return prev;
+      }
 
-        return {
-          ...prev,
-          taskType,
-          priority,
-          taskOrder,
-        };
-      });
-    },
-    [],
-  );
+      return {
+        ...prev,
+        taskType,
+        priority,
+        taskOrder,
+      };
+    });
+  }, []);
 
   // =========================================================
   // EMPLOYEE
@@ -211,18 +189,12 @@ const DailyTaskAdmin = () => {
 
   const handleEmployeeChange = useCallback(
     (userId) => {
-      const employee = employees.find(
-        (item) => item.userId === userId,
-      );
+      const employee = employees.find((item) => item.userId === userId);
 
-      const department =
-        employee?.department || "";
+      const department = employee?.department || "";
 
       setForm((prev) => {
-        if (
-          prev.assignedTo === userId &&
-          prev.department === department
-        ) {
+        if (prev.assignedTo === userId && prev.department === department) {
           return prev;
         }
 
@@ -259,35 +231,30 @@ const DailyTaskAdmin = () => {
   // EDIT
   // =========================================================
 
-  const handleOpenEdit = useCallback(
-    (task) => {
-      if (!task) return;
+  const handleOpenEdit = useCallback((task) => {
+    if (!task) return;
 
-      setEditingTask(task);
+    setEditingTask(task);
 
-      setForm({
-        taskType:
-          task.taskType || TASK_TYPE.DAILY,
-        assignedTo: task.assignedTo || "",
-        department: task.department || "",
-        taskOrder: task.taskOrder || "",
-        priority: task.priority || "",
-        dueTime: task.dueTime || "",
-        active: isTaskActive(task.active),
-      });
+    setForm({
+      taskType: task.taskType || TASK_TYPE.DAILY,
+      assignedTo: task.assignedTo || "",
+      department: task.department || "",
+      taskOrder: task.taskOrder || "",
+      priority: task.priority || "",
+      dueTime: task.dueTime || "",
+      active: isTaskActive(task.active),
+    });
 
-      // Set description without React state
-      requestAnimationFrame(() => {
-        if (descriptionRef.current) {
-          descriptionRef.current.value =
-            task.description || "";
-        }
-      });
+    // Set description without React state
+    requestAnimationFrame(() => {
+      if (descriptionRef.current) {
+        descriptionRef.current.value = task.description || "";
+      }
+    });
 
-      setDrawerOpen(true);
-    },
-    [],
-  );
+    setDrawerOpen(true);
+  }, []);
 
   // =========================================================
   // CLOSE
@@ -311,44 +278,37 @@ const DailyTaskAdmin = () => {
   // =========================================================
 
   const handleSubmit = useCallback(async () => {
-    const description =
-      descriptionRef.current?.value?.trim() || "";
+    if(deduplicationRef.current){ toast.loading("Request already in Process");
+      return;
+    }
+   
+    const description = descriptionRef.current?.value?.trim() || "";
 
     if (!description) {
-      console.warn(
-        "Description is required",
-      );
+      console.warn("Description is required");
       return;
     }
 
     if (!form.assignedTo) {
-      console.warn(
-        "Assigned To is required",
-      );
+      console.warn("Assigned To is required");
       return;
     }
 
-    if (
-      form.taskType === TASK_TYPE.DAILY &&
-      !form.taskOrder
-    ) {
-      console.warn(
-        "Task Order is required for Daily Task",
-      );
+    if (form.taskType === TASK_TYPE.DAILY && !form.taskOrder) {
+      console.warn("Task Order is required for Daily Task");
       return;
     }
 
-    if (
-      form.taskType === TASK_TYPE.DELEGATION &&
-      !form.priority
-    ) {
-      console.warn(
-        "Priority is required for Delegation Task",
-      );
+    if (form.taskType === TASK_TYPE.DELEGATION && !form.priority) {
+      console.warn("Priority is required for Delegation Task");
       return;
     }
+
+    // lock request
+      deduplicationRef.current = true;
 
     try {
+
       const taskData = {
         taskType: form.taskType,
         description,
@@ -356,36 +316,21 @@ const DailyTaskAdmin = () => {
         assignedBy: authUser?.userId || "",
         department: form.department,
 
-        taskOrder:
-          form.taskType === TASK_TYPE.DAILY
-            ? form.taskOrder
-            : "",
+        taskOrder: form.taskType === TASK_TYPE.DAILY ? form.taskOrder : "",
 
-        priority:
-          form.taskType === TASK_TYPE.DELEGATION
-            ? form.priority
-            : "",
+        priority: form.taskType === TASK_TYPE.DELEGATION ? form.priority : "",
 
         dueTime: form.dueTime,
         active: form.active,
       };
 
-      console.log(
-        "📤 Task Data:",
-        taskData,
-      );
+      console.log("📤 Task Data:", taskData);
 
       if (!editingTask) {
-        if (
-          form.taskType === TASK_TYPE.DAILY
-        ) {
-          await dispatch(
-            createDailyTask(taskData),
-          ).unwrap();
+        if (form.taskType === TASK_TYPE.DAILY) {
+          await dispatch(createDailyTask(taskData)).unwrap();
         } else {
-          await dispatch(
-            createDelegationTask(taskData),
-          ).unwrap();
+          await dispatch(createDelegationTask(taskData)).unwrap();
         }
       } else {
         await dispatch(
@@ -396,24 +341,16 @@ const DailyTaskAdmin = () => {
         ).unwrap();
       }
 
-      await dispatch(
-        fetchDailyTasks(),
-      ).unwrap();
+      await dispatch(fetchDailyTasks()).unwrap();
 
       handleCloseDrawer();
     } catch (error) {
-      console.error(
-        "❌ Daily Task submit error:",
-        error,
-      );
+      console.error("❌ Daily Task submit error:", error);
     }
-  }, [
-    form,
-    authUser,
-    editingTask,
-    dispatch,
-    handleCloseDrawer,
-  ]);
+    finally{
+      deduplicationRef.current = false;
+    }
+  }, [form, authUser, editingTask, dispatch, handleCloseDrawer]);
 
   // =========================================================
   // COLUMNS
@@ -435,17 +372,9 @@ const DailyTaskAdmin = () => {
           <Chip
             size="small"
             label={
-              params.value ===
-              TASK_TYPE.DELEGATION
-                ? "Delegation"
-                : "Daily"
+              params.value === TASK_TYPE.DELEGATION ? "Delegation" : "Daily"
             }
-            color={
-              params.value ===
-              TASK_TYPE.DELEGATION
-                ? "warning"
-                : "info"
-            }
+            color={params.value === TASK_TYPE.DELEGATION ? "warning" : "info"}
             variant="outlined"
             sx={{
               height: 24,
@@ -476,11 +405,9 @@ const DailyTaskAdmin = () => {
         headerName: "ASSIGNED TO",
         width: 155,
         renderCell: (params) => {
-          const employee =
-            employees.find(
-              (item) =>
-                item.userId === params.value,
-            );
+          const employee = employees.find(
+            (item) => item.userId === params.value,
+          );
 
           return (
             <Box
@@ -493,23 +420,13 @@ const DailyTaskAdmin = () => {
                 variant="body2"
                 fontWeight={600}
                 noWrap
-                title={
-                  employee?.name ||
-                  params.value ||
-                  ""
-                }
+                title={employee?.name || params.value || ""}
               >
-                {employee?.name ||
-                  params.value ||
-                  "--"}
+                {employee?.name || params.value || "--"}
               </Typography>
 
               {employee?.role && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  noWrap
-                >
+                <Typography variant="caption" color="text.secondary" noWrap>
                   {employee.role}
                 </Typography>
               )}
@@ -523,11 +440,7 @@ const DailyTaskAdmin = () => {
         headerName: "ASSIGNED BY",
         width: 120,
         renderCell: (params) => (
-          <Typography
-            variant="body2"
-            noWrap
-            title={params.value || ""}
-          >
+          <Typography variant="body2" noWrap title={params.value || ""}>
             {params.value || "--"}
           </Typography>
         ),
@@ -538,11 +451,7 @@ const DailyTaskAdmin = () => {
         headerName: "DEPARTMENT",
         width: 120,
         renderCell: (params) => (
-          <Typography
-            variant="body2"
-            noWrap
-            title={params.value || ""}
-          >
+          <Typography variant="body2" noWrap title={params.value || ""}>
             {params.value || "--"}
           </Typography>
         ),
@@ -555,18 +464,12 @@ const DailyTaskAdmin = () => {
         align: "center",
         headerAlign: "center",
         renderCell: (params) => {
-          if (
-            params.row.taskType !==
-            TASK_TYPE.DAILY
-          ) {
+          if (params.row.taskType !== TASK_TYPE.DAILY) {
             return "--";
           }
 
           return (
-            <Typography
-              variant="body2"
-              fontWeight={700}
-            >
+            <Typography variant="body2" fontWeight={700}>
               {params.value || "--"}
             </Typography>
           );
@@ -578,10 +481,7 @@ const DailyTaskAdmin = () => {
         headerName: "PRIORITY",
         width: 100,
         renderCell: (params) => {
-          if (
-            params.row.taskType !==
-            TASK_TYPE.DELEGATION
-          ) {
+          if (params.row.taskType !== TASK_TYPE.DELEGATION) {
             return "--";
           }
 
@@ -589,11 +489,7 @@ const DailyTaskAdmin = () => {
             <Chip
               size="small"
               label={params.value || "--"}
-              color={
-                priorityColor[
-                  params.value
-                ] || "default"
-              }
+              color={priorityColor[params.value] || "default"}
               sx={{
                 height: 24,
                 fontSize: "0.7rem",
@@ -608,9 +504,7 @@ const DailyTaskAdmin = () => {
         headerName: "DUE TIME",
         width: 90,
         renderCell: (params) => (
-          <Typography variant="body2">
-            {params.value || "--"}
-          </Typography>
+          <Typography variant="body2">{params.value || "--"}</Typography>
         ),
       },
 
@@ -619,27 +513,14 @@ const DailyTaskAdmin = () => {
         headerName: "ACTIVE",
         width: 95,
         renderCell: (params) => {
-          const active =
-            isTaskActive(params.value);
+          const active = isTaskActive(params.value);
 
           return (
             <Chip
               size="small"
-              label={
-                active
-                  ? "Active"
-                  : "Inactive"
-              }
-              color={
-                active
-                  ? "success"
-                  : "default"
-              }
-              variant={
-                active
-                  ? "filled"
-                  : "outlined"
-              }
+              label={active ? "Active" : "Inactive"}
+              color={active ? "success" : "default"}
+              variant={active ? "filled" : "outlined"}
               sx={{
                 height: 24,
                 fontSize: "0.7rem",
@@ -654,11 +535,7 @@ const DailyTaskAdmin = () => {
         headerName: "CREATED AT",
         width: 155,
         renderCell: (params) => (
-          <Typography
-            variant="body2"
-            noWrap
-            title={params.value || ""}
-          >
+          <Typography variant="body2" noWrap title={params.value || ""}>
             {params.value || "--"}
           </Typography>
         ),
@@ -669,11 +546,7 @@ const DailyTaskAdmin = () => {
         headerName: "UPDATED AT",
         width: 155,
         renderCell: (params) => (
-          <Typography
-            variant="body2"
-            noWrap
-            title={params.value || ""}
-          >
+          <Typography variant="body2" noWrap title={params.value || ""}>
             {params.value || "--"}
           </Typography>
         ),
@@ -687,12 +560,7 @@ const DailyTaskAdmin = () => {
         filterable: false,
         disableColumnMenu: true,
         renderCell: (params) => (
-          <IconButton
-            size="small"
-            onClick={() =>
-              handleOpenEdit(params.row)
-            }
-          >
+          <IconButton size="small" onClick={() => handleOpenEdit(params.row)}>
             <EditIcon fontSize="small" />
           </IconButton>
         ),
@@ -721,11 +589,7 @@ const DailyTaskAdmin = () => {
   if (viewScore) {
     return (
       <Box sx={{ p: 3 }}>
-        <ViewScoreOfEmployes
-          onBack={() =>
-            setViewScore(false)
-          }
-        />
+        <ViewScoreOfEmployes onBack={() => setViewScore(false)} />
       </Box>
     );
   }
@@ -752,33 +616,17 @@ const DailyTaskAdmin = () => {
         sx={{ mb: 3 }}
       >
         <Box>
-          <Typography
-            variant="h5"
-            fontWeight={700}
-          >
+          <Typography variant="h5" fontWeight={700}>
             Task Management
           </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 0.5 }}
-          >
-            Manage recurring daily tasks
-            and delegated employee tasks
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Manage recurring daily tasks and delegated employee tasks
           </Typography>
         </Box>
 
-        <Stack
-          direction="row"
-          spacing={1}
-        >
-          <Button
-            variant="outlined"
-            onClick={() =>
-              setViewScore(true)
-            }
-          >
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" onClick={() => setViewScore(true)}>
             View Score Card
           </Button>
 
@@ -794,11 +642,7 @@ const DailyTaskAdmin = () => {
 
       {/* KPI */}
 
-      <Grid
-        container
-        spacing={2}
-        sx={{ mb: 3 }}
-      >
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper
             sx={{
@@ -814,17 +658,11 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Total Tasks
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                >
+                <Typography variant="h4" fontWeight={700}>
                   {totalTasks}
                 </Typography>
               </Box>
@@ -849,17 +687,11 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Active Tasks
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                >
+                <Typography variant="h4" fontWeight={700}>
                   {activeTasks}
                 </Typography>
               </Box>
@@ -884,17 +716,11 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography variant="body2" color="text.secondary">
                   Inactive Tasks
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                >
+                <Typography variant="h4" fontWeight={700}>
                   {inactiveTasks}
                 </Typography>
               </Box>
@@ -916,19 +742,12 @@ const DailyTaskAdmin = () => {
         }}
       >
         <Box sx={{ p: 2 }}>
-          <Typography
-            variant="h6"
-            fontWeight={700}
-          >
+          <Typography variant="h6" fontWeight={700}>
             Tasks
           </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            Manage recurring daily tasks
-            and one-time delegated tasks.
+          <Typography variant="body2" color="text.secondary">
+            Manage recurring daily tasks and one-time delegated tasks.
           </Typography>
         </Box>
 
@@ -952,33 +771,29 @@ const DailyTaskAdmin = () => {
               border: 0,
 
               "& .MuiDataGrid-columnHeaders": {
-                backgroundColor:
-                  "action.hover",
+                backgroundColor: "action.hover",
               },
 
-              "& .MuiDataGrid-columnHeaderTitle":
-                {
-                  fontWeight: 700,
-                  fontSize: "0.72rem",
-                },
+              "& .MuiDataGrid-columnHeaderTitle": {
+                fontWeight: 700,
+                fontSize: "0.72rem",
+              },
 
               "& .MuiDataGrid-cell": {
                 fontSize: "0.8rem",
               },
 
               "& .MuiDataGrid-row:hover": {
-                backgroundColor:
-                  "action.hover",
+                backgroundColor: "action.hover",
               },
 
               "& .MuiDataGrid-cell:focus": {
                 outline: "none",
               },
 
-              "& .MuiDataGrid-cell:focus-within":
-                {
-                  outline: "none",
-                },
+              "& .MuiDataGrid-cell:focus-within": {
+                outline: "none",
+              },
             }}
           />
         </Box>
@@ -986,11 +801,7 @@ const DailyTaskAdmin = () => {
 
       {/* DRAWER */}
 
-      <Drawer
-        anchor="right"
-        open={drawerOpen}
-        onClose={handleCloseDrawer}
-      >
+      <Drawer anchor="right" open={drawerOpen} onClose={handleCloseDrawer}>
         <Box
           sx={{
             width: {
@@ -1000,13 +811,8 @@ const DailyTaskAdmin = () => {
             p: 3,
           }}
         >
-          <Typography
-            variant="h6"
-            fontWeight={700}
-          >
-            {editingTask
-              ? "Edit Task"
-              : "Create Task"}
+          <Typography variant="h6" fontWeight={700}>
+            {editingTask ? "Edit Task" : "Create Task"}
           </Typography>
 
           <Typography
@@ -1017,8 +823,7 @@ const DailyTaskAdmin = () => {
               mb: 3,
             }}
           >
-            {form.taskType ===
-            TASK_TYPE.DELEGATION
+            {form.taskType === TASK_TYPE.DELEGATION
               ? "Create a one-time task and assign it to an employee."
               : "Create a recurring task that remains assigned every working day until deactivated."}
           </Typography>
@@ -1031,23 +836,11 @@ const DailyTaskAdmin = () => {
               label="Task Type"
               fullWidth
               value={form.taskType}
-              onChange={(e) =>
-                handleTaskTypeChange(
-                  e.target.value,
-                )
-              }
+              onChange={(e) => handleTaskTypeChange(e.target.value)}
             >
-              <MenuItem
-                value={TASK_TYPE.DAILY}
-              >
-                Daily Task
-              </MenuItem>
+              <MenuItem value={TASK_TYPE.DAILY}>Daily Task</MenuItem>
 
-              <MenuItem
-                value={TASK_TYPE.DELEGATION}
-              >
-                Delegation Task
-              </MenuItem>
+              <MenuItem value={TASK_TYPE.DELEGATION}>Delegation Task</MenuItem>
             </TextField>
 
             {/* DESCRIPTION */}
@@ -1072,8 +865,7 @@ const DailyTaskAdmin = () => {
                   padding: "12px",
                   fontSize: "16px",
                   fontFamily: "inherit",
-                  border:
-                    "1px solid #c4c4c4",
+                  border: "1px solid #c4c4c4",
                   borderRadius: "6px",
                   boxSizing: "border-box",
                   resize: "vertical",
@@ -1090,19 +882,11 @@ const DailyTaskAdmin = () => {
               required
               fullWidth
               value={form.assignedTo}
-              onChange={(e) =>
-                handleEmployeeChange(
-                  e.target.value,
-                )
-              }
+              onChange={(e) => handleEmployeeChange(e.target.value)}
             >
               {employees.map((employee) => (
-                <MenuItem
-                  key={employee.userId}
-                  value={employee.userId}
-                >
-                  {employee.name} (
-                  {employee.userId})
+                <MenuItem key={employee.userId} value={employee.userId}>
+                  {employee.name} ({employee.userId})
                 </MenuItem>
               ))}
             </TextField>
@@ -1120,55 +904,35 @@ const DailyTaskAdmin = () => {
 
             {/* TASK ORDER */}
 
-            {form.taskType ===
-              TASK_TYPE.DAILY && (
+            {form.taskType === TASK_TYPE.DAILY && (
               <TextField
                 label="Task Order"
                 type="number"
                 required
                 fullWidth
                 value={form.taskOrder}
-                onChange={(e) =>
-                  handleChange(
-                    "taskOrder",
-                    e.target.value,
-                  )
-                }
+                onChange={(e) => handleChange("taskOrder", e.target.value)}
               />
             )}
 
             {/* PRIORITY */}
 
-            {form.taskType ===
-              TASK_TYPE.DELEGATION && (
+            {form.taskType === TASK_TYPE.DELEGATION && (
               <TextField
                 select
                 label="Priority"
                 required
                 fullWidth
                 value={form.priority}
-                onChange={(e) =>
-                  handleChange(
-                    "priority",
-                    e.target.value,
-                  )
-                }
+                onChange={(e) => handleChange("priority", e.target.value)}
               >
-                <MenuItem value="Low">
-                  Low
-                </MenuItem>
+                <MenuItem value="Low">Low</MenuItem>
 
-                <MenuItem value="Medium">
-                  Medium
-                </MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
 
-                <MenuItem value="High">
-                  High
-                </MenuItem>
+                <MenuItem value="High">High</MenuItem>
 
-                <MenuItem value="Urgent">
-                  Urgent
-                </MenuItem>
+                <MenuItem value="Urgent">Urgent</MenuItem>
               </TextField>
             )}
 
@@ -1179,12 +943,7 @@ const DailyTaskAdmin = () => {
               type="time"
               fullWidth
               value={form.dueTime}
-              onChange={(e) =>
-                handleChange(
-                  "dueTime",
-                  e.target.value,
-                )
-              }
+              onChange={(e) => handleChange("dueTime", e.target.value)}
               InputLabelProps={{
                 shrink: true,
               }}
@@ -1196,17 +955,11 @@ const DailyTaskAdmin = () => {
               control={
                 <Switch
                   checked={form.active}
-                  onChange={(e) =>
-                    handleChange(
-                      "active",
-                      e.target.checked,
-                    )
-                  }
+                  onChange={(e) => handleChange("active", e.target.checked)}
                 />
               }
               label={
-                form.taskType ===
-                TASK_TYPE.DELEGATION
+                form.taskType === TASK_TYPE.DELEGATION
                   ? "Active Task"
                   : "Active Recurring Task"
               }
@@ -1216,17 +969,11 @@ const DailyTaskAdmin = () => {
 
             {/* BUTTONS */}
 
-            <Stack
-              direction="row"
-              spacing={1.5}
-              justifyContent="flex-end"
-            >
+            <Stack direction="row" spacing={1.5} justifyContent="flex-end">
               <Button
                 variant="outlined"
                 onClick={handleCloseDrawer}
-                disabled={
-                  creating || updating
-                }
+                disabled={creating || updating}
               >
                 Cancel
               </Button>
@@ -1234,9 +981,7 @@ const DailyTaskAdmin = () => {
               <Button
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={
-                  creating || updating
-                }
+                disabled={creating || updating}
               >
                 {creating
                   ? "Creating..."

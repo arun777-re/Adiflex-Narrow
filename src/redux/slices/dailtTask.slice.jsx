@@ -34,10 +34,7 @@ export const createDailyTask = createAsyncThunk(
   "dailyTask/createDailyTask",
   async (taskData, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${API_URL}/create`,
-        taskData,
-      );
+      const response = await axios.post(`${API_URL}/create`, taskData);
 
       return response.data;
     } catch (error) {
@@ -74,113 +71,145 @@ export const updateDailyTask = createAsyncThunk(
   },
 );
 
+export const getDailyTaskEmployees = createAsyncThunk(
+  "/daily-tasks/employees",
+  async (userID, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/daily-tasks/employee-gettasks", {
+        params: { userID },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("❌ getDailyTaskEmployees error:", error);
 
-
-
-export const getDailyTaskEmployees = createAsyncThunk('/daily-tasks/employees',
-  async(userID,{rejectWithValue})=>{
-  try {
-    const response = await api.get("/daily-tasks/employee-gettasks",{
-      params:{userID}
-    });
-    return response.data;
-  } catch (error) {
-    console.error("❌ getDailyTaskEmployees error:",
-        error);
-
-        return rejectWithValue(error.response?.data?.message || "Failed to fetch employee daily tasks")
-  }
-});
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch employee daily tasks",
+      );
+    }
+  },
+);
 
 export const completeDailyTasks = createAsyncThunk(
   "/daily-tasks/complete",
   async ({ taskId, userID }, { rejectWithValue }) => {
     try {
-      const response = await api.post(
-        "/daily-tasks/complete-task",
-        {
-          taskId,
-          userID,
-        }
-      );
+      const response = await api.post("/daily-tasks/complete-task", {
+        taskId,
+        userID,
+      });
 
       return response.data;
     } catch (error) {
-      console.error(
-        "❌ completeDailyTasks error:",
-        error
-      );
+      console.error("❌ completeDailyTasks error:", error);
 
       return rejectWithValue(
-        error.response?.data?.message ||
-          `Failed to complete daily task`
+        error.response?.data?.message || `Failed to complete daily task`,
       );
     }
-  }
+  },
 );
- 
 
-export const getPendingOrdersOfEMployee = createAsyncThunk('/daily-tasks-log/pending',async({userID,startDate,endDate},{
-  rejectWithValue
-})=>{
-  try {
-    const res = await api.get(`/daily-tasks/get-score/?userID=${userID}&startDate=${startDate}&endDate=${endDate}`);
-    return res.data;
-  } catch (error) {
-     console.error(
-        "❌ completeDailyTasks error:",
-        error
+export const getPendingOrdersOfEMployee = createAsyncThunk(
+  "/daily-tasks-log/pending",
+  async ({ userID, startDate, endDate }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(
+        `/daily-tasks/get-score/?userID=${userID}&startDate=${startDate}&endDate=${endDate}`,
       );
+      return res.data;
+    } catch (error) {
+      console.error("❌ completeDailyTasks error:", error);
 
       return rejectWithValue(
-        error.response?.data?.message ||
-          `Failed to complete daily task`
+        error.response?.data?.message || `Failed to complete daily task`,
       );
-  }
-});
+    }
+  },
+);
 
+export const createDelegationTask = createAsyncThunk(
+  "/delegation-task/create",
+  async ({ description, assignedTo, dueTime }, { rejectWithValue }) => {
+    try {
+      const res = await api.post("/delegation-tasks/create", {
+        description,
+        assignedTo,
+        dueTime,
+      });
 
-export const createDelegationTask = createAsyncThunk('/delegation-task/create',async({description,assignedTo,dueTime}
-  ,{rejectWithValue})=>{
-try {
-  const res = await api.post('/delegation-tasks/create',{
-    description,
-    assignedTo,
-    dueTime
-  });
+      return res.data;
+    } catch (error) {
+      console.error("create delegation task error", error);
+      return rejectWithValue(
+        error.response?.data?.message || `Failed to create delegation tasks`,
+      );
+    }
+  },
+);
 
-  return res.data;
-} catch (error) {
-  console.error("create delegation task error",error);
-  return rejectWithValue(error.response?.data?.message 
-    || `Failed to create delegation tasks`
-  )
-}
-});
+export const getDelegationTasksofEmployee = createAsyncThunk(
+  "/get-active-delegation",
+  async ({ userID }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(
+        `/delegation-tasks/get-active?userID=${userID}`,
+      );
+      console.log("response...", res);
+      return res.data;
+    } catch (error) {
+      console.error("create delegation task error", error);
+      return rejectWithValue(
+        error.response?.data?.message ||
+          `Failed to get active delegation tasks`,
+      );
+    }
+  },
+);
 
-
-export const getDelegationTasksofEmployee = createAsyncThunk('/get-active-delegation',async({userID},{rejectWithValue})=>{
-try {
-  const res = await api.get(`/delegation-tasks/get-active?userID=${userID}`);
-   console.log("response...",res);
-  return res.data;
-} catch (error) {
-  console.error("create delegation task error",error);
-  return rejectWithValue(error.response?.data?.message 
-    || `Failed to get active delegation tasks`
-  )
-}
-})
+export const completeDelegationTask = createAsyncThunk(
+  "/complete-delegation",
+  async ({ taskID, userID, userName }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(
+        `/delegation-tasks/complete/${taskID}?userID=${userID}&userName=${userName}`,
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to complete delegation tasks error", error);
+      return rejectWithValue(
+        error.response?.data?.message ||
+          `Failed to complete delegation tasks`,
+      );
+    }
+  },
+);
+export const notCompleteDelegationTask = createAsyncThunk(
+  "/not-complete-delegation",
+  async ({ taskID, userID, userName }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(
+        `/delegation-tasks/not-completed?taskID=${taskID}&userID=${userID}&userName=${userName}`,
+      );
+      return response.data;
+    } catch (error) {
+      console.error("not complete delegation task error", error);
+      return rejectWithValue(
+        error.response?.data?.message ||
+          `Failed to not complete delegation tasks`,
+      );
+    }
+  },
+);
 
 // =========================================================
 // INITIAL STATE
 // =========================================================
 const initialState = {
   tasks: [],
-  employeeTasks:[],
-  pendingTasks:[],
-  weeklySummary:null,
-  delegationTasks:[],
+  employeeTasks: [],
+  pendingTasks: [],
+  weeklySummary: null,
+  delegationTasks: [],
   loading: false,
   creating: false,
   updating: false,
@@ -244,8 +273,7 @@ const dailyTaskSlice = createSlice({
         state.creating = false;
         state.success = true;
 
-        state.message =
-          action.payload?.message || "Task created successfully";
+        state.message = action.payload?.message || "Task created successfully";
 
         const newTask = action.payload?.data;
 
@@ -275,8 +303,7 @@ const dailyTaskSlice = createSlice({
         state.updating = false;
         state.success = true;
 
-        state.message =
-          action.payload?.message || "Task updated successfully";
+        state.message = action.payload?.message || "Task updated successfully";
 
         const updatedTask = action.payload?.data;
 
@@ -296,69 +323,71 @@ const dailyTaskSlice = createSlice({
         state.error = action.payload;
         state.success = false;
       })
-      .addCase(getDailyTaskEmployees.fulfilled,(state,action)=>{
+      .addCase(getDailyTaskEmployees.fulfilled, (state, action) => {
         state.employeeTasks = action.payload;
         state.error = null;
         state.loading = false;
       })
-      
-       .addCase(
-      getPendingOrdersOfEMployee.pending,
-      (state) => {
+
+      .addCase(getPendingOrdersOfEMployee.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.success = false;
-      }
-    )
+      })
 
-    // =========================================================
-    // GET PENDING TASKS / WEEKLY SCORE - FULFILLED
-    // =========================================================
-    .addCase(
-      getPendingOrdersOfEMployee.fulfilled,
-      (state, action) => {
+      // =========================================================
+      // GET PENDING TASKS / WEEKLY SCORE - FULFILLED
+      // =========================================================
+      .addCase(getPendingOrdersOfEMployee.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
         state.error = null;
 
-        state.message =
-          action.payload?.message || "";
+        state.message = action.payload?.message || "";
 
-        state.pendingTasks =
-          action.payload?.data?.pendingTasks || [];
+        state.pendingTasks = action.payload?.data?.pendingTasks || [];
 
         // Agar summary bhi Redux mein rakhna hai
-        state.weeklySummary =
-          action.payload?.data?.summary || null;
-      }
-    )
+        state.weeklySummary = action.payload?.data?.summary || null;
+      })
 
-    // =========================================================
-    // GET PENDING TASKS / WEEKLY SCORE - REJECTED
-    // =========================================================
-    .addCase(
-      getPendingOrdersOfEMployee.rejected,
-      (state, action) => {
+      // =========================================================
+      // GET PENDING TASKS / WEEKLY SCORE - REJECTED
+      // =========================================================
+      .addCase(getPendingOrdersOfEMployee.rejected, (state, action) => {
         state.loading = false;
         state.success = false;
 
-        state.error =
-          action.payload || "Failed to get pending tasks";
+        state.error = action.payload || "Failed to get pending tasks";
 
         state.pendingTasks = [];
-      }
-    )
-    .addCase(getDelegationTasksofEmployee.fulfilled,(state,action)=>{
-         state.delegationTasks = action.payload;
-         state.error = null;
-         state.loading = false;
-    });
+      })
+      .addCase(getDelegationTasksofEmployee.fulfilled, (state, action) => {
+        state.delegationTasks = action.payload;
+        state.error = null;
+        state.loading = false;
+      })
+      .addCase(completeDelegationTask.fulfilled,(state,action)=>{
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(completeDelegationTask.rejected,(state,action)=>{
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(notCompleteDelegationTask.fulfilled,(state,action)=>{
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(notCompleteDelegationTask.rejected,(state,action)=>{
+        state.loading = false;
+        state.error = action.payload;
+      })
+      ;
   },
 });
 
-export const {
-  clearDailyTaskError,
-  clearDailyTaskSuccess,
-} = dailyTaskSlice.actions;
+export const { clearDailyTaskError, clearDailyTaskSuccess } =
+  dailyTaskSlice.actions;
 
 export default dailyTaskSlice.reducer;
