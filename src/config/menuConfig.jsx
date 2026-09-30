@@ -153,6 +153,12 @@ export const menuConfig = {
       path: "/complete-dispatch",
       icon: <CheckCircleRoundedIcon />,
     },
+     {
+      id: 5,
+      title: "Sales Orders",
+      path: "/sales-order",
+      icon: <ShoppingCartRoundedIcon />,
+    },
   ],
 
   // ==========================================

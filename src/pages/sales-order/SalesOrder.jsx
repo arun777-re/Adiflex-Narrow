@@ -39,6 +39,8 @@ const SalesOrder = () => {
     (state) => state.salesOrder,
   );
 
+  const {role} = useSelector((state)=> state.auth?.user?.user)
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [customer, setCustomer] = useState("All");
@@ -151,165 +153,167 @@ const SalesOrder = () => {
   // FILTER
   // --------------------------------------------------
 
-const filteredRows = useMemo(() => {
-  const normalizedSearch = String(search || "").trim().toLowerCase();
-  const normalizedCustomer = String(customer || "").trim().toLowerCase();
-  const normalizedDivision = String(division || "").trim().toLowerCase();
-
-  return salesOrders.filter((row) => {
-    // ==========================================
-    // SEARCH
-    // ==========================================
-
-    const matchesSearch =
-      !normalizedSearch ||
-      String(row.soNo || "").toLowerCase().includes(normalizedSearch) ||
-      String(row.customer || "").toLowerCase().includes(normalizedSearch) ||
-      String(row.product || "").toLowerCase().includes(normalizedSearch);
-
-    if (!matchesSearch) return false;
-
-    // ==========================================
-    // STATUS
-    // ==========================================
-
-    const productionStatus = String(row.productionstatus || "")
+  const filteredRows = useMemo(() => {
+    const normalizedSearch = String(search || "")
+      .trim()
+      .toLowerCase();
+    const normalizedCustomer = String(customer || "")
+      .trim()
+      .toLowerCase();
+    const normalizedDivision = String(division || "")
       .trim()
       .toLowerCase();
 
-    const dispatchStatus = String(row.dispatchstatus || "")
-      .trim()
-      .toLowerCase();
+    return salesOrders.filter((row) => {
+      // ==========================================
+      // SEARCH
+      // ==========================================
 
-    const orderStatus = String(row.status || "")
-      .trim()
-      .toLowerCase();
+      const matchesSearch =
+        !normalizedSearch ||
+        String(row.soNo || "")
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        String(row.customer || "")
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        String(row.product || "")
+          .toLowerCase()
+          .includes(normalizedSearch);
 
-    if (status === "Pending") {
-      const isPending =
-        productionStatus === "pending production" ||
-        dispatchStatus === "pending dispatch";
+      if (!matchesSearch) return false;
 
-      if (!isPending) return false;
-    }
+      // ==========================================
+      // STATUS
+      // ==========================================
 
-    if (status === "Completed") {
-      const isCompleted =
-        productionStatus === "completed" &&
-        dispatchStatus === "dispatched";
+      const productionStatus = String(row.productionstatus || "")
+        .trim()
+        .toLowerCase();
 
-      if (!isCompleted) return false;
-    }
+      const dispatchStatus = String(row.dispatchstatus || "")
+        .trim()
+        .toLowerCase();
 
-    if (status === "Cancelled") {
-      if (orderStatus !== "cancelled") return false;
-    }
+      const orderStatus = String(row.status || "")
+        .trim()
+        .toLowerCase();
 
-    // ==========================================
-    // CUSTOMER
-    // ==========================================
+      if (status === "Pending") {
+        const isPending =
+          productionStatus === "pending production" ||
+          dispatchStatus === "pending dispatch";
 
-    if (
-      normalizedCustomer !== "all" &&
-      String(row.customer || "").trim().toLowerCase() !==
-        normalizedCustomer
-    ) {
-      return false;
-    }
+        if (!isPending) return false;
+      }
 
-    // ==========================================
-    // DIVISION
-    // ==========================================
+      if (status === "Completed") {
+        const isCompleted =
+          productionStatus === "completed" && dispatchStatus === "dispatched";
 
-    if (
-      normalizedDivision !== "all" &&
-      String(row.division || "").trim().toLowerCase() !==
-        normalizedDivision
-    ) {
-      return false;
-    }
+        if (!isCompleted) return false;
+      }
 
-    // ==========================================
-    // DATE
-    // ==========================================
+      if (status === "Cancelled") {
+        if (orderStatus !== "cancelled") return false;
+      }
 
-    if (dateFilter !== "All") {
-      const rawDate = String(row.date || "").trim();
-
-      const parts = rawDate.split("/");
-
-      if (parts.length !== 3) return false;
-
-      const day = Number(parts[0]);
-      const month = Number(parts[1]);
-      const year = Number(parts[2]);
+      // ==========================================
+      // CUSTOMER
+      // ==========================================
 
       if (
-        !Number.isInteger(day) ||
-        !Number.isInteger(month) ||
-        !Number.isInteger(year)
+        normalizedCustomer !== "all" &&
+        String(row.customer || "")
+          .trim()
+          .toLowerCase() !== normalizedCustomer
       ) {
         return false;
       }
 
-      const rowDate = new Date(year, month - 1, day);
+      // ==========================================
+      // DIVISION
+      // ==========================================
 
-      rowDate.setHours(0, 0, 0, 0);
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // TODAY
-      if (dateFilter === "Today") {
-        if (rowDate.getTime() !== today.getTime()) {
-          return false;
-        }
+      if (
+        normalizedDivision !== "all" &&
+        String(row.division || "")
+          .trim()
+          .toLowerCase() !== normalizedDivision
+      ) {
+        return false;
       }
 
-      // THIS WEEK
-      if (dateFilter === "This Week") {
-        const weekStart = new Date(today);
+      // ==========================================
+      // DATE
+      // ==========================================
 
-        weekStart.setDate(
-          today.getDate() - today.getDay()
-        );
+      if (dateFilter !== "All") {
+        const rawDate = String(row.date || "").trim();
 
-        weekStart.setHours(0, 0, 0, 0);
+        const parts = rawDate.split("/");
 
-        const weekEnd = new Date(weekStart);
+        if (parts.length !== 3) return false;
 
-        weekEnd.setDate(
-          weekStart.getDate() + 6
-        );
+        const day = Number(parts[0]);
+        const month = Number(parts[1]);
+        const year = Number(parts[2]);
 
-        weekEnd.setHours(23, 59, 59, 999);
-
-        if (rowDate < weekStart || rowDate > weekEnd) {
-          return false;
-        }
-      }
-
-      // THIS MONTH
-      if (dateFilter === "This Month") {
         if (
-          rowDate.getMonth() !== today.getMonth() ||
-          rowDate.getFullYear() !== today.getFullYear()
+          !Number.isInteger(day) ||
+          !Number.isInteger(month) ||
+          !Number.isInteger(year)
         ) {
           return false;
         }
-      }
-    }
 
-    return true;
-  });
-}, [
-  salesOrders,
-  search,
-  status,
-  customer,
-  division,
-  dateFilter,
-]);
+        const rowDate = new Date(year, month - 1, day);
+
+        rowDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // TODAY
+        if (dateFilter === "Today") {
+          if (rowDate.getTime() !== today.getTime()) {
+            return false;
+          }
+        }
+
+        // THIS WEEK
+        if (dateFilter === "This Week") {
+          const weekStart = new Date(today);
+
+          weekStart.setDate(today.getDate() - today.getDay());
+
+          weekStart.setHours(0, 0, 0, 0);
+
+          const weekEnd = new Date(weekStart);
+
+          weekEnd.setDate(weekStart.getDate() + 6);
+
+          weekEnd.setHours(23, 59, 59, 999);
+
+          if (rowDate < weekStart || rowDate > weekEnd) {
+            return false;
+          }
+        }
+
+        // THIS MONTH
+        if (dateFilter === "This Month") {
+          if (
+            rowDate.getMonth() !== today.getMonth() ||
+            rowDate.getFullYear() !== today.getFullYear()
+          ) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [salesOrders, search, status, customer, division, dateFilter]);
 
   // --------------------------------------------------
   // REFRESH
@@ -624,13 +628,17 @@ const filteredRows = useMemo(() => {
       {/* =========================================
           EDIT
       ========================================= */}
-
-      <EditSalesOrderDialog
+{
+  String(role).trim().toLowerCase() === "supervisor" && (
+    <EditSalesOrderDialog
         open={editOpen}
         row={selectedOrder}
         onClose={handleEditClose}
         onSuccess={handleEditSuccess}
       />
+  )
+}
+  
     </Box>
   );
 };
