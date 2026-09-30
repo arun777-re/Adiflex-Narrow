@@ -28,6 +28,7 @@ import {
   getDelegationTasksofEmployee,
   notCompleteDelegationTask,
 } from "../../../redux/slices/dailtTask.slice";
+import {useNotification} from '../../../hooks/useNotification';
 
 // ============================================================
 // HELPERS
@@ -166,6 +167,12 @@ const DelegationTask = () => {
       setLoading(false);
     }
   }, [dispatch, userID]);
+
+
+  useNotification({
+    refetch:fetchDelegationTasks
+  });
+
 
   // ============================================================
   // INITIAL FETCH
