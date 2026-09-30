@@ -218,6 +218,12 @@ const BillingPage = () => {
         type: "number",
       },
       {
+        field: "rate",
+        headerName: "Rate",
+        width: 100,
+        type: "number",
+      },
+      {
         field: "vehicleNo",
         headerName: "VehicleNo",
         width: 100,
