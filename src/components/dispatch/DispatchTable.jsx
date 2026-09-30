@@ -1,13 +1,17 @@
 import { useMemo, useState } from "react";
 
-import { Button, Chip, Box,
+import {
+  Button,
+  Chip,
+  Box,
   TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Stack
- } from "@mui/material";
+  Stack,
+  Autocomplete,
+} from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -20,72 +24,78 @@ const DispatchTable = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [routeFilter, setRouteFilter] = useState("");
-const [customerFilter, setCustomerFilter] = useState("");
-const [soFilter, setSoFilter] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [productFilter, setProductFilter] = useState("");
+  const [soFilter, setSoFilter] = useState("");
 
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   // filtered values for route
-const routes = useMemo(() => {
-  return [
-    ...new Set(
-      rows
-        .map((row) => String(row.route || "").trim())
-        .filter(Boolean)
-    ),
-  ].sort();
-}, [rows]);
+  const routes = useMemo(() => {
+    return [
+      ...new Set(
+        rows.map((row) => String(row.route || "").trim()).filter(Boolean),
+      ),
+    ].sort();
+  }, [rows]);
 
-// filtered values for customers
-const customers = useMemo(() => {
-  return [
-    ...new Set(
-      rows
-        .map((row) => String(row.customer || "").trim())
-        .filter(Boolean)
-    ),
-  ].sort();
-}, [rows]);
-const activeRows = useMemo(() => {
-  if (!Array.isArray(rows)) {
-    return [];
-  }
+  // filtered values for customers
+  const customers = useMemo(() => {
+    return [
+      ...new Set(
+        rows.map((row) => String(row.customer || "").trim()).filter(Boolean),
+      ),
+    ].sort();
+  }, [rows]);
+  const products = useMemo(() => {
+    return [
+      ...new Set(
+        rows.map((row) => String(row.product || "").trim()).filter(Boolean),
+      ),
+    ].sort();
+  }, [rows]);
 
-  return rows.filter((row) => {
-    // Fully dispatched orders hide
-    if (row.status === "Fully Dispatched") {
-      return false;
+  const activeRows = useMemo(() => {
+    if (!Array.isArray(rows)) {
+      return [];
     }
 
-    // Route filter
-    if (
-      routeFilter &&
-      String(row.route || "").trim() !== routeFilter
-    ) {
-      return false;
-    }
+    return rows.filter((row) => {
+      // Fully dispatched orders hide
+      if (row.status === "Fully Dispatched") {
+        return false;
+      }
 
-    // Customer filter
-    if (
-      customerFilter &&
-      String(row.customer || "").trim() !== customerFilter
-    ) {
-      return false;
-    }
+      // Route filter
+      if (routeFilter && String(row.route || "").trim() !== routeFilter) {
+        return false;
+      }
+      // Product filter
+      if (productFilter && String(row.product || "").trim() !== productFilter) {
+        return false;
+      }
 
-    // SO No filter
-    if (
-      soFilter &&
-      !String(row.soNo || "")
-        .toLowerCase()
-        .includes(soFilter.toLowerCase())
-    ) {
-      return false;
-    }
+      // Customer filter
+      if (
+        customerFilter &&
+        String(row.customer || "").trim() !== customerFilter
+      ) {
+        return false;
+      }
 
-    return true;
-  });
-}, [rows, routeFilter, customerFilter, soFilter]);
+      // SO No filter
+      if (
+        soFilter &&
+        !String(row.soNo || "")
+          .toLowerCase()
+          .includes(soFilter.toLowerCase())
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [rows, routeFilter, customerFilter, soFilter, productFilter]);
 
   const handleOpen = (row) => {
     setSelectedOrder(row);
@@ -98,22 +108,19 @@ const activeRows = useMemo(() => {
 
     setSelectedOrder(null);
   };
-console.log(
-  "DATAGRID ROW COUNT:",
-  rows.length
-);
+  console.log("DATAGRID ROW COUNT:", rows.length);
 
-console.table(
-  rows.map((row) => ({
-    soNo: row.soNo,
-    skuCode: row.skuCode,
-    status: row.status,
-    availableQty: row.availableQty,
-    dispatchQty: row.dispatchQty,
-  }))
-);
+  console.table(
+    rows.map((row) => ({
+      soNo: row.soNo,
+      skuCode: row.skuCode,
+      status: row.status,
+      availableQty: row.availableQty,
+      dispatchQty: row.dispatchQty,
+    })),
+  );
 
-// column for table
+  // column for table
   const columns = useMemo(
     () => [
       {
@@ -251,168 +258,188 @@ console.table(
     [],
   );
 
-  console.log("DispatchTable Rendered",activeRows);
+  console.log("DispatchTable Rendered", activeRows);
 
   return (
- <>
-  <Stack
-    direction={{ xs: "column", md: "row" }}
-    spacing={1}
-    sx={{
-      mb: 2,
-      px: { xs: 0.5, sm: 1, md: 0 },
-      width: "100%",
-    }}
-  >
-    {/* ROUTE */}
-    <FormControl
-      size="small"
-      sx={{
-        minWidth: { xs: 0, md: 180 },
-        width: { xs: "100%", md: "auto" },
-      }}
-    >
-      <InputLabel>Route</InputLabel>
-
-      <Select
-        value={routeFilter}
-        label="Route"
-        onChange={(e) => setRouteFilter(e.target.value)}
+    <>
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        spacing={1}
+        sx={{
+          mb: 2,
+          px: { xs: 0.5, sm: 1, md: 0 },
+          width: "100%",
+        }}
       >
-        <MenuItem value="">All Routes</MenuItem>
+        {/* ROUTE */}
+        <FormControl
+          size="small"
+          sx={{
+            minWidth: { xs: 0, md: 180 },
+            width: { xs: "100%", md: "auto" },
+          }}
+        >
+          <InputLabel>Route</InputLabel>
 
-        {routes.map((route) => (
-          <MenuItem key={route} value={route}>
-            {route}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+          <Select
+            value={routeFilter}
+            label="Route"
+            onChange={(e) => setRouteFilter(e.target.value)}
+          >
+            <MenuItem value="">All Routes</MenuItem>
 
-    {/* CUSTOMER */}
-    <FormControl
-      size="small"
-      sx={{
-        minWidth: { xs: 0, md: 180 },
-        width: { xs: "100%", md: "auto" },
-      }}
-    >
-      <InputLabel>Customer</InputLabel>
+            {routes.map((route) => (
+              <MenuItem key={route} value={route}>
+                {route}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      <Select
-        value={customerFilter}
-        label="Customer"
-        onChange={(e) => setCustomerFilter(e.target.value)}
+        {/* CUSTOMER */}
+        <FormControl
+          size="small"
+          sx={{
+            minWidth: { xs: 0, md: 180 },
+            width: { xs: "100%", md: "auto" },
+          }}
+        >
+          <InputLabel>Customer</InputLabel>
+
+          <Select
+            value={customerFilter}
+            label="Customer"
+            onChange={(e) => setCustomerFilter(e.target.value)}
+          >
+            <MenuItem value="">All Customers</MenuItem>
+
+            {customers.map((customer) => (
+              <MenuItem key={customer} value={customer}>
+                {customer}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {/* PRODUCT */}
+        <Autocomplete
+          size="small"
+          options={products}
+          value={productFilter || null}
+          onChange={(event, newValue) => {
+            setProductFilter(newValue || "");
+          }}
+          onInputChange={(event, newInputValue, reason) => {
+            if (reason === "clear") {
+              setProductFilter("");
+            }
+          }}
+          getOptionLabel={(option) => String(option || "")}
+          isOptionEqualToValue={(option, value) => option === value}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Product"
+              placeholder="Search product..."
+            />
+          )}
+          sx={{
+            minWidth: { xs: 0, md: 220 },
+            width: { xs: "100%", md: "auto" },
+          }}
+        />
+        {/* SO NO */}
+        <TextField
+          size="small"
+          label="Search SO No"
+          value={soFilter}
+          onChange={(e) => setSoFilter(e.target.value)}
+          sx={{
+            width: { xs: "100%", md: "auto" },
+          }}
+        />
+
+        {/* CLEAR */}
+        <Button
+          variant="outlined"
+          onClick={() => {
+            setRouteFilter("");
+            setCustomerFilter("");
+            setSoFilter("");
+          }}
+          sx={{
+            width: { xs: "100%", md: "auto" },
+          }}
+        >
+          Clear
+        </Button>
+      </Stack>
+
+      <Box
+        sx={{
+          width: "100%",
+          height: "calc(100vh - 150px)",
+          px: { xs: 0, sm: 1, md: 0 },
+          boxSizing: "border-box",
+        }}
       >
-        <MenuItem value="">All Customers</MenuItem>
+        <Box
+          sx={{
+            width: "100%",
+            height: "calc(100vh - 150px)",
+            px: { xs: 0, sm: 1, md: 0 },
 
-        {customers.map((customer) => (
-          <MenuItem key={customer} value={customer}>
-            {customer}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+            // 👇 IMPORTANT
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              pb: 3, // 👈 bottom mein proper space
+            }}
+          >
+            <DataGrid
+              rows={activeRows}
+              columns={columns}
+              loading={loading}
+              getRowId={(row) =>
+                `${row.id || `${row.soNo}-${row.skuCode}`}-${row.rowNumber}`
+              }
+              disableRowSelectionOnClick
+              density="compact"
+              pageSizeOptions={[10, 20, 50]}
+              initialState={{
+                pagination: {
+                  paginationModel: {
+                    pageSize: 10,
+                  },
+                },
+              }}
+              // 👇 HEADER + GRID SCROLL CONTROL
+              sx={{
+                height: "100%",
 
-    {/* SO NO */}
-    <TextField
-      size="small"
-      label="Search SO No"
-      value={soFilter}
-      onChange={(e) => setSoFilter(e.target.value)}
-      sx={{
-        width: { xs: "100%", md: "auto" },
-      }}
-    />
+                "& .MuiDataGrid-columnHeaders": {
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 10,
+                  backgroundColor: "background.paper",
+                },
 
-    {/* CLEAR */}
-    <Button
-      variant="outlined"
-      onClick={() => {
-        setRouteFilter("");
-        setCustomerFilter("");
-        setSoFilter("");
-      }}
-      sx={{
-        width: { xs: "100%", md: "auto" },
-      }}
-    >
-      Clear
-    </Button>
-  </Stack>
+                "& .MuiDataGrid-virtualScroller": {
+                  overflowY: "auto",
+                },
+              }}
+            />
+          </Box>
+        </Box>
+      </Box>
 
-  <Box
-    sx={{
-      width: "100%",
-      height: "calc(100vh - 150px)",
-      px: { xs: 0, sm: 1, md: 0 },
-      boxSizing:"border-box"
-    }}
-  >
-<Box
-  sx={{
-    width: "100%",
-    height: "calc(100vh - 150px)",
-    px: { xs: 0, sm: 1, md: 0 },
-
-    // 👇 IMPORTANT
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-  }}
->
-  <Box
-    sx={{
-      flex: 1,
-      minHeight: 0,
-      pb: 3, // 👈 bottom mein proper space
-    }}
-  >
-    <DataGrid
-      rows={activeRows}
-      columns={columns}
-      loading={loading}
-      getRowId={(row) =>
- `${row.id || `${row.soNo}-${row.skuCode}`}-${row.rowNumber}`
-        
-      }
-      disableRowSelectionOnClick
-      density="compact"
-      pageSizeOptions={[10, 20, 50]}
-      initialState={{
-        pagination: {
-          paginationModel: {
-            pageSize: 10,
-          },
-        },
-      }}
-
-      // 👇 HEADER + GRID SCROLL CONTROL
-      sx={{
-        height: "100%",
-
-        "& .MuiDataGrid-columnHeaders": {
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          backgroundColor: "background.paper",
-        },
-
-        "& .MuiDataGrid-virtualScroller": {
-          overflowY: "auto",
-        },
-      }}
-    />
-  </Box>
-</Box>
-</Box>
-
-  <DispatchDialog
-    open={open}
-    onClose={handleClose}
-    order={selectedOrder}
-  />
-  </>
+      <DispatchDialog open={open} onClose={handleClose} order={selectedOrder} />
+    </>
   );
 };
 

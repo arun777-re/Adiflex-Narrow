@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import {
   Box,
@@ -11,125 +11,508 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Autocomplete,
 } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllFG, updateFG } from "../redux/slices/fgSlice";
+
+import {
+  fetchAllFG,
+  updateFG,
+} from "../redux/slices/fgSlice";
+
 import InventoryDataGrid from "../components/InventoryDataGrid";
 
 const Inventory = () => {
   const dispatch = useDispatch();
 
+  // ============================================================
+  // STATE
+  // ============================================================
+
   const [editOpen, setEditOpen] = useState(false);
+
   const [selectedItem, setSelectedItem] = useState(null);
+
   const [newFGQty, setNewFGQty] = useState("");
 
-  useEffect(() => {
-    dispatch(fetchAllFG());
-  }, [dispatch]);
+  // Product filter
+  const [productFilter, setProductFilter] = useState("");
+
+  // SKU filter
+  const [skuFilter, setSkuFilter] = useState("");
+
+  // ============================================================
+  // REDUX
+  // ============================================================
 
   const { inventory, loading } = useSelector(
     (state) => state?.fginventory
   );
 
-  const { user } = useSelector((state) => state.auth.user);
+  const { user } = useSelector(
+    (state) => state.auth?.user || {}
+  );
 
-  let finalData = inventory?.data || [];
+  // ============================================================
+  // FETCH INVENTORY
+  // ============================================================
 
-  // -----------------------------
-  // Edit Stock
-  // -----------------------------
+  useEffect(() => {
+    dispatch(fetchAllFG());
+  }, [dispatch]);
+
+  // ============================================================
+  // INVENTORY DATA
+  // ============================================================
+
+  const inventoryData = Array.isArray(inventory?.data)
+    ? inventory.data
+    : [];
+
+  // ============================================================
+  // DIVISION FILTER
+  // ============================================================
+
+  const divisionData = useMemo(() => {
+    if (!Array.isArray(inventoryData)) {
+      return [];
+    }
+
+    const userDivision = String(
+      user?.division || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    // Admin / All division
+    if (!userDivision || userDivision === "all") {
+      return inventoryData;
+    }
+
+    return inventoryData.filter((item) => {
+      const itemDivision = String(item?.[2] || "")
+        .trim()
+        .toLowerCase();
+
+      return itemDivision === userDivision;
+    });
+  }, [inventoryData, user?.division]);
+
+  // ============================================================
+  // PRODUCT OPTIONS
+  // ============================================================
+
+  const productOptions = useMemo(() => {
+    return [
+      ...new Set(
+        divisionData
+          .map((item) =>
+            String(item?.[1] || "").trim()
+          )
+          .filter(Boolean)
+      ),
+    ].sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }, [divisionData]);
+
+  // ============================================================
+  // SKU OPTIONS
+  // ============================================================
+
+  const skuOptions = useMemo(() => {
+    return [
+      ...new Set(
+        divisionData
+          .map((item) =>
+            String(item?.[0] || "").trim()
+          )
+          .filter(Boolean)
+      ),
+    ].sort((a, b) =>
+      a.localeCompare(b)
+    );
+  }, [divisionData]);
+
+  // ============================================================
+  // FILTERED DATA
+  // ============================================================
+
+  const filteredData = useMemo(() => {
+    return divisionData.filter((item) => {
+      const product = String(
+        item?.[1] || ""
+      ).trim();
+
+      const skuCode = String(
+        item?.[0] || ""
+      ).trim();
+
+      // --------------------------------------------------------
+      // PRODUCT FILTER
+      // --------------------------------------------------------
+
+      if (
+        productFilter &&
+        product.toLowerCase() !==
+          productFilter.toLowerCase()
+      ) {
+        return false;
+      }
+
+      // --------------------------------------------------------
+      // SKU FILTER
+      // --------------------------------------------------------
+
+      if (
+        skuFilter &&
+        skuCode.toLowerCase() !==
+          skuFilter.toLowerCase()
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [
+    divisionData,
+    productFilter,
+    skuFilter,
+  ]);
+
+  // ============================================================
+  // SUMMARY
+  // ============================================================
+
+  const availableFGStock = useMemo(() => {
+    return filteredData.reduce(
+      (sum, item) =>
+        sum + Number(item?.[4] || 0),
+      0
+    );
+  }, [filteredData]);
+
+  const lowStockItemsLength = useMemo(() => {
+    return filteredData.filter(
+      (item) =>
+        Number(item?.[4] || 0) < 100
+    ).length;
+  }, [filteredData]);
+
+  const outOfStockItemsLength = useMemo(() => {
+    return filteredData.filter(
+      (item) =>
+        Number(item?.[4] || 0) <= 0
+    ).length;
+  }, [filteredData]);
+
+  // ============================================================
+  // CLEAR FILTERS
+  // ============================================================
+
+  const handleClearFilters = () => {
+    setProductFilter("");
+    setSkuFilter("");
+  };
+
+  // ============================================================
+  // EDIT STOCK
+  // ============================================================
+
   const handleEditStock = (item) => {
     if (!item) return;
 
     setSelectedItem(item);
-    setNewFGQty(item[4] ?? "");
+
+    setNewFGQty(
+      item?.[4] ?? ""
+    );
+
     setEditOpen(true);
   };
 
-  // -----------------------------
-  // Close Edit Dialog
-  // -----------------------------
+  // ============================================================
+  // CLOSE EDIT DIALOG
+  // ============================================================
+
   const handleCloseEdit = () => {
     setEditOpen(false);
+
     setSelectedItem(null);
+
     setNewFGQty("");
   };
 
-  if (user?.division?.toLowerCase() !== "all") {
-    finalData = inventory?.data?.filter(
-      (item) =>
-        item[2]?.trim().toLowerCase() ===
-        user.division.trim().toLowerCase()
-    );
-  }
+  // ============================================================
+  // UPDATE STOCK
+  // ============================================================
 
-  const availableFGStock =
-    Array.isArray(finalData)
-      ? finalData.reduce(
-          (sum, item) => sum + Number(item[4] || 0),
-          0
-        )
-      : 0;
+  const handleUpdateStock = async () => {
+    if (!selectedItem) {
+      return;
+    }
 
-  const lowStockItemsLength =
-    Array.isArray(finalData)
-      ? finalData.filter((i) => Number(i[4]) < 100).length
-      : 0;
+    const skucode = selectedItem?.[0];
 
-  const outOfStockItemsLength =
-    Array.isArray(finalData)
-      ? finalData.filter((i) => Number(i[4]) <= 0).length
-      : 0;
+    const qty = Number(newFGQty);
 
+    // ----------------------------------------------------------
+    // VALIDATION
+    // ----------------------------------------------------------
 
- // update stock functionallity
-const handleUpdateStock = async () => {
-  if (!selectedItem) return;
-  const skucode = selectedItem[0];
-  const qty = Number(newFGQty);
+    if (!Number.isFinite(qty) || qty < 0) {
+      return;
+    }
 
-  if (!Number.isFinite(qty) || qty < 0) {
-    return;
-  }
-  try {
-    console.log("fgfgfggfgStock in component bhai......l",qty);
-  const result =  await dispatch(updateFG({skucode,newFGQty:qty})).unwrap();
-    console.log("✅ Stock updated:", result);
+    if (!skucode) {
+      console.error("❌ SKU Code missing");
 
-    // Close dialog
-    handleCloseEdit();
+      return;
+    }
 
-    // Refresh inventory
-    dispatch(fetchAllFG());
-  } catch (error) {
-    console.error("❌ Stock update failed:", error);
-  }
-};
+    try {
+      console.log(
+        "📦 Updating FG Stock:",
+        {
+          skucode,
+          qty,
+        }
+      );
+
+      const result = await dispatch(
+        updateFG({
+          skucode,
+          newFGQty: qty,
+        })
+      ).unwrap();
+
+      console.log(
+        "✅ Stock updated:",
+        result
+      );
+
+      // Close dialog
+      handleCloseEdit();
+
+      // Refresh inventory
+      await dispatch(
+        fetchAllFG()
+      );
+    } catch (error) {
+      console.error(
+        "❌ Stock update failed:",
+        error
+      );
+    }
+  };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
-    <Box p={3}>
-      {/* Heading */}
-      <Typography variant="h5" fontWeight={600} mb={3}>
+    <Box
+      p={{
+        xs: 1.5,
+        sm: 2,
+        md: 3,
+      }}
+    >
+      {/* ======================================================
+          HEADING
+      ====================================================== */}
+
+      <Typography
+        variant="h5"
+        fontWeight={600}
+        mb={3}
+      >
         Finished Goods Inventory
       </Typography>
 
-      {/* Summary Cards */}
-      <Grid container spacing={2} mb={3}>
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Paper sx={{ p: 2 }}>
+      {/* ======================================================
+          FILTERS
+      ====================================================== */}
+
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 3,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 2,
+        }}
+      >
+        <Grid
+          container
+          spacing={2}
+          alignItems="center"
+        >
+          {/* ==================================================
+              PRODUCT NAME
+          ================================================== */}
+
+          <Grid
+            size={{
+              xs: 12,
+              md: 5,
+            }}
+          >
+            <Autocomplete
+              size="small"
+              options={productOptions}
+              value={
+                productFilter || null
+              }
+              onChange={(
+                event,
+                newValue
+              ) => {
+                setProductFilter(
+                  newValue || ""
+                );
+              }}
+              getOptionLabel={(option) =>
+                String(option || "")
+              }
+              isOptionEqualToValue={(
+                option,
+                value
+              ) =>
+                String(option) ===
+                String(value)
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Product Name"
+                  placeholder="Type product name..."
+                />
+              )}
+              fullWidth
+            />
+          </Grid>
+
+          {/* ==================================================
+              SKU CODE
+          ================================================== */}
+
+          <Grid
+            size={{
+              xs: 12,
+              md: 4,
+            }}
+          >
+            <Autocomplete
+              size="small"
+              options={skuOptions}
+              value={
+                skuFilter || null
+              }
+              onChange={(
+                event,
+                newValue
+              ) => {
+                setSkuFilter(
+                  newValue || ""
+                );
+              }}
+              getOptionLabel={(option) =>
+                String(option || "")
+              }
+              isOptionEqualToValue={(
+                option,
+                value
+              ) =>
+                String(option) ===
+                String(value)
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="SKU Code"
+                  placeholder="Type SKU code..."
+                />
+              )}
+              fullWidth
+            />
+          </Grid>
+
+          {/* ==================================================
+              CLEAR FILTERS
+          ================================================== */}
+
+          <Grid
+            size={{
+              xs: 12,
+              md: 3,
+            }}
+          >
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={
+                handleClearFilters
+              }
+              sx={{
+                height: 40,
+              }}
+            >
+              Clear Filters
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* ======================================================
+          SUMMARY CARDS
+      ====================================================== */}
+
+      <Grid
+        container
+        spacing={2}
+        mb={3}
+      >
+        {/* TOTAL SKU */}
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3,
+          }}
+        >
+          <Paper
+            sx={{
+              p: 2,
+            }}
+          >
             <Typography variant="body2">
               Total SKU
             </Typography>
 
             <Typography variant="h5">
-              {finalData?.length || 0}
+              {filteredData.length}
             </Typography>
           </Paper>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Paper sx={{ p: 2 }}>
+        {/* AVAILABLE QTY */}
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3,
+          }}
+        >
+          <Paper
+            sx={{
+              p: 2,
+            }}
+          >
             <Typography variant="body2">
               Available Qty
             </Typography>
@@ -140,8 +523,20 @@ const handleUpdateStock = async () => {
           </Paper>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Paper sx={{ p: 2 }}>
+        {/* LOW STOCK */}
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3,
+          }}
+        >
+          <Paper
+            sx={{
+              p: 2,
+            }}
+          >
             <Typography variant="body2">
               Low Stock
             </Typography>
@@ -152,8 +547,20 @@ const handleUpdateStock = async () => {
           </Paper>
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Paper sx={{ p: 2 }}>
+        {/* OUT OF STOCK */}
+
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3,
+          }}
+        >
+          <Paper
+            sx={{
+              p: 2,
+            }}
+          >
             <Typography variant="body2">
               Out Of Stock
             </Typography>
@@ -165,14 +572,20 @@ const handleUpdateStock = async () => {
         </Grid>
       </Grid>
 
-      {/* DataGrid */}
+      {/* ======================================================
+          DATA GRID
+      ====================================================== */}
+
       <InventoryDataGrid
-        data={finalData || []}
+        data={filteredData}
         loading={loading}
         onEdit={handleEditStock}
       />
 
-      {/* Edit Stock Dialog */}
+      {/* ======================================================
+          EDIT STOCK DIALOG
+      ====================================================== */}
+
       <Dialog
         open={editOpen}
         onClose={handleCloseEdit}
@@ -184,43 +597,67 @@ const handleUpdateStock = async () => {
         </DialogTitle>
 
         <DialogContent>
+          {/* SKU */}
+
           <TextField
             fullWidth
             label="SKU Code"
-            value={selectedItem?.[0] || ""}
+            value={
+              selectedItem?.[0] || ""
+            }
             disabled
             margin="normal"
           />
 
+          {/* CURRENT STOCK */}
+
           <TextField
             fullWidth
             label="Current FG Qty"
-            value={selectedItem?.[4] ?? ""}
+            value={
+              selectedItem?.[4] ?? ""
+            }
             disabled
             margin="normal"
           />
+
+          {/* NEW STOCK */}
 
           <TextField
             fullWidth
             label="New FG Qty"
             type="number"
             value={newFGQty}
-            onChange={(e) => setNewFGQty(e.target.value)}
+            onChange={(e) =>
+              setNewFGQty(
+                e.target.value
+              )
+            }
             margin="normal"
-            inputProps={{ min: 0 }}
+            inputProps={{
+              min: 0,
+            }}
             autoFocus
           />
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={handleCloseEdit}>
+          <Button
+            onClick={
+              handleCloseEdit
+            }
+          >
             Cancel
           </Button>
 
           <Button
             variant="contained"
-            onClick={handleUpdateStock}
-            disabled={newFGQty === ""}
+            onClick={
+              handleUpdateStock
+            }
+            disabled={
+              newFGQty === ""
+            }
           >
             Save
           </Button>
@@ -231,3 +668,4 @@ const handleUpdateStock = async () => {
 };
 
 export default Inventory;
+

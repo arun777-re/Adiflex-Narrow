@@ -28,7 +28,7 @@ import {
   getDelegationTasksofEmployee,
   notCompleteDelegationTask,
 } from "../../../redux/slices/dailtTask.slice";
-import {useNotification} from '../../../hooks/useNotification';
+import useNotification from '../../../hooks/useNotification';
 
 // ============================================================
 // HELPERS
