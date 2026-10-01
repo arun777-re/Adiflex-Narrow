@@ -13,7 +13,6 @@ import Inventory from "./pages/Inventory";
 import ViewAllProducts from "./pages/product/ViewAllProducts";
 import CreateProduct from "./pages/product/CreateProduct";
 import ActivityLog from "./pages/ActivityLog";
-import Reports from "./pages/Reports";
 import CompleteDispatch from "./pages/CompleteDispatch";
 import BillingPage from "./pages/billing/BillingPage";
 import CompleteBilling from "./pages/billing/CompleteBilling";

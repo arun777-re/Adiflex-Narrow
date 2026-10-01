@@ -12,7 +12,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
@@ -40,6 +39,9 @@ import {
   getOrdersAnalytics,
   getSalesAnalytics,
 } from "../../redux/slices/analyticsSlice";
+
+import DashboardCard from "../../components/dashboards/admin/DashboardCard";
+import ChartContainer from "../../components/dashboards/admin/ChartContainer";
 
 /* =========================================================
    CONSTANTS
@@ -95,67 +97,6 @@ const formatGrowth = (value) => {
 };
 
 /* =========================================================
-   REUSABLE CARD
-========================================================= */
-
-const DashboardCard = ({
-  title,
-  subtitle,
-  children,
-  sx = {},
-}) => {
-  return (
-    <Card
-      elevation={1}
-      sx={{
-        width: "100%",
-        height: "100%",
-        borderRadius: 2,
-        overflow: "hidden",
-        ...sx,
-      }}
-    >
-      <CardContent
-        sx={{
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          "&:last-child": {
-            pb: 2,
-          },
-        }}
-      >
-        <Typography
-          variant="h6"
-          fontWeight={700}
-        >
-          {title}
-        </Typography>
-
-        {subtitle && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 0.25, mb: 2 }}
-          >
-            {subtitle}
-          </Typography>
-        )}
-
-        <Box
-          sx={{
-            flex: 1,
-            minWidth: 0,
-          }}
-        >
-          {children}
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
-
-/* =========================================================
    KPI CARD
 ========================================================= */
 
@@ -165,10 +106,7 @@ const DashboardKpiCard = ({
   previousValue,
   formatter = formatNumber,
 }) => {
-  const growth = calculateGrowth(
-    value,
-    previousValue
-  );
+  const growth = calculateGrowth(value, previousValue);
 
   const isPositive = growth >= 0;
 
@@ -206,11 +144,7 @@ const DashboardKpiCard = ({
         <Chip
           size="small"
           label={formatGrowth(growth)}
-          color={
-            isPositive
-              ? "success"
-              : "error"
-          }
+          color={isPositive ? "success" : "error"}
           variant="outlined"
         />
 
@@ -222,33 +156,6 @@ const DashboardKpiCard = ({
         </Typography>
       </Stack>
     </DashboardCard>
-  );
-};
-
-/* =========================================================
-   CHART CONTAINER
-========================================================= */
-
-const ChartContainer = ({
-  children,
-  height = 320,
-}) => {
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        height,
-        minWidth: 0,
-        minHeight: 0,
-      }}
-    >
-      <ResponsiveContainer
-        width="100%"
-        height="100%"
-      >
-        {children}
-      </ResponsiveContainer>
-    </Box>
   );
 };
 
@@ -277,9 +184,7 @@ const DashboardFilter = ({
       <Select
         value={value}
         label={label}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
+        onChange={(event) => onChange(event.target.value)}
       >
         {options.map((option) => (
           <MenuItem
@@ -316,7 +221,10 @@ const DashboardHeader = ({
       }}
       justifyContent="space-between"
       spacing={2}
-      sx={{ mb: 2 }}
+      sx={{
+        mb: 3,
+        width: "100%",
+      }}
     >
       <Box>
         <Typography
@@ -329,9 +237,9 @@ const DashboardHeader = ({
         <Typography
           variant="body2"
           color="text.secondary"
+          sx={{ mt: 0.5 }}
         >
-          Orders, production completion
-          and sales performance
+          Orders, production completion and sales performance
         </Typography>
       </Box>
 
@@ -398,6 +306,12 @@ const KpiGrid = ({ summary }) => {
     <Grid
       container
       spacing={2}
+      sx={{
+        width: "100%",
+        m: 0,
+        mb: 3,
+        alignItems: "stretch",
+      }}
     >
       {cards.map((card) => (
         <Grid
@@ -408,11 +322,17 @@ const KpiGrid = ({ summary }) => {
             md: 3,
           }}
           sx={{
-            display: "flex",
             minWidth: 0,
+            display: "flex",
           }}
         >
-          <DashboardKpiCard {...card} />
+          <Box
+            sx={{
+              width: "100%",
+            }}
+          >
+            <DashboardKpiCard {...card} />
+          </Box>
         </Grid>
       ))}
     </Grid>
@@ -425,11 +345,7 @@ const KpiGrid = ({ summary }) => {
 
 const CompletionCard = ({ summary }) => {
   const completionRate = summary.orders
-    ? (
-        (summary.completed /
-          summary.orders) *
-        100
-      ).toFixed(1)
+    ? ((summary.completed / summary.orders) * 100).toFixed(1)
     : 0;
 
   return (
@@ -442,14 +358,22 @@ const CompletionCard = ({ summary }) => {
         alignItems="center"
         justifyContent="space-between"
         spacing={2}
-        sx={{ height: "100%" }}
+        sx={{
+          minWidth: 0,
+          width: "100%",
+        }}
       >
-        <Box>
+        <Box sx={{ minWidth: 0 }}>
           <Typography
             variant="h3"
             fontWeight={800}
             sx={{
               lineHeight: 1.1,
+              fontSize: {
+                xs: "2rem",
+                sm: "3rem",
+              },
+              whiteSpace: "nowrap",
             }}
           >
             {completionRate}%
@@ -460,10 +384,8 @@ const CompletionCard = ({ summary }) => {
             color="text.secondary"
             sx={{ mt: 1 }}
           >
-            {formatNumber(summary.completed)}{" "}
-            of{" "}
-            {formatNumber(summary.orders)}{" "}
-            orders completed
+            {formatNumber(summary.completed)} of{" "}
+            {formatNumber(summary.orders)} orders completed
           </Typography>
         </Box>
 
@@ -475,6 +397,7 @@ const CompletionCard = ({ summary }) => {
             },
             fontWeight: 800,
             lineHeight: 1,
+            flexShrink: 0,
           }}
         >
           ✓
@@ -511,17 +434,22 @@ const QuickSummaryCard = ({ summary }) => {
     >
       <Grid
         container
-        spacing={2}
+        spacing={{ xs: 1.5, sm: 2 }}
         sx={{
-          height: "100%",
+          width: "100%",
           alignItems: "center",
+          minWidth: 0,
         }}
       >
         {items.map((item) => (
           <Grid
             key={item.label}
             size={{
-              xs: 4,
+              xs: 12,
+              sm: 4,
+            }}
+            sx={{
+              minWidth: 0,
             }}
           >
             <Typography
@@ -564,13 +492,9 @@ const OrdersChart = ({ data }) => {
           bottom: 0,
         }}
       >
-        <CartesianGrid
-          strokeDasharray="3 3"
-        />
+        <CartesianGrid strokeDasharray="3 3" />
 
-        <XAxis
-          dataKey="week"
-        />
+        <XAxis dataKey="week" />
 
         <YAxis />
 
@@ -610,9 +534,7 @@ const DivisionPieChart = ({ data }) => {
           label
         >
           {data.map((entry) => (
-            <Cell
-              key={entry.division}
-            />
+            <Cell key={entry.division} />
           ))}
         </Pie>
 
@@ -640,26 +562,18 @@ const SalesChart = ({ data }) => {
           bottom: 0,
         }}
       >
-        <CartesianGrid
-          strokeDasharray="3 3"
-        />
+        <CartesianGrid strokeDasharray="3 3" />
 
-        <XAxis
-          dataKey="week"
-        />
+        <XAxis dataKey="week" />
 
         <YAxis
           tickFormatter={(value) =>
-            `₹${(
-              value / 100000
-            ).toFixed(0)}L`
+            `₹${(value / 100000).toFixed(0)}L`
           }
         />
 
         <Tooltip
-          formatter={(value) =>
-            formatCurrency(value)
-          }
+          formatter={(value) => formatCurrency(value)}
         />
 
         <Legend />
@@ -679,9 +593,7 @@ const SalesChart = ({ data }) => {
    DIVISION PERFORMANCE
 ========================================================= */
 
-const DivisionPerformance = ({
-  data,
-}) => {
+const DivisionPerformance = ({ data }) => {
   return (
     <DashboardCard
       title="Division Performance"
@@ -690,24 +602,18 @@ const DivisionPerformance = ({
       <Stack
         spacing={1.5}
         sx={{
-          height: "100%",
+          width: "100%",
           overflowY: "auto",
           pr: 0.5,
         }}
       >
         {data.map((item) => {
           const rate = item.orders
-            ? (
-                (item.completed /
-                  item.orders) *
-                100
-              ).toFixed(1)
+            ? ((item.completed / item.orders) * 100).toFixed(1)
             : 0;
 
           return (
-            <Box
-              key={item.division}
-            >
+            <Box key={item.division}>
               <Stack
                 direction="row"
                 justifyContent="space-between"
@@ -736,10 +642,8 @@ const DivisionPerformance = ({
                 variant="body2"
                 sx={{ mt: 0.5 }}
               >
-                {formatNumber(item.orders)}{" "}
-                orders ·{" "}
-                {formatNumber(item.completed)}{" "}
-                completed
+                {formatNumber(item.orders)} orders ·{" "}
+                {formatNumber(item.completed)} completed
               </Typography>
 
               <Typography
@@ -774,13 +678,11 @@ const DivisionPerformance = ({
 
 const createDivisionData = (
   divisionOrders,
-  divisionSales
+  divisionSales,
 ) => {
   const map = {};
 
-  const ensureDivision = (
-    division
-  ) => {
+  const ensureDivision = (division) => {
     if (!map[division]) {
       map[division] = {
         division,
@@ -794,62 +696,42 @@ const createDivisionData = (
   };
 
   divisionOrders.forEach((item) => {
-    const division =
-      item.division || "UNKNOWN";
+    const division = item.division || "UNKNOWN";
 
-    const target =
-      ensureDivision(division);
+    const target = ensureDivision(division);
 
-    target.orders =
-      Number(item.orders) || 0;
-
-    target.completed =
-      Number(item.completed) || 0;
+    target.orders = Number(item.orders) || 0;
+    target.completed = Number(item.completed) || 0;
   });
 
   divisionSales.forEach((item) => {
-    const division =
-      item.division || "UNKNOWN";
+    const division = item.division || "UNKNOWN";
 
-    const target =
-      ensureDivision(division);
+    const target = ensureDivision(division);
 
-    target.sales =
-      Number(item.sales) || 0;
+    target.sales = Number(item.sales) || 0;
   });
 
   return Object.values(map);
 };
 
-const createDashboardSummary = (
-  summary
-) => ({
-  orders:
-    Number(summary?.ordersReceived) || 0,
+const createDashboardSummary = (summary) => ({
+  orders: Number(summary?.ordersReceived) || 0,
 
-  completed:
-    Number(summary?.ordersCompleted) || 0,
+  completed: Number(summary?.ordersCompleted) || 0,
 
-  pending:
-    Number(summary?.pendingOrders) || 0,
+  pending: Number(summary?.pendingOrders) || 0,
 
-  sales:
-    Number(summary?.sales) || 0,
+  sales: Number(summary?.sales) || 0,
 
   previousOrders:
-    Number(
-      summary?.previousOrdersReceived
-    ) || 0,
+    Number(summary?.previousOrdersReceived) || 0,
 
   previousCompleted:
-    Number(
-      summary?.previousOrdersCompleted
-    ) || 0,
+    Number(summary?.previousOrdersCompleted) || 0,
 
   previousPending:
-    Number(
-      summary?.previousPendingOrders
-    ) || 0,
+    Number(summary?.previousPendingOrders) || 0,
 
   previousSales:
     Number(summary?.previousSales) || 0,
@@ -862,8 +744,7 @@ const createDashboardSummary = (
 const AnalysisPage = () => {
   const dispatch = useDispatch();
 
-  const [period, setPeriod] =
-    useState("all");
+  const [period, setPeriod] = useState("all");
 
   const [division, setDivision] =
     useState(DIVISION_TOTAL);
@@ -874,9 +755,7 @@ const AnalysisPage = () => {
     sales,
     loading,
     error,
-  } = useSelector(
-    (state) => state.analytics
-  );
+  } = useSelector((state) => state.analytics);
 
   /* =======================================================
      FETCH
@@ -888,70 +767,42 @@ const AnalysisPage = () => {
       division,
     };
 
-    dispatch(
-      getAnalyticsSummary(params)
-    );
-
-    dispatch(
-      getOrdersAnalytics(params)
-    );
-
-    dispatch(
-      getSalesAnalytics(params)
-    );
-  }, [
-    dispatch,
-    period,
-    division,
-  ]);
+    dispatch(getAnalyticsSummary(params));
+    dispatch(getOrdersAnalytics(params));
+    dispatch(getSalesAnalytics(params));
+  }, [dispatch, period, division]);
 
   /* =======================================================
      DERIVED DATA
   ======================================================= */
 
-  const dashboardSummary =
-    useMemo(
-      () =>
-        createDashboardSummary(
-          summary
-        ),
-      [summary]
+  const dashboardSummary = useMemo(
+    () => createDashboardSummary(summary),
+    [summary],
+  );
+
+  const weeklyOrders = orders?.weekly || [];
+
+  const weeklySales = sales?.weekly || [];
+
+  const divisionData = useMemo(
+    () =>
+      createDivisionData(
+        orders?.division || [],
+        sales?.division || [],
+      ),
+    [orders, sales],
+  );
+
+  const filteredDivisionData = useMemo(() => {
+    if (division === DIVISION_TOTAL) {
+      return divisionData;
+    }
+
+    return divisionData.filter(
+      (item) => item.division === division,
     );
-
-  const weeklyOrders =
-    orders?.weekly || [];
-
-  const weeklySales =
-    sales?.weekly || [];
-
-  const divisionData =
-    useMemo(
-      () =>
-        createDivisionData(
-          orders?.division || [],
-          sales?.division || []
-        ),
-      [orders, sales]
-    );
-
-  const filteredDivisionData =
-    useMemo(() => {
-      if (
-        division ===
-        DIVISION_TOTAL
-      ) {
-        return divisionData;
-      }
-
-      return divisionData.filter(
-        (item) =>
-          item.division ===
-          division
-      );
-    }, [
-      divisionData,
-      division,
-    ]);
+  }, [divisionData, division]);
 
   const isLoading =
     Boolean(loading?.summary) ||
@@ -979,9 +830,12 @@ const AnalysisPage = () => {
         },
         boxSizing: "border-box",
         overflowX: "hidden",
+        overflowY: "visible",
       }}
     >
-      {/* HEADER */}
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
       <DashboardHeader
         period={period}
@@ -990,12 +844,14 @@ const AnalysisPage = () => {
         onDivisionChange={setDivision}
       />
 
-      {/* ERROR */}
+      {/* =================================================
+          ERROR
+      ================================================= */}
 
       {hasError && (
         <Card
           sx={{
-            mb: 2,
+            mb: 3,
             borderRadius: 2,
           }}
         >
@@ -1020,20 +876,25 @@ const AnalysisPage = () => {
         </Card>
       )}
 
-      {/* KPI */}
+      {/* =================================================
+          KPI
+      ================================================= */}
 
-      <KpiGrid
-        summary={
-          dashboardSummary
-        }
-      />
+      <KpiGrid summary={dashboardSummary} />
 
-      {/* SUMMARY */}
+      {/* =================================================
+          SUMMARY SECTION
+      ================================================= */}
 
       <Grid
         container
         spacing={2}
-        sx={{ mt: 0 }}
+        sx={{
+          width: "100%",
+          m: 0,
+          mb: 3,
+          alignItems: "stretch",
+        }}
       >
         <Grid
           size={{
@@ -1045,11 +906,15 @@ const AnalysisPage = () => {
             minWidth: 0,
           }}
         >
-          <CompletionCard
-            summary={
-              dashboardSummary
-            }
-          />
+          <Box
+            sx={{
+              width: "100%",
+            }}
+          >
+            <CompletionCard
+              summary={dashboardSummary}
+            />
+          </Box>
         </Grid>
 
         <Grid
@@ -1062,20 +927,31 @@ const AnalysisPage = () => {
             minWidth: 0,
           }}
         >
-          <QuickSummaryCard
-            summary={
-              dashboardSummary
-            }
-          />
+          <Box
+            sx={{
+              width: "100%",
+            }}
+          >
+            <QuickSummaryCard
+              summary={dashboardSummary}
+            />
+          </Box>
         </Grid>
       </Grid>
 
-      {/* ORDERS */}
+      {/* =================================================
+          ORDERS SECTION
+      ================================================= */}
 
       <Grid
         container
         spacing={2}
-        sx={{ mt: 0 }}
+        sx={{
+          width: "100%",
+          m: 0,
+          mb: 3,
+          alignItems: "stretch",
+        }}
       >
         <Grid
           size={{
@@ -1087,20 +963,26 @@ const AnalysisPage = () => {
             minWidth: 0,
           }}
         >
-          <DashboardCard
-            title="Weekly Orders"
-            subtitle="Orders received vs completed"
+          <Box
+            sx={{
+              width: "100%",
+            }}
           >
-            {weeklyOrders.length ? (
-              <OrdersChart
-                data={weeklyOrders}
-              />
-            ) : (
-              <EmptyChart
-                message="No weekly order data available"
-              />
-            )}
-          </DashboardCard>
+            <DashboardCard
+              title="Weekly Orders"
+              subtitle="Orders received vs completed"
+            >
+              {weeklyOrders.length ? (
+                <OrdersChart
+                  data={weeklyOrders}
+                />
+              ) : (
+                <EmptyChart
+                  message="No weekly order data available"
+                />
+              )}
+            </DashboardCard>
+          </Box>
         </Grid>
 
         <Grid
@@ -1113,29 +995,42 @@ const AnalysisPage = () => {
             minWidth: 0,
           }}
         >
-          <DashboardCard
-            title="Orders by Division"
-            subtitle="Division-wise order distribution"
+          <Box
+            sx={{
+              width: "100%",
+            }}
           >
-            {divisionData.length ? (
-              <DivisionPieChart
-                data={divisionData}
-              />
-            ) : (
-              <EmptyChart
-                message="No division order data available"
-              />
-            )}
-          </DashboardCard>
+            <DashboardCard
+              title="Orders by Division"
+              subtitle="Division-wise order distribution"
+            >
+              {divisionData.length ? (
+                <DivisionPieChart
+                  data={divisionData}
+                />
+              ) : (
+                <EmptyChart
+                  message="No division order data available"
+                />
+              )}
+            </DashboardCard>
+          </Box>
         </Grid>
       </Grid>
 
-      {/* SALES */}
+      {/* =================================================
+          SALES SECTION
+      ================================================= */}
 
       <Grid
         container
         spacing={2}
-        sx={{ mt: 0 }}
+        sx={{
+          width: "100%",
+          m: 0,
+          mb: 3,
+          alignItems: "stretch",
+        }}
       >
         <Grid
           size={{
@@ -1147,20 +1042,26 @@ const AnalysisPage = () => {
             minWidth: 0,
           }}
         >
-          <DashboardCard
-            title="Weekly Sales"
-            subtitle="Sales value by week"
+          <Box
+            sx={{
+              width: "100%",
+            }}
           >
-            {weeklySales.length ? (
-              <SalesChart
-                data={weeklySales}
-              />
-            ) : (
-              <EmptyChart
-                message="No weekly sales data available"
-              />
-            )}
-          </DashboardCard>
+            <DashboardCard
+              title="Weekly Sales"
+              subtitle="Sales value by week"
+            >
+              {weeklySales.length ? (
+                <SalesChart
+                  data={weeklySales}
+                />
+              ) : (
+                <EmptyChart
+                  message="No weekly sales data available"
+                />
+              )}
+            </DashboardCard>
+          </Box>
         </Grid>
 
         <Grid
@@ -1173,15 +1074,21 @@ const AnalysisPage = () => {
             minWidth: 0,
           }}
         >
-          <DivisionPerformance
-            data={
-              filteredDivisionData
-            }
-          />
+          <Box
+            sx={{
+              width: "100%",
+            }}
+          >
+            <DivisionPerformance
+              data={filteredDivisionData}
+            />
+          </Box>
         </Grid>
       </Grid>
 
-      {/* LOADING */}
+      {/* =================================================
+          LOADING
+      ================================================= */}
 
       {isLoading && (
         <Typography
@@ -1189,7 +1096,8 @@ const AnalysisPage = () => {
           color="text.secondary"
           sx={{
             display: "block",
-            mt: 2,
+            mt: 1,
+            mb: 2,
             textAlign: "center",
           }}
         >
@@ -1204,9 +1112,7 @@ const AnalysisPage = () => {
    EMPTY CHART
 ========================================================= */
 
-const EmptyChart = ({
-  message,
-}) => {
+const EmptyChart = ({ message }) => {
   return (
     <Box
       sx={{
