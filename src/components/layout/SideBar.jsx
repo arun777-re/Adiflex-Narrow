@@ -36,7 +36,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, handleDrawerToggle }) => {
   // ACTUAL LOGGED-IN USER
 
   const loggedInUser = user?.user;
-
+console.log("logged in user",loggedInUser)
   const role = loggedInUser?.role;
 
   const division = loggedInUser?.division;

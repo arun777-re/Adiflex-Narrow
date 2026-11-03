@@ -24,7 +24,8 @@ const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { loading } = useSelector((state) => state.auth);
+  // const { loading } = useSelector((state) => state.auth);
+  const loading = React.useRef(false);
 
   // ==========================================
   // FORM DATA
@@ -54,13 +55,16 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if(loading.current) return;
 
     try {
+      loading.current = true;
       const data = await dispatch(login(formData)).unwrap();
 
       console.log("Login response:", data);
 
       if (!data?.success) {
+        loading.current = false;
         toast.error("Invalid User ID or Password");
         return;
       }
@@ -116,11 +120,14 @@ const Login = () => {
       navigate("/dashboard");
 
     } catch (error) {
+      loading.current = false;
       console.error("❌ Login error:", error);
 
       toast.error(
         error || "Invalid User ID or Password"
       );
+    }finally{
+      loading.current = false;
     }
   };
 

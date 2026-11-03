@@ -1,8 +1,10 @@
+import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children }) => {
 
-  const isLogin = true;
+  const {user} = useSelector((state)=> state.auth);
+  const isLogin = Boolean(user?.data?.token || user?.token);
 
   return isLogin ? children : <Navigate to="/" />;
 };

@@ -15,6 +15,7 @@ import {useDispatch,useSelector} from 'react-redux';
 const Navbar = ({ handleDrawerToggle }) => {
   const dispatch = useDispatch();
   const {user} = useSelector(state => state.auth);
+
   return (
     <AppBar
       position="fixed"
