@@ -24,7 +24,7 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import SearchIcon from "@mui/icons-material/Search";
 
-import { getPendingOrdersOfEMployee } from "../../../redux/slices/dailtTask.slice";
+import { getPendingOrdersOfEMployee } from "../../../redux/slices/dailyTask.slice";
 // =========================================================
 // HELPERS
 // =========================================================

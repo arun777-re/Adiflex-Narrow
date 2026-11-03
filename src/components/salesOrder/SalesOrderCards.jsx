@@ -38,7 +38,10 @@ const SalesOrderCards = ({
     const endIndex =
       startIndex + rowsPerPage;
 
-    return rows.slice(startIndex, endIndex);
+    return rows.slice(
+      startIndex,
+      endIndex
+    );
   }, [rows, page, rowsPerPage]);
 
   // -----------------------------------------
@@ -48,7 +51,6 @@ const SalesOrderCards = ({
   const handlePageChange = (_, value) => {
     setPage(value);
 
-    // Scroll to top of cards
     window.scrollTo({
       top: 0,
       behavior: "smooth",
@@ -60,7 +62,9 @@ const SalesOrderCards = ({
   // -----------------------------------------
 
   const handleRowsPerPageChange = (event) => {
-    const newRowsPerPage = Number(event.target.value);
+    const newRowsPerPage = Number(
+      event.target.value
+    );
 
     setRowsPerPage(newRowsPerPage);
     setPage(1);
@@ -84,6 +88,7 @@ const SalesOrderCards = ({
       </Box>
     );
   }
+
   // -----------------------------------------
   // EMPTY
   // -----------------------------------------
@@ -139,7 +144,9 @@ const SalesOrderCards = ({
               rows.length
             )}
           </strong>{" "}
-          of <strong>{rows.length}</strong> orders
+          of{" "}
+          <strong>{rows.length}</strong>{" "}
+          orders
         </Typography>
 
         <FormControl
@@ -155,7 +162,9 @@ const SalesOrderCards = ({
           <Select
             value={rowsPerPage}
             label="Per Page"
-            onChange={handleRowsPerPageChange}
+            onChange={
+              handleRowsPerPageChange
+            }
           >
             <MenuItem value={10}>
               10
@@ -184,20 +193,22 @@ const SalesOrderCards = ({
         container
         spacing={2}
       >
-        {paginatedRows.map((row, index) => (
-          <Grid
-            item
-            key={`${row.soNo}-${row.product}-${index}`}
-            xs={12}
-            sm={6}
-            lg={4}
-          >
-            <SalesOrderCard
-              row={row}
-              onEdit={onEdit}
-            />
-          </Grid>
-        ))}
+        {paginatedRows.map(
+          (row, index) => (
+            <Grid
+              item
+              key={`${row.so_no}-${row.product_name}-${index}`}
+              xs={12}
+              sm={6}
+              lg={4}
+            >
+              <SalesOrderCard
+                row={row}
+                onEdit={onEdit}
+              />
+            </Grid>
+          )
+        )}
       </Grid>
 
       {/* ---------------------------------------

@@ -1,62 +1,47 @@
+
 export const PROCESS_ORDER = [
-  {
-    key: "warping",
-    label: "Warping",
-    startField: "warpingStartAt",
-    endField: "warpingEndsAt",
-  },
-
-  {
-    key: "filling",
-    label: "Filling",
-    startField: "fillingStartAt",
-    endField: "fillingEndsAt",
-  },
-
-  {
-    key: "machine",
-    label: "Machine",
-    startField: "machineStartsAt",
-    endField: "machineEndsAt",
-  },
-
-  {
-    key: "finishing",
-    label: "Finishing",
-    startField: "finishingStartsAt",
-    endField: "finishingEndsAt",
-  },
-
-  {
-    key: "quality",
-    label: "Quality",
-    startField: "qualityStartsAt",
-    endField: "qualityEndsAt",
-  },
-
-  {
-    key: "rolling",
-    label: "Rolling",
-    startField: "rollingStartsAt",
-    endField: "rollingEndsAt",
-  },
-
-  {
-    key: "packing",
-    label: "Packing",
-    startField: "packingStartsAt",
-    endField: "packingEndsAt",
-  },
+  { key: "JOB_WORK", label: "Job Work" },
+  { key: "WARPING", label: "Warping" },
+  { key: "FILLING", label: "Filling" },
+  { key: "MACHINE", label: "Machine" },
+  { key: "FINISHING", label: "Finishing" },
+  { key: "QUALITY", label: "Quality" },
+  { key: "ROLLING", label: "Rolling" },
+  { key: "PACKING", label: "Packing" },
 ];
 
+// Default process assignments.
+// Actual assignments should ultimately come from the backend.
+export const SUPERVISOR_PROCESSES = {
+  productionsupervisor: [
+    "JOB_WORK",
+    "WARPING",
+    "FILLING",
+    "MACHINE",
+  ],
+
+  finishingsupervisor: [
+    "FINISHING",
+    "QUALITY",
+  ],
+
+  packingsupervisor: [
+    "ROLLING",
+    "PACKING",
+  ],
+};
+
 export const getCurrentProcess = (row) => {
-  // OLD / COMPLETED PRODUCTION CYCLE
+  const stages = Array.isArray(row?.stages)
+    ? row.stages
+    : [];
+
+  const masterStatus = String(
+    row?.production_status || ""
+  ).toUpperCase().replaceAll(" ", "_");
 
   if (
-    row.overAllStatus === "Cycle Completed" ||
-    row.overAllStatus === "Completed" ||
-    row.status === "Cycle Completed" ||
-    row.status === "Completed"
+    ["COMPLETED", "CYCLE_COMPLETED"].includes(masterStatus)
   ) {
     return {
       key: null,
@@ -65,60 +50,50 @@ export const getCurrentProcess = (row) => {
     };
   }
 
-  const processOrder = [];
+  for (const process of PROCESS_ORDER) {
+    const stage = stages.find(
+      (item) => item.stage_code === process.key
+    );
 
-  // ===================================================
-  // JOB WORK
-  // ===================================================
+    // This cycle may not have this stage configured.
+    if (!stage) continue;
 
-  if (row.isJobWork === true) {
-    processOrder.push({
-      key: "jobWork",
-      label: "Job Work",
-      startField: "jobWorkStartTime",
-      endField: "jobWorkEndTime",
-    });
-  }
+    const status = String(
+      stage.status || "PENDING"
+    ).toUpperCase();
 
-  // ===================================================
-  // NORMAL PRODUCTION PROCESSES
-  // ===================================================
+    if (status === "COMPLETED") continue;
 
-  processOrder.push(...PROCESS_ORDER);
-
-  // ===================================================
-  // FIND CURRENT PROCESS
-  // ===================================================
-
-  for (const process of processOrder) {
-    const startTime = row[process.startField];
-    const endTime = row[process.endField];
-
-    // COMPLETED
-    if (endTime) {
-      continue;
-    }
-
-    // IN PROGRESS
-    if (startTime) {
+    if (
+      ["IN_PROGRESS", "PARTIALLY_RELEASED"].includes(status)
+    ) {
       return {
         key: process.key,
         label: process.label,
         status: "In Progress",
+        stageRunId: stage.stage_run_id,
+        stage,
       };
     }
 
-    // PENDING
+    if (status === "PENDING") {
+      return {
+        key: process.key,
+        label: process.label,
+        status: "Pending",
+        stageRunId: stage.stage_run_id,
+        stage,
+      };
+    }
+
     return {
       key: process.key,
       label: process.label,
-      status: "Pending",
+      status,
+      stageRunId: stage.stage_run_id,
+      stage,
     };
   }
-
-  // ===================================================
-  // ALL COMPLETED
-  // ===================================================
 
   return {
     key: null,

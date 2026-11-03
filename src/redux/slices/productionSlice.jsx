@@ -8,46 +8,30 @@ import {
   getAllProduction,
   getAllJobWorkProductionOrders,
   addCommitedDate,
+  getAllQualityProduction,
+  getAllPackingProduction,
+  getCompletedPendingOrders,
 } from "../../services/productionApi";
 
 // fetch production orders by process
 export const fetchProductionByProcess = createAsyncThunk(
   "production/fetchProductionByProcess",
 
-  async (
-    {
-      process,
-      division,
-    },
-    thunkAPI
-  ) => {
-
+  async ({ process, division }, thunkAPI) => {
     try {
+      const data = await getProductionByProcess({
+        process,
 
-      const data =
-        await getProductionByProcess({
-
-          process,
-
-          division,
-
-        });
+        division,
+      });
 
       return data.data;
-
     } catch (error) {
-
       return thunkAPI.rejectWithValue(
-
-        error.response?.data?.message ||
-        error.message
-
+        error.response?.data?.message || error.message,
       );
-
     }
-
-  }
-
+  },
 );
 
 // start production process
@@ -56,6 +40,7 @@ export const startProduction = createAsyncThunk(
 
   async (payload, thunkAPI) => {
     try {
+      console.log("payloaddddddddddddddddddddddddddddd", payload);
       const data = await startProductionProcess(payload);
 
       return data;
@@ -71,42 +56,73 @@ export const startProduction = createAsyncThunk(
 export const getAllProductions = createAsyncThunk(
   "/get-all",
   async (division, thunkAPI) => {
-    if(!division){
+    if (!division) {
       throw Error("Division required");
     }
     try {
-
       console.log("🔥 THUNK DIVISION:", division);
-
       const data = await getAllProduction(division);
-
-      return data.productionOrders;
+      return data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || error.message
+        error.response?.data?.message || error.message,
       );
     }
-  }
+  },
+);
+// get all production orders for quality supervisor
+export const getAllQualityProductions = createAsyncThunk(
+  "/get-all-quality",
+  async (division, thunkAPI) => {
+    if (!division) {
+      throw Error("Division required");
+    }
+    try {
+      const data = await getAllQualityProduction(division);
+      return data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message,
+      );
+    }
+  },
+);
+// get all production orders for packing supervisor
+export const getAllPackingProductions = createAsyncThunk(
+  "/get-all-packing",
+  async (division, thunkAPI) => {
+    if (!division) {
+      throw Error("Division required");
+    }
+    try {
+      console.log("🔥 THUNK DIVISION:", division);
+      const data = await getAllPackingProduction(division);
+      return data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message,
+      );
+    }
+  },
 );
 // get all production jobwork orders
 export const getAllJobWorkProductions = createAsyncThunk(
   "/get-alljobwork",
   async (division, thunkAPI) => {
-    if(!division){
+    if (!division) {
       throw Error("Division required");
     }
     try {
-
       console.log("🔥 THUNK DIVISION:", division);
 
       const data = await getAllJobWorkProductionOrders(division);
       return data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || error.message
+        error.response?.data?.message || error.message,
       );
     }
-  }
+  },
 );
 
 // complete production process
@@ -143,27 +159,46 @@ export const completeQuality = createAsyncThunk(
   },
 );
 
-// add commited date to production 
-export const addCommitedDateToOrder = createAsyncThunk('/production/addcommitment',async({committedDate,updatedBy,
-  cycleID,division
-},{rejectWithValue})=>{
-  if(!committedDate){
-    throw new Error("Commited date is required");
-  }
-  console.log("commited date",committedDate)
-  try {
-    const res = await addCommitedDate({
-      committedDate,updatedBy,
-      cycleID,
-      division
-    });
-    return res;
-  } catch (error) {
-    return rejectWithValue(
-        error.response?.data?.message || error.message,
-    )
-  }
-})
+// add commited date to production
+export const addCommitedDateToOrder = createAsyncThunk(
+  "/production/addcommitment",
+  async (
+    { committedDate, updatedBy, cycleID, division },
+    { rejectWithValue },
+  ) => {
+    if (!committedDate) {
+      throw new Error("Commited date is required");
+    }
+    console.log("commited date", committedDate);
+    try {
+      const res = await addCommitedDate({
+        committedDate,
+        updatedBy,
+        cycleID,
+        division,
+      });
+      return res;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  },
+);
+
+export const getallCycleCompletedPending = createAsyncThunk(
+  "/production/completed-pending",
+  async ({ division }, { rejectWithValue }) => {
+    try {
+      if (!division) {
+        throw new Error("Division is required");
+      }
+
+      const res = await getCompletedPendingOrders({ division });
+      return res;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  },
+);
 
 // =====================================================
 // INITIAL STATE
@@ -172,12 +207,15 @@ export const addCommitedDateToOrder = createAsyncThunk('/production/addcommitmen
 const initialState = {
   allProductionOrders: [],
   productionOrders: [],
-  jobOrders:[],
+  jobOrders: [],
   loading: false,
   starting: false,
   completing: false,
   completingQuality: false,
   error: null,
+  qualitySuprvsrProduction: [],
+  packingSuprvsrProduction: [],
+  cycleCompletedPending:[]
 };
 
 // =====================================================
@@ -197,20 +235,13 @@ const productionSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-
       // ==========================================
       // FETCH PRODUCTION
       // ==========================================
-
-      .addCase(
-        fetchProductionByProcess.pending,
-
-        (state) => {
-          state.loading = true;
-
-          state.error = null;
-        },
-      )
+      .addCase(fetchProductionByProcess.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
 
       .addCase(
         fetchProductionByProcess.fulfilled,
@@ -231,20 +262,15 @@ const productionSlice = createSlice({
           state.error = action.payload;
         },
       )
-
       // ==========================================
       // START PROCESS
       // ==========================================
 
-      .addCase(
-        startProduction.pending,
+      .addCase(startProduction.pending, (state) => {
+        state.starting = true;
 
-        (state) => {
-          state.starting = true;
-
-          state.error = null;
-        },
-      )
+        state.error = null;
+      })
 
       .addCase(
         startProduction.fulfilled,
@@ -327,6 +353,7 @@ const productionSlice = createSlice({
           state.error = action.payload;
         },
       )
+
       .addCase(
         getAllProductions.pending,
 
@@ -391,6 +418,64 @@ const productionSlice = createSlice({
         (state, action) => {
           state.loading = false;
           state.error = null;
+        },
+      )
+      .addCase(
+        getAllQualityProductions.fulfilled,
+
+        (state, action) => {
+          state.loading = false;
+
+          state.qualitySuprvsrProduction = action.payload;
+        },
+      )
+
+      .addCase(
+        getAllQualityProductions.rejected,
+
+        (state, action) => {
+          state.loading = false;
+
+          state.error = action.payload;
+        },
+      )
+      .addCase(
+        getallCycleCompletedPending.fulfilled,
+
+        (state, action) => {
+          state.loading = false;
+
+          state.cycleCompletedPending = action.payload;
+        },
+      )
+
+      .addCase(
+        getallCycleCompletedPending.rejected,
+
+        (state, action) => {
+          state.loading = false;
+
+          state.error = action.payload;
+        },
+      )
+
+      .addCase(
+        getAllPackingProductions.fulfilled,
+
+        (state, action) => {
+          state.loading = false;
+
+          state.packingSuprvsrProduction = action.payload;
+        },
+      )
+
+      .addCase(
+        getAllPackingProductions.rejected,
+
+        (state, action) => {
+          state.loading = false;
+
+          state.error = action.payload;
         },
       );
   },

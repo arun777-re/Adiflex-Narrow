@@ -394,9 +394,9 @@ const SalesOrderForm = () => {
                 <Grid size={{ xs: 12, md: 3 }}>
                   <Autocomplete
                     options={allproducts || []}
-                    getOptionLabel={(option) => option?.sku || ""}
+                    getOptionLabel={(option) => option?.skucode || ""}
                     isOptionEqualToValue={(option, value) =>
-                      option?.sku === value?.sku
+                      option?.skucode === value?.skucode
                     }
                     onChange={async (event, newValue) => {
                       console.log("🔥 SKU CHANGED:", newValue);
@@ -423,7 +423,7 @@ const SalesOrderForm = () => {
                       // PRODUCT MASTER DATA
                       // ==========================================
 
-                      setValue(`products.${index}.skucode`, newValue.sku);
+                      setValue(`products.${index}.skucode`, newValue.skucode);
 
                       setValue(
                         `products.${index}.product`,
@@ -454,7 +454,7 @@ const SalesOrderForm = () => {
 
                         try {
                           const result = await dispatch(
-                            fetchFGAvailableQty(newValue.sku),
+                            fetchFGAvailableQty(newValue.skucode),
                           ).unwrap();
 
                           console.log("✅ FG API RESPONSE:", result);

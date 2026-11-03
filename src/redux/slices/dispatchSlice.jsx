@@ -13,7 +13,7 @@ export const getAllDispatch = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const response = await api.get("/dispatch");
-
+console.log("response..................",response.data);
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
@@ -84,6 +84,28 @@ export const billingDone = createAsyncThunk(
     }
   }
 );
+
+
+// confirm-dispatch 
+export const confirmDispatchSlice = createAsyncThunk('/confirm-dispatch',async({
+  items,vehicleNo,gstNo,gstRate,driverName},{rejectWithValue})=>{
+try {
+  const response = await api.post('/dispatch/confirm',{
+    items,
+    vehicleNo,
+    driverName,
+    gstNo,
+    gstRate
+  });
+  return response.data
+} catch (error) {
+   return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to confirm dispatch"
+      );
+}
+})
 // =====================================================
 // INITIAL STATE
 // =====================================================
@@ -98,7 +120,7 @@ const initialState = {
   billing:false,
 
   error: null,
-
+lastChallan:null,
   success: false,
 };
 
@@ -119,6 +141,9 @@ const dispatchSlice = createSlice({
     clearDispatchSuccess: (state) => {
       state.success = false;
     },
+    clearLastChallan:(state)=>{
+      state.lastChallan = null;
+    }
   },
 
   extraReducers: (builder) => {
@@ -144,7 +169,7 @@ const dispatchSlice = createSlice({
         (state, action) => {
           state.loading = false;
 
-          state.dispatchOrders = action.payload?.dispatchOrders || [];
+          state.dispatchOrders = action.payload.data || [];
         },
       )
 
@@ -259,7 +284,32 @@ const dispatchSlice = createSlice({
       state.billing = false;
       state.error = action.payload;
     }
-  );
+  )
+  // Confirm dispatch
+      .addCase(confirmDispatchSlice.pending, (state) => {
+        state.dispatching = true;
+        state.error = null;
+      })
+      .addCase(confirmDispatchSlice.fulfilled, (state, action) => {
+        state.dispatching = false;
+        state.lastChallan = action.payload;
+
+        // Remove reservation if no pending dispatch quantity remains.
+        // Otherwise update its remaining quantity/status.
+        const dispatchedReservationId =
+          action.payload?.reservationId ??
+          action.payload?.data?.reservationId;
+
+        if (dispatchedReservationId != null) {
+          state.pendingDispatches = state.pendingDispatches.filter(
+            (item) => item.reservation_id !== dispatchedReservationId
+          );
+        }
+      })
+      .addCase(confirmDispatchSlice.rejected, (state, action) => {
+        state.dispatching = false;
+        state.error = action.payload || "Failed to confirm dispatch";
+      });
   },
 });
 

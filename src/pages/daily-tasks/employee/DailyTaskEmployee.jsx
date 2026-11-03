@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+
 import {
   Box,
   Paper,
@@ -15,166 +17,139 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import {
   getDailyTaskEmployees,
   completeDailyTasks,
-} from "../../../redux/slices/dailtTask.slice";
+} from "../../../redux/slices/dailyTask.slice";
 
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 const DailyTaskEmployee = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // Currently completing task
-  const [completingTaskId, setCompletingTaskId] = useState(null);
-
-  // Local completed state
-  const [completedTaskIds, setCompletedTaskIds] = useState(new Set());
-
   const dispatch = useDispatch();
 
-  const userID = useSelector((state) => state.auth?.user?.user?.userID);
+  const [loading, setLoading] = useState(false);
+  const [completingTaskId, setCompletingTaskId] = useState(null);
+  const [completedTaskIds, setCompletedTaskIds] = useState(new Set());
 
-  // =========================================================
+  const userID = useSelector(
+    (state) => state.auth?.user?.user?.userID
+  );
+
+  const tasks = useSelector(
+    (state) => state.dailyTask?.employeeTasks?.data || []
+  );
+
   // FETCH EMPLOYEE TASKS
-  // =========================================================
-
-  const fetchEmployeeTasks = async () => {
+  const fetchEmployeeTasks = useCallback(async () => {
     if (!userID) return;
 
     try {
       setLoading(true);
-      setError("");
 
-      const result = await dispatch(getDailyTaskEmployees(userID)).unwrap();
+      const result = await dispatch(
+        getDailyTaskEmployees(userID)
+      ).unwrap();
 
-      // =====================================================
-      // IF BACKEND ALREADY RETURNS completed: true
-      // =====================================================
-
+      // Backend should return completed: true/false
       if (Array.isArray(result)) {
         const completedIds = new Set(
           result
             .filter((task) => task.completed === true)
-            .map((task) => task.taskId),
+            .map((task) => String(task.id))
         );
 
         setCompletedTaskIds(completedIds);
       }
-    } catch (err) {
-      console.error("Failed to fetch employee tasks:", err);
+    } catch (error) {
+      console.error("Fetch employee tasks error:", error);
 
-      setError(
-        typeof err === "string"
-          ? err
-          : err?.message || "Failed to fetch daily tasks",
+      toast.error(
+        typeof error === "string"
+          ? error
+          : error?.message || "Failed to fetch daily tasks"
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [dispatch, userID]);
 
-  // =========================================================
   // INITIAL FETCH
-  // =========================================================
-
   useEffect(() => {
     fetchEmployeeTasks();
-  }, [userID]);
+  }, [fetchEmployeeTasks]);
 
-  // =========================================================
-  // GET TASKS
-  // =========================================================
-
-  const tasks = useSelector(
-    (state) => state.dailyTask.employeeTasks?.data || [],
-  );
-
-  // =========================================================
   // SORT TASKS
-  // =========================================================
-
   const sortedTasks = useMemo(() => {
+    if (!Array.isArray(tasks)) return [];
+
     return [...tasks].sort(
-      (a, b) => Number(a.taskOrder || 999) - Number(b.taskOrder || 999),
+      (a, b) => Number(a.id) - Number(b.id)
     );
   }, [tasks]);
 
-  // =========================================================
-  // ERROR TOAST
-  // =========================================================
-
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-    }
-  }, [error]);
-
-  // =========================================================
   // COMPLETE TASK
-  // =========================================================
-
   const handleCompleteTask = async (taskId) => {
-    if (!taskId || !userID) {
-      setError("Task ID or User ID is missing");
+    const id = String(taskId);
+
+    if (!taskId) {
+      toast.error("Task ID is missing");
       return;
     }
 
-    // Already completed
-    if (completedTaskIds.has(taskId)) {
-      return;
-    }
-
-    // Same task already being completed
-    if (completingTaskId === taskId) {
+    if (
+      completedTaskIds.has(id) ||
+      completingTaskId === id
+    ) {
       return;
     }
 
     try {
-      setError("");
-
-      // Show completing state only for this task
-      setCompletingTaskId(taskId);
+      setCompletingTaskId(id);
 
       await dispatch(
         completeDailyTasks({
-          taskId,
-          userID,
-        }),
+          taskId: id,
+        })
       ).unwrap();
 
-      // =====================================================
-      // IMMEDIATELY MARK TASK AS COMPLETED
-      // =====================================================
-
-      setCompletedTaskIds((prev) => {
-        const next = new Set(prev);
-        next.add(taskId);
-        return next;
+      // Update local completed state
+      setCompletedTaskIds((previous) => {
+        const updated = new Set(previous);
+        updated.add(id);
+        return updated;
       });
 
       toast.success("Task completed successfully");
 
-      // =====================================================
-      // FETCH LATEST TASKS
-      // =====================================================
+      // Fetch latest task status
+      await fetchEmployeeTasks();
 
-      await dispatch(getDailyTaskEmployees(userID)).unwrap();
-    } catch (err) {
-      console.error("Failed to complete daily task:", err);
+    } catch (error) {
+      console.error("Complete task error:", error);
 
-      setError(
-        typeof err === "string"
-          ? err
-          : err?.message || "Failed to complete daily task",
+      toast.error(
+        typeof error === "string"
+          ? error
+          : error?.message || "Failed to complete task"
       );
     } finally {
       setCompletingTaskId(null);
     }
   };
 
-  // =========================================================
-  // UI
-  // =========================================================
+  // LOADING UI
+  if (loading && sortedTasks.length === 0) {
+    return (
+      <Box
+        sx={{
+          minHeight: 300,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -184,50 +159,35 @@ const DailyTaskEmployee = () => {
         bgcolor: "#f8fafc",
       }}
     >
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
+      {/* HEADER */}
       <Paper
         elevation={0}
         sx={{
           p: { xs: 2, sm: 2.5 },
           mb: 2,
           borderRadius: 3,
-          border: "1px solid",
-          borderColor: "#e2e8f0",
+          border: "1px solid #e2e8f0",
           bgcolor: "#ffffff",
         }}
       >
         <Stack
-          direction={{
-            xs: "column",
-            sm: "row",
-          }}
+          direction={{ xs: "column", sm: "row" }}
           justifyContent="space-between"
-          alignItems={{
-            xs: "stretch",
-            sm: "center",
-          }}
+          alignItems={{ xs: "stretch", sm: "center" }}
           gap={2}
         >
           <Box>
             <Typography
               variant="h5"
               fontWeight={700}
-              sx={{
-                color: "#0f172a",
-              }}
+              color="#0f172a"
             >
               My Daily Tasks
             </Typography>
 
             <Typography
               variant="body2"
-              sx={{
-                mt: 0.5,
-                color: "#64748b",
-              }}
+              sx={{ mt: 0.5, color: "#64748b" }}
             >
               Complete your assigned tasks for today.
             </Typography>
@@ -241,10 +201,7 @@ const DailyTaskEmployee = () => {
               borderRadius: 2,
               textTransform: "none",
               fontWeight: 600,
-              alignSelf: {
-                xs: "flex-start",
-                sm: "auto",
-              },
+              alignSelf: { xs: "flex-start", sm: "auto" },
             }}
           >
             {loading ? "Refreshing..." : "Refresh"}
@@ -252,69 +209,77 @@ const DailyTaskEmployee = () => {
         </Stack>
       </Paper>
 
-      {/* =====================================================
-          LOADING
-      ===================================================== */}
+      {/* TASK SUMMARY */}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ mb: 2 }}
+      >
+        <Chip
+          label={`Total Tasks: ${sortedTasks.length}`}
+          color="primary"
+          variant="outlined"
+        />
 
-      {loading ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            py: 8,
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      ) : sortedTasks.length === 0 ? (
-        // =====================================================
-        // NO TASKS
-        // =====================================================
+        <Chip
+          label={`Completed: ${
+            sortedTasks.filter(
+              (task) =>
+                completedTaskIds.has(String(task.id)) ||
+                task.completed === true
+            ).length
+          }`}
+          color="success"
+          variant="outlined"
+        />
+      </Stack>
 
+      {/* TASK LIST */}
+      {sortedTasks.length === 0 ? (
         <Paper
           elevation={0}
           sx={{
             p: 5,
             textAlign: "center",
             borderRadius: 3,
-            border: "1px solid",
-            borderColor: "#e2e8f0",
+            border: "1px solid #e2e8f0",
             bgcolor: "#ffffff",
           }}
         >
-          <Typography variant="h6" fontWeight={600} sx={{ color: "#334155" }}>
+          <Typography
+            variant="h6"
+            fontWeight={600}
+            color="#334155"
+          >
             No tasks assigned
           </Typography>
 
           <Typography
             variant="body2"
-            sx={{
-              mt: 1,
-              color: "#64748b",
-            }}
+            sx={{ mt: 1, color: "#64748b" }}
           >
-            You don't have any active daily tasks.
+            You don't have any active tasks.
           </Typography>
         </Paper>
       ) : (
-        // =====================================================
-        // TASK LIST
-        // =====================================================
-
         <Stack spacing={1.5}>
           {sortedTasks.map((task, index) => {
-            // =================================================
-            // TASK STATE
-            // =================================================
+            // IMPORTANT: Backend returns id, not taskId
+            const taskId = String(task.id);
 
             const isCompleted =
-              completedTaskIds.has(task.taskId) || task.completed === true;
+              completedTaskIds.has(taskId) ||
+              task.completed === true;
 
-            const isCompleting = completingTaskId === task.taskId;
+            const isCompleting =
+              completingTaskId === taskId;
 
-            // =================================================
-            // CARD COLORS
-            // =================================================
+            const taskType =
+              task.task_type === "daily_task"
+                ? "DAILY TASK"
+                : task.task_type === "delegation_task"
+                  ? "DELEGATION TASK"
+                  : task.task_type || "TASK";
 
             const cardBackground = isCompleted
               ? "#f0fdf4"
@@ -330,70 +295,50 @@ const DailyTaskEmployee = () => {
 
             return (
               <Paper
-                key={task.taskId}
+                key={taskId}
                 elevation={0}
                 sx={{
                   p: { xs: 1.5, sm: 2 },
                   borderRadius: 3,
-
                   border: "1px solid",
                   borderColor: cardBorder,
-
                   bgcolor: cardBackground,
-
                   transition: "all 0.25s ease",
-
                   boxShadow: isCompleted
                     ? "0 2px 8px rgba(22, 163, 74, 0.08)"
                     : "none",
                 }}
               >
                 <Stack
-                  direction={{
-                    xs: "column",
-                    sm: "row",
-                  }}
-                  alignItems={{
-                    xs: "stretch",
-                    sm: "center",
-                  }}
+                  direction={{ xs: "column", sm: "row" }}
+                  alignItems={{ xs: "stretch", sm: "center" }}
                   justifyContent="space-between"
                   gap={2}
                 >
-                  {/* =================================================
-                      TASK INFO
-                  ================================================= */}
-
-                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
-                    {/* NUMBER / CHECK CIRCLE */}
-
+                  {/* TASK INFORMATION */}
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="flex-start"
+                  >
                     <Box
                       sx={{
                         width: 38,
                         height: 38,
                         borderRadius: "50%",
-
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-
                         flexShrink: 0,
-
                         bgcolor: isCompleted
                           ? "#16a34a"
                           : isCompleting
                             ? "#f59e0b"
                             : "#eff6ff",
-
-                        color: isCompleted
+                        color: isCompleted || isCompleting
                           ? "#ffffff"
-                          : isCompleting
-                            ? "#ffffff"
-                            : "#2563eb",
-
+                          : "#2563eb",
                         fontWeight: 700,
-
-                        transition: "all 0.25s ease",
                       }}
                     >
                       {isCompleted ? (
@@ -403,23 +348,20 @@ const DailyTaskEmployee = () => {
                       )}
                     </Box>
 
-                    {/* TASK DETAILS */}
-
                     <Box>
                       <Typography
                         fontWeight={700}
                         sx={{
-                          color: isCompleted ? "#166534" : "#1e293b",
-
-                          textDecoration: isCompleted ? "line-through" : "none",
-
-                          transition: "all 0.25s ease",
+                          color: isCompleted
+                            ? "#166534"
+                            : "#1e293b",
+                          textDecoration: isCompleted
+                            ? "line-through"
+                            : "none",
                         }}
                       >
                         {task.description}
                       </Typography>
-
-                      {/* CHIPS */}
 
                       <Stack
                         direction="row"
@@ -431,69 +373,70 @@ const DailyTaskEmployee = () => {
                         }}
                       >
                         <Chip
-                          label={isCompleted ? "COMPLETED" : task.taskType}
+                          label={
+                            isCompleted
+                              ? "COMPLETED"
+                              : taskType
+                          }
                           size="small"
                           sx={{
                             fontWeight: 600,
-
-                            bgcolor: isCompleted ? "#dcfce7" : "#eff6ff",
-
-                            color: isCompleted ? "#166534" : "#1d4ed8",
+                            bgcolor: isCompleted
+                              ? "#dcfce7"
+                              : "#eff6ff",
+                            color: isCompleted
+                              ? "#166534"
+                              : "#1d4ed8",
                           }}
                         />
 
-                        {task.dueTime && (
+                        {task.task_type === "delegation_task" &&
+                          task.effective_due_date && (
+                            <Chip
+                              icon={<AccessTimeIcon sx={{ fontSize: 16 }} />}
+                              label={`Due: ${new Date(
+                                task.effective_due_date
+                              ).toLocaleDateString("en-IN")}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+
+                        {task.department && (
                           <Chip
-                            icon={
-                              <AccessTimeIcon
-                                sx={{
-                                  fontSize: 16,
-                                }}
-                              />
-                            }
-                            label={task.dueTime}
+                            label={task.department}
                             size="small"
                             variant="outlined"
-                            sx={{
-                              borderColor: isCompleted ? "#86efac" : "#cbd5e1",
-
-                              color: isCompleted ? "#166534" : "#475569",
-                            }}
                           />
                         )}
                       </Stack>
                     </Box>
                   </Stack>
 
-                  {/* =================================================
-                      COMPLETE BUTTON
-                  ================================================= */}
-
+                  {/* COMPLETE BUTTON */}
                   <Button
                     variant={isCompleted ? "outlined" : "contained"}
                     color={isCompleted ? "success" : "primary"}
                     startIcon={
                       isCompleting ? (
-                        <CircularProgress size={17} color="inherit" />
+                        <CircularProgress
+                          size={17}
+                          color="inherit"
+                        />
                       ) : (
                         <CheckCircleOutlineIcon />
                       )
                     }
-                    onClick={() => handleCompleteTask(task.taskId)}
+                    onClick={() => handleCompleteTask(task.id)}
                     disabled={isCompleted || isCompleting}
                     sx={{
                       minWidth: {
                         xs: "100%",
                         sm: 130,
                       },
-
                       borderRadius: 2,
-
                       textTransform: "none",
-
                       fontWeight: 600,
-
-                      transition: "all 0.2s ease",
                     }}
                   >
                     {isCompleting

@@ -29,7 +29,6 @@ import toast from "react-hot-toast";
 
 const ProductTable = () => {
   const dispatch = useDispatch();
-
   // =====================================================
   // PRODUCTS
   // =====================================================
@@ -337,48 +336,29 @@ const ProductTable = () => {
           height: "calc(100vh - 260px)",
         }}
       >
-        <DataGrid
-          rows={filteredRows}
-          columns={columns}
-          loading={loading}
-          getRowId={(row) => row.sku}
-          disableRowSelectionOnClick
-          density="compact"
-          pageSizeOptions={[10, 20, 50, 100]}
-          columnHeaderHeight={48}
-          rowHeight={42}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 10,
-              },
-            },
-          }}
-          sx={{
-            border: 0,
+        
 
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontWeight: 700,
-            },
-
-            "& .MuiDataGrid-cell": {
-              borderBottom: "1px solid #eee",
-              fontSize: 13,
-            },
-
-            "& .MuiDataGrid-row:nth-of-type(even)": {
-              backgroundColor: "#fafafa",
-            },
-
-            "& .MuiDataGrid-row:hover": {
-              backgroundColor: "#e3f2fd",
-            },
-
-            "& .MuiDataGrid-footerContainer": {
-              borderTop: "1px solid #ddd",
-            },
-          }}
-        />
+<DataGrid
+  rows={filteredRows}
+  columns={columns}
+  loading={loading}
+  getRowId={(row) => String(row.id)}
+  disableRowSelectionOnClick
+  density="compact"
+  pageSizeOptions={[10, 20, 50, 100]}
+  columnHeaderHeight={48}
+  rowHeight={42}
+  initialState={{
+    pagination: {
+      paginationModel: {
+        pageSize: 10,
+      },
+    },
+  }}
+  sx={{
+    border: "none",
+  }}
+/>
       </Box>
 
       {/* =================================================

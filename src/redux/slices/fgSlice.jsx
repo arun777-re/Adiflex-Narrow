@@ -80,10 +80,9 @@ export const addFG = createAsyncThunk(
 
 // update fg stock 
 export const updateFG = createAsyncThunk("fg/update",
-  async({skucode,newFGQty},{rejectWithValue})=>{
-    console.log("fgggggfgfgfgfgfgfggf........",newFGQty)
+  async({skucode,newFGQty,stockUnit},{rejectWithValue})=>{
     try {
-      const res = await updateFGStock({skucode,newFGQty});
+      const res = await updateFGStock({skucode,newFGQty,stockUnit});
       return res;
     } catch (error) {
        return rejectWithValue(error.response?.data?.message || error.message);

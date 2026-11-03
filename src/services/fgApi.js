@@ -31,16 +31,18 @@ export const allFGInventory = async (data) => {
   return response.data;
 };
 
-export const updateFGStock = async ({ skucode, newFGQty }) => {
+export const updateFGStock = async ({ skucode, newFGQty,stockUnit }) => {
   console.log("🚀 updateFGStock payload:", {
     skucode,
     newFGQty,
+    stockUnit
   });
 
   const response = await api.patch(
     `/fg/stock/${skucode}`,
     {
       newFGQty: newFGQty,
+      stockUnit
     }
   );
 

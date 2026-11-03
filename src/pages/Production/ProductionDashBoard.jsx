@@ -4,7 +4,6 @@ import { Paper, Box, Typography } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 
-
 import ProductionTable from "../../components/production/ProductionTable";
 
 import { getAllProductions } from "../../redux/slices/productionSlice";
@@ -13,8 +12,8 @@ import useNotification from "../../hooks/useNotification";
 
 const ProductionDashboard = () => {
   const dispatch = useDispatch();
-const { user } = useSelector((state) => state.auth.user);
-const currentDivision = user?.division;
+  const { user } = useSelector((state) => state.auth.user);
+  const currentDivision = user?.division;
 
   // =========================
   // PRODUCTION STATE
@@ -40,18 +39,17 @@ const currentDivision = user?.division;
     dispatch(getAllProductions(currentDivision));
   }, [dispatch, currentDivision]);
 
-
-  useEffect(()=>{
-    if(error){
+  useEffect(() => {
+    if (error) {
       toast.error(error);
     }
-  },[error])
+  }, [error]);
 
-     useNotification({
-      event:"new-notification",
-      refetch:getAllProductions,
-      refetchArg:currentDivision
-     });
+  useNotification({
+    event: "new-notification",
+    refetch: getAllProductions,
+    refetchArg: currentDivision,
+  });
 
   return (
     <Box>
@@ -77,7 +75,6 @@ const currentDivision = user?.division;
         </Typography>
       </Box>
 
-
       {/* PRODUCTION TABLE */}
 
       <Paper
@@ -101,8 +98,6 @@ const currentDivision = user?.division;
       </Paper>
 
       {/* ERROR */}
-
-     
     </Box>
   );
 };

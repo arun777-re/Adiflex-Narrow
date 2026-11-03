@@ -38,6 +38,32 @@ export const getAllProduction = async (division) => {
   return response.data;
 
 };
+// =====================================================
+// GET ALL PRODUCTION ORDERS
+// =====================================================
+
+export const getAllQualityProduction = async (division) => {
+  const response =
+    await api.get(
+      `/production/getAll/quality-supervisor/${division}`
+    );
+
+  return response.data;
+
+};
+// =====================================================
+// GET ALL PRODUCTION ORDERS
+// =====================================================
+
+export const getAllPackingProduction = async (division) => {
+  const response =
+    await api.get(
+      `/production/getAll/packing-supervisor/${division}`
+    );
+
+  return response.data;
+
+};
 
 // get all job work orders 
 export const getAllJobWorkProductionOrders = async (division) => {
@@ -132,4 +158,9 @@ export const completeQualityWithWastage =
     });
 
     return response.data;
+  }
+
+  export const getCompletedPendingOrders = async({division})=>{
+const response = await api.get(`/production/completed-pending/${division}`);
+return response.data;
   }

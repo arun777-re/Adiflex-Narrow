@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -14,106 +15,61 @@ import {
 
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
-import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 import {
+  completeDailyTasks,
   completeDelegationTask,
   getDelegationTasksofEmployee,
-  notCompleteDelegationTask,
-} from "../../../redux/slices/dailtTask.slice";
-import useNotification from '../../../hooks/useNotification';
+} from "../../../redux/slices/dailyTask.slice";
+
+import useNotification from "../../../hooks/useNotification";
 
 // ============================================================
 // HELPERS
 // ============================================================
 
-const getTodayDueTime = (dueTime) => {
-  if (!dueTime) return null;
-
-  const [hours, minutes] = String(dueTime).split(":").map(Number);
-
-  if (
-    Number.isNaN(hours) ||
-    Number.isNaN(minutes) ||
-    hours < 0 ||
-    hours > 23 ||
-    minutes < 0 ||
-    minutes > 59
-  ) {
-    return null;
-  }
-
+const getTodayDate = () => {
   const now = new Date();
 
-  const due = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    hours,
-    minutes,
-    0,
-    0,
-  );
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
 
-  return due;
+  return `${year}-${month}-${day}`;
 };
 
-const getRemainingTime = (dueTime, now) => {
-  const due = getTodayDueTime(dueTime);
+const formatDueDate = (date) => {
+  if (!date) return "--";
 
-  if (!due) {
-    return {
-      totalMs: null,
-      label: "--",
-      state: "unknown",
-    };
-  }
+  const dateString = String(date).slice(0, 10);
+  const parsedDate = new Date(`${dateString}T00:00:00`);
 
-  const diff = due.getTime() - now.getTime();
+  if (Number.isNaN(parsedDate.getTime())) return dateString;
 
-  if (diff <= 0) {
-    return {
-      totalMs: diff,
-      label: "Overdue",
-      state: "overdue",
-    };
-  }
+  return parsedDate.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
-  const totalSeconds = Math.floor(diff / 1000);
+const getTaskDateStatus = (dueDate) => {
+  if (!dueDate) return "unknown";
 
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const today = getTodayDate();
+  const date = String(dueDate).slice(0, 10);
 
-  let label = "";
+  if (date < today) return "overdue";
+  if (date === today) return "today";
 
-  if (hours > 0) {
-    label = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0",
-    )}:${String(seconds).padStart(2, "0")}`;
-  } else {
-    label = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
-      2,
-      "0",
-    )}`;
-  }
-
-  // Warning when 30 minutes or less remain
-  const state = diff <= 30 * 60 * 1000 ? "warning" : "normal";
-
-  return {
-    totalMs: diff,
-    label,
-    state,
-  };
+  return "upcoming";
 };
 
 // ============================================================
@@ -123,29 +79,22 @@ const getRemainingTime = (dueTime, now) => {
 const DelegationTask = () => {
   const dispatch = useDispatch();
 
-  const { userID, name } = useSelector((state) => state.auth?.user?.user);
+  const { userID, name } = useSelector(
+    (state) => state.auth?.user?.user || {}
+  );
 
   const employeeTasksState = useSelector(
-    (state) => state.dailyTask?.delegationTasks,
+    (state) => state.dailyTask?.delegationTasks
   );
 
   const reduxTasks = employeeTasksState?.data || employeeTasksState || [];
 
   const [loading, setLoading] = useState(false);
-
   const [completingTaskId, setCompletingTaskId] = useState(null);
-
   const [completedTaskIds, setCompletedTaskIds] = useState(new Set());
 
-  // Prevent same expired task from firing multiple times
-  const [processingExpiredTaskIds, setProcessingExpiredTaskIds] = useState(
-    new Set(),
-  );
-
-  const [now, setNow] = useState(new Date());
-
   // ============================================================
-  // FETCH TASKS
+  // FETCH DELEGATION TASKS
   // ============================================================
 
   const fetchDelegationTasks = useCallback(async () => {
@@ -154,25 +103,30 @@ const DelegationTask = () => {
     try {
       setLoading(true);
 
-      await dispatch(getDelegationTasksofEmployee({ userID })).unwrap();
+      await dispatch(
+        getDelegationTasksofEmployee({ userID })
+      ).unwrap();
+
     } catch (error) {
-      console.error("❌ Failed to fetch delegation tasks:", error);
+      console.error("Failed to fetch delegation tasks:", error);
 
       toast.error(
         typeof error === "string"
           ? error
-          : error?.message || "Failed to load delegation tasks",
+          : error?.message || "Failed to load delegation tasks"
       );
     } finally {
       setLoading(false);
     }
   }, [dispatch, userID]);
 
+  // ============================================================
+  // NOTIFICATION REFRESH
+  // ============================================================
 
   useNotification({
-    refetch:fetchDelegationTasks
+    refetch: fetchDelegationTasks,
   });
-
 
   // ============================================================
   // INITIAL FETCH
@@ -183,32 +137,19 @@ const DelegationTask = () => {
   }, [fetchDelegationTasks]);
 
   // ============================================================
-  // LIVE TIMER
-  // ============================================================
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // ============================================================
   // NORMALIZE TASK DATA
+  // Actual backend fields:
+  // id, task_type, due_date, is_active, department
   // ============================================================
 
   const tasks = useMemo(() => {
-    if (!Array.isArray(reduxTasks)) {
-      return [];
-    }
+    if (!Array.isArray(reduxTasks)) return [];
 
     return reduxTasks.filter((task) => {
-      const status = String(task?.status || "")
-        .trim()
-        .toLowerCase();
-
-      return status === "pending" || status === "active";
+      return (
+        task?.task_type === "delegation_task" &&
+        task?.is_active === true
+      );
     });
   }, [reduxTasks]);
 
@@ -216,174 +157,69 @@ const DelegationTask = () => {
   // COMPLETE TASK
   // ============================================================
 
-  const handleCompleteTask = async (task) => {
-    const taskID = task?.taskID;
+  
+const handleCompleteTask = async (task) => {
+  const taskId = String(task?.id || "");
 
-    if (!taskID) {
-      toast.error("Task ID is missing");
-      return;
-    }
+  if (!taskId) {
+    toast.error("Task ID is missing");
+    return;
+  }
 
-    if (completingTaskId === taskID) {
-      return;
-    }
+  if (completingTaskId === taskId) return;
 
-    if (completedTaskIds.has(taskID)) {
-      return;
-    }
+  try {
+    setCompletingTaskId(taskId);
 
-    try {
-      setCompletingTaskId(taskID);
+    await dispatch(
+      completeDelegationTask({
+        taskId,
+      })
+    ).unwrap();
 
-      await dispatch(
-        completeDelegationTask({
-          userID,
-          taskID,
-          userName: name,
-        }),
-      ).unwrap();
+    setCompletedTaskIds((prev) => {
+      const next = new Set(prev);
+      next.add(taskId);
+      return next;
+    });
 
-      setCompletedTaskIds((prev) => {
-        const next = new Set(prev);
-        next.add(taskID);
-        return next;
-      });
+    toast.success("Delegation task completed successfully");
 
-      toast.success("Delegation task completed successfully");
+    await fetchDelegationTasks();
 
-      await fetchDelegationTasks();
-    } catch (error) {
-      console.error("❌ Complete delegation task error:", error);
+  } catch (error) {
+    console.error("Complete delegation task error:", error);
 
-      toast.error(error?.message || "Failed to complete delegation task");
-    } finally {
-      setCompletingTaskId(null);
-    }
-  };
+    toast.error(
+      typeof error === "string"
+        ? error
+        : error?.message || "Failed to complete delegation task"
+    );
+  } finally {
+    setCompletingTaskId(null);
+  }
+};
+
 
   // ============================================================
-  // TASK COUNTS
+  // COUNTS
   // ============================================================
 
   const pendingCount = tasks.filter(
-    (task) => !completedTaskIds.has(task.taskID),
+    (task) => !completedTaskIds.has(String(task.id))
   ).length;
 
-  const warningCount = tasks.filter((task) => {
-    if (completedTaskIds.has(task.taskID)) {
-      return false;
-    }
-
-    return getRemainingTime(task.dueTime, now).state === "warning";
-  }).length;
-
   const overdueCount = tasks.filter((task) => {
-    if (completedTaskIds.has(task.taskID)) {
-      return false;
-    }
+    if (completedTaskIds.has(String(task.id))) return false;
 
-    return getRemainingTime(task.dueTime, now).state === "overdue";
+    return getTaskDateStatus(task.due_date) === "overdue";
   }).length;
 
-  // ============================================================
-  // AUTO NOT COMPLETED WHEN TIME ENDS
-  // ============================================================
+  const todayCount = tasks.filter((task) => {
+    if (completedTaskIds.has(String(task.id))) return false;
 
-  useEffect(() => {
-    if (!userID || !tasks.length) return;
-
-    const expiredTasks = tasks.filter((task) => {
-      const taskID = task?.taskID;
-
-      if (!taskID) {
-        return false;
-      }
-
-      const timer = getRemainingTime(task.dueTime, now);
-
-      return (
-        timer.state === "overdue" &&
-        !completedTaskIds.has(taskID) &&
-        !processingExpiredTaskIds.has(taskID)
-      );
-    });
-
-    if (!expiredTasks.length) {
-      return;
-    }
-
-    expiredTasks.forEach(async (task) => {
-      const taskID = task?.taskID;
-
-      if (!taskID) {
-        return;
-      }
-
-      try {
-        // ======================================================
-        // MARK AS PROCESSING FIRST
-        // Prevent duplicate API calls
-        // ======================================================
-
-        setProcessingExpiredTaskIds((prev) => {
-          const next = new Set(prev);
-          next.add(taskID);
-          return next;
-        });
-
-        // ======================================================
-        // CALL NOT COMPLETED API
-        // ======================================================
-
-        await dispatch(
-          notCompleteDelegationTask({
-            userID,
-            taskID,
-            userName: name,
-          }),
-        ).unwrap();
-
-        // ======================================================
-        // MARK LOCALLY AS COMPLETED/PROCESSED
-        // So it won't fire again
-        // ======================================================
-
-        setCompletedTaskIds((prev) => {
-          const next = new Set(prev);
-          next.add(taskID);
-          return next;
-        });
-
-        toast.error(
-          `Task "${task.description || taskID}" was not completed on time`,
-        );
-
-        // ======================================================
-        // REFRESH TASKS
-        // ======================================================
-
-        await fetchDelegationTasks();
-      } catch (error) {
-        console.error("❌ Not completed delegation task error:", error);
-
-        // If API failed, allow retry on next timer tick
-        setProcessingExpiredTaskIds((prev) => {
-          const next = new Set(prev);
-          next.delete(taskID);
-          return next;
-        });
-      }
-    });
-  }, [
-    now,
-    tasks,
-    userID,
-    name,
-    dispatch,
-    completedTaskIds,
-    processingExpiredTaskIds,
-    fetchDelegationTasks,
-  ]);
+    return getTaskDateStatus(task.due_date) === "today";
+  }).length;
 
   // ============================================================
   // UI
@@ -397,9 +233,7 @@ const DelegationTask = () => {
         bgcolor: "#f8fafc",
       }}
     >
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
+      {/* HEADER */}
 
       <Paper
         elevation={0}
@@ -412,15 +246,9 @@ const DelegationTask = () => {
         }}
       >
         <Stack
-          direction={{
-            xs: "column",
-            sm: "row",
-          }}
+          direction={{ xs: "column", sm: "row" }}
           justifyContent="space-between"
-          alignItems={{
-            xs: "stretch",
-            sm: "center",
-          }}
+          alignItems={{ xs: "stretch", sm: "center" }}
           gap={2}
         >
           <Stack direction="row" spacing={1.5} alignItems="center">
@@ -457,7 +285,11 @@ const DelegationTask = () => {
           <Button
             variant="outlined"
             startIcon={
-              loading ? <CircularProgress size={16} /> : <RefreshIcon />
+              loading ? (
+                <CircularProgress size={16} />
+              ) : (
+                <RefreshIcon />
+              )
             }
             disabled={loading}
             onClick={fetchDelegationTasks}
@@ -471,28 +303,30 @@ const DelegationTask = () => {
           </Button>
         </Stack>
 
-        {/* ====================================================
-            SUMMARY
-        ==================================================== */}
+        {/* SUMMARY */}
 
-        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 2 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          flexWrap="wrap"
+          sx={{ mt: 2 }}
+        >
           <Chip
             label={`Pending: ${pendingCount}`}
             color="primary"
             variant="outlined"
           />
 
-          {warningCount > 0 && (
+          {todayCount > 0 && (
             <Chip
-              icon={<WarningAmberOutlinedIcon />}
-              label={`Warning: ${warningCount}`}
+              label={`Due Today: ${todayCount}`}
               color="warning"
             />
           )}
 
           {overdueCount > 0 && (
             <Chip
-              icon={<ErrorOutlineOutlinedIcon />}
+              icon={<ErrorOutlineIcon />}
               label={`Overdue: ${overdueCount}`}
               color="error"
             />
@@ -500,25 +334,13 @@ const DelegationTask = () => {
         </Stack>
       </Paper>
 
-      {/* ======================================================
-          LOADING
-      ====================================================== */}
+      {/* LOADING */}
 
       {loading && tasks.length === 0 ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            py: 8,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
           <CircularProgress />
         </Box>
       ) : tasks.length === 0 ? (
-        // ======================================================
-        // NO TASKS
-        // ======================================================
-
         <Paper
           elevation={0}
           sx={{
@@ -537,43 +359,38 @@ const DelegationTask = () => {
             }}
           />
 
-          <Typography variant="h6" fontWeight={700} sx={{ color: "#334155" }}>
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            sx={{ color: "#334155" }}
+          >
             No active delegation tasks
           </Typography>
 
           <Typography
             variant="body2"
-            sx={{
-              mt: 0.7,
-              color: "#64748b",
-            }}
+            sx={{ mt: 0.7, color: "#64748b" }}
           >
             You currently don't have any pending delegation tasks.
           </Typography>
         </Paper>
       ) : (
-        // ======================================================
-        // TASK LIST
-        // ======================================================
-
         <Stack spacing={1.5}>
           {tasks.map((task) => {
-            const taskID = task.taskID;
+            const taskID = String(task.id);
 
             const isCompleted = completedTaskIds.has(taskID);
-
             const isCompleting = completingTaskId === taskID;
 
-            const timer = getRemainingTime(task.dueTime, now);
+            const dateStatus = getTaskDateStatus(task.due_date);
 
-            const isWarning = timer.state === "warning";
-
-            const isOverdue = timer.state === "overdue";
+            const isOverdue = dateStatus === "overdue";
+            const isDueToday = dateStatus === "today";
 
             let borderColor = "#e2e8f0";
             let background = "#ffffff";
 
-            if (isWarning) {
+            if (isDueToday) {
               borderColor = "#f59e0b";
               background = "#fffbeb";
             }
@@ -602,27 +419,14 @@ const DelegationTask = () => {
                 }}
               >
                 <Stack
-                  direction={{
-                    xs: "column",
-                    md: "row",
-                  }}
+                  direction={{ xs: "column", md: "row" }}
                   justifyContent="space-between"
-                  alignItems={{
-                    xs: "stretch",
-                    md: "center",
-                  }}
+                  alignItems={{ xs: "stretch", md: "center" }}
                   gap={2}
                 >
-                  {/* =================================================
-                      LEFT SIDE
-                  ================================================= */}
+                  {/* TASK DETAILS */}
 
-                  <Box
-                    sx={{
-                      minWidth: 0,
-                      flex: 1,
-                    }}
-                  >
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Stack
                       direction="row"
                       spacing={1.5}
@@ -637,20 +441,18 @@ const DelegationTask = () => {
                           alignItems: "center",
                           justifyContent: "center",
                           flexShrink: 0,
-
                           bgcolor: isCompleted
                             ? "#16a34a"
                             : isOverdue
                               ? "#fee2e2"
-                              : isWarning
+                              : isDueToday
                                 ? "#fef3c7"
                                 : "#eff6ff",
-
                           color: isCompleted
                             ? "#ffffff"
                             : isOverdue
                               ? "#dc2626"
-                              : isWarning
+                              : isDueToday
                                 ? "#d97706"
                                 : "#2563eb",
                         }}
@@ -662,12 +464,7 @@ const DelegationTask = () => {
                         )}
                       </Box>
 
-                      <Box
-                        sx={{
-                          minWidth: 0,
-                          flex: 1,
-                        }}
-                      >
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Stack
                           direction="row"
                           spacing={1}
@@ -678,11 +475,9 @@ const DelegationTask = () => {
                             fontWeight={800}
                             sx={{
                               color: isCompleted ? "#166534" : "#1e293b",
-
                               textDecoration: isCompleted
                                 ? "line-through"
                                 : "none",
-
                               wordBreak: "break-word",
                             }}
                           >
@@ -691,7 +486,9 @@ const DelegationTask = () => {
 
                           <Chip
                             size="small"
-                            label={isCompleted ? "COMPLETED" : "DELEGATION"}
+                            label={
+                              isCompleted ? "COMPLETED" : "DELEGATION"
+                            }
                             color={isCompleted ? "success" : "primary"}
                             variant={isCompleted ? "filled" : "outlined"}
                             sx={{
@@ -710,43 +507,17 @@ const DelegationTask = () => {
                         >
                           <Chip
                             size="small"
-                            label={`Task ID: ${taskID || "--"}`}
+                            label={`Task ID: ${taskID}`}
                             variant="outlined"
-                            sx={{
-                              height: 24,
-                              fontSize: "0.7rem",
-                            }}
+                            sx={{ height: 24, fontSize: "0.7rem" }}
                           />
 
-                          {task.priority && (
+                          {task.department && (
                             <Chip
                               size="small"
-                              label={task.priority}
-                              color={
-                                String(task.priority).toLowerCase() === "urgent"
-                                  ? "error"
-                                  : String(task.priority).toLowerCase() ===
-                                      "high"
-                                    ? "warning"
-                                    : "default"
-                              }
-                              sx={{
-                                height: 24,
-                                fontSize: "0.7rem",
-                                fontWeight: 700,
-                              }}
-                            />
-                          )}
-
-                          {task.assignedBy && (
-                            <Chip
-                              size="small"
-                              label={`By: ${task.assignedBy}`}
+                              label={`Department: ${task.department}`}
                               variant="outlined"
-                              sx={{
-                                height: 24,
-                                fontSize: "0.7rem",
-                              }}
+                              sx={{ height: 24, fontSize: "0.7rem" }}
                             />
                           )}
                         </Stack>
@@ -754,51 +525,34 @@ const DelegationTask = () => {
                     </Stack>
                   </Box>
 
-                  {/* =================================================
-                      TIMER + BUTTON
-                  ================================================= */}
+                  {/* DUE DATE + COMPLETE BUTTON */}
 
                   <Stack
-                    direction={{
-                      xs: "column",
-                      sm: "row",
-                    }}
+                    direction={{ xs: "column", sm: "row" }}
                     spacing={1.2}
-                    alignItems={{
-                      xs: "stretch",
-                      sm: "center",
-                    }}
+                    alignItems={{ xs: "stretch", sm: "center" }}
                   >
-                    {/* TIMER */}
-
                     <Box
                       sx={{
-                        minWidth: {
-                          xs: "100%",
-                          sm: 145,
-                        },
+                        minWidth: { xs: "100%", sm: 155 },
                         px: 1.5,
                         py: 1,
                         borderRadius: 2,
-
                         bgcolor: isCompleted
                           ? "#dcfce7"
                           : isOverdue
                             ? "#fee2e2"
-                            : isWarning
+                            : isDueToday
                               ? "#fef3c7"
                               : "#f8fafc",
-
                         border: "1px solid",
-
                         borderColor: isCompleted
                           ? "#86efac"
                           : isOverdue
                             ? "#fca5a5"
-                            : isWarning
+                            : isDueToday
                               ? "#fcd34d"
                               : "#e2e8f0",
-
                         textAlign: "center",
                       }}
                     >
@@ -810,17 +564,11 @@ const DelegationTask = () => {
                       >
                         {isOverdue ? (
                           <ErrorOutlineIcon
-                            sx={{
-                              fontSize: 18,
-                              color: "#dc2626",
-                            }}
+                            sx={{ fontSize: 18, color: "#dc2626" }}
                           />
                         ) : (
                           <AccessTimeOutlinedIcon
-                            sx={{
-                              fontSize: 18,
-                              color: isWarning ? "#d97706" : "#64748b",
-                            }}
+                            sx={{ fontSize: 18, color: "#64748b" }}
                           />
                         )}
 
@@ -830,16 +578,18 @@ const DelegationTask = () => {
                           sx={{
                             color: isOverdue
                               ? "#dc2626"
-                              : isWarning
+                              : isDueToday
                                 ? "#b45309"
                                 : "#64748b",
                           }}
                         >
-                          {isOverdue
-                            ? "OVERDUE"
-                            : isWarning
-                              ? "TIME RUNNING OUT"
-                              : "TIME LEFT"}
+                          {isCompleted
+                            ? "COMPLETED"
+                            : isOverdue
+                              ? "OVERDUE"
+                              : isDueToday
+                                ? "DUE TODAY"
+                                : "DUE DATE"}
                         </Typography>
                       </Stack>
 
@@ -848,31 +598,12 @@ const DelegationTask = () => {
                         sx={{
                           mt: 0.2,
                           fontSize: "1rem",
-                          fontVariantNumeric: "tabular-nums",
-
-                          color: isOverdue
-                            ? "#dc2626"
-                            : isWarning
-                              ? "#b45309"
-                              : "#334155",
+                          color: isOverdue ? "#dc2626" : "#334155",
                         }}
                       >
-                        {isCompleted ? "Completed" : timer.label}
+                        {formatDueDate(task.due_date)}
                       </Typography>
-
-                      {task.dueTime && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "#64748b",
-                          }}
-                        >
-                          Due: {task.dueTime}
-                        </Typography>
-                      )}
                     </Box>
-
-                    {/* COMPLETE BUTTON */}
 
                     <Button
                       variant={isCompleted ? "outlined" : "contained"}
@@ -887,10 +618,7 @@ const DelegationTask = () => {
                       disabled={isCompleted || isCompleting}
                       onClick={() => handleCompleteTask(task)}
                       sx={{
-                        minWidth: {
-                          xs: "100%",
-                          sm: 135,
-                        },
+                        minWidth: { xs: "100%", sm: 135 },
                         minHeight: 42,
                         borderRadius: 2,
                         textTransform: "none",
@@ -906,11 +634,9 @@ const DelegationTask = () => {
                   </Stack>
                 </Stack>
 
-                {/* =================================================
-                    WARNING
-                ================================================= */}
+                {/* DATE WARNINGS */}
 
-                {!isCompleted && isWarning && !isOverdue && (
+                {!isCompleted && isDueToday && (
                   <>
                     <Divider sx={{ my: 1.5 }} />
 
@@ -925,15 +651,10 @@ const DelegationTask = () => {
                         },
                       }}
                     >
-                      This task is due soon. Please complete it before{" "}
-                      <strong>{task.dueTime}</strong>.
+                      This delegation task is due today.
                     </Alert>
                   </>
                 )}
-
-                {/* =================================================
-                    OVERDUE WARNING
-                ================================================= */}
 
                 {!isCompleted && isOverdue && (
                   <>
@@ -950,8 +671,8 @@ const DelegationTask = () => {
                         },
                       }}
                     >
-                      This delegation task is overdue. Please complete it as
-                      soon as possible.
+                      This delegation task is overdue. Please complete it
+                      as soon as possible.
                     </Alert>
                   </>
                 )}

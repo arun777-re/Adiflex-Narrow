@@ -35,8 +35,11 @@ import { salesOrderColumns } from "../../constant/printColumns/salesPrintColumns
 const SalesOrder = () => {
   const dispatch = useDispatch();
 
-  const { salesOrders = [], loading } = useSelector(
+  const { loading } = useSelector(
     (state) => state.salesOrder,
+  );
+  const salesOrders = useSelector(
+    (state) => state.salesOrder.salesOrders.data,
   );
 
   const {role} = useSelector((state)=> state.auth?.user?.user)
@@ -153,167 +156,195 @@ const SalesOrder = () => {
   // FILTER
   // --------------------------------------------------
 
-  const filteredRows = useMemo(() => {
-    const normalizedSearch = String(search || "")
+ 
+const filteredRows = useMemo(() => {
+  const normalizedSearch = String(search || "")
+    .trim()
+    .toLowerCase();
+
+  const normalizedCustomer = String(customer || "")
+    .trim()
+    .toLowerCase();
+
+  const normalizedDivision = String(division || "")
+    .trim()
+    .toLowerCase();
+
+  return salesOrders.filter((row) => {
+    // ==========================================
+    // SEARCH
+    // ==========================================
+
+    const matchesSearch =
+      !normalizedSearch ||
+      String(row.so_no || "")
+        .toLowerCase()
+        .includes(normalizedSearch) ||
+      String(row.customer || "")
+        .toLowerCase()
+        .includes(normalizedSearch) ||
+      String(row.product_name || "")
+        .toLowerCase()
+        .includes(normalizedSearch);
+
+    if (!matchesSearch) return false;
+
+    // ==========================================
+    // STATUS
+    // ==========================================
+
+    const productionStatus = String(row.status || "")
       .trim()
       .toLowerCase();
-    const normalizedCustomer = String(customer || "")
+
+    const dispatchedQty = Number(row.dispatched_qty || 0);
+    const orderQtyMeter = Number(row.so_qty_in_meter || 0);
+
+    let dispatchStatus = "pending dispatch";
+
+    if (orderQtyMeter > 0 && dispatchedQty >= orderQtyMeter) {
+      dispatchStatus = "dispatched";
+    } else if (dispatchedQty > 0) {
+      dispatchStatus = "partially dispatched";
+    }
+
+    const orderStatus = String(row.status || "")
       .trim()
       .toLowerCase();
-    const normalizedDivision = String(division || "")
-      .trim()
-      .toLowerCase();
 
-    return salesOrders.filter((row) => {
-      // ==========================================
-      // SEARCH
-      // ==========================================
+    if (status === "Pending") {
+      const isPending =
+        productionStatus === "pending production" ||
+        dispatchStatus === "pending dispatch";
 
-      const matchesSearch =
-        !normalizedSearch ||
-        String(row.soNo || "")
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        String(row.customer || "")
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        String(row.product || "")
-          .toLowerCase()
-          .includes(normalizedSearch);
+      if (!isPending) return false;
+    }
 
-      if (!matchesSearch) return false;
+    if (status === "Completed") {
+      const isCompleted =
+        productionStatus === "completed" &&
+        dispatchStatus === "dispatched";
 
-      // ==========================================
-      // STATUS
-      // ==========================================
+      if (!isCompleted) return false;
+    }
 
-      const productionStatus = String(row.productionstatus || "")
+    if (status === "Cancelled") {
+      if (orderStatus !== "cancelled") return false;
+    }
+
+    // ==========================================
+    // CUSTOMER
+    // ==========================================
+
+    if (
+      normalizedCustomer !== "all" &&
+      String(row.customer || "")
         .trim()
-        .toLowerCase();
+        .toLowerCase() !== normalizedCustomer
+    ) {
+      return false;
+    }
 
-      const dispatchStatus = String(row.dispatchstatus || "")
+    // ==========================================
+    // DIVISION
+    // ==========================================
+
+    if (
+      normalizedDivision !== "all" &&
+      String(row.division || "")
         .trim()
-        .toLowerCase();
+        .toLowerCase() !== normalizedDivision
+    ) {
+      return false;
+    }
 
-      const orderStatus = String(row.status || "")
-        .trim()
-        .toLowerCase();
+    // ==========================================
+    // DATE FILTER
+    // ==========================================
 
-      if (status === "Pending") {
-        const isPending =
-          productionStatus === "pending production" ||
-          dispatchStatus === "pending dispatch";
+    if (dateFilter !== "All") {
+      const rawDate = row.order_date;
 
-        if (!isPending) return false;
-      }
-
-      if (status === "Completed") {
-        const isCompleted =
-          productionStatus === "completed" && dispatchStatus === "dispatched";
-
-        if (!isCompleted) return false;
-      }
-
-      if (status === "Cancelled") {
-        if (orderStatus !== "cancelled") return false;
-      }
-
-      // ==========================================
-      // CUSTOMER
-      // ==========================================
-
-      if (
-        normalizedCustomer !== "all" &&
-        String(row.customer || "")
-          .trim()
-          .toLowerCase() !== normalizedCustomer
-      ) {
+      if (!rawDate) {
         return false;
       }
 
-      // ==========================================
-      // DIVISION
-      // ==========================================
+      const rowDate = new Date(rawDate);
 
-      if (
-        normalizedDivision !== "all" &&
-        String(row.division || "")
-          .trim()
-          .toLowerCase() !== normalizedDivision
-      ) {
+      if (Number.isNaN(rowDate.getTime())) {
         return false;
       }
 
+      // Normalize order date to local midnight
+      rowDate.setHours(0, 0, 0, 0);
+
+      // Today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       // ==========================================
-      // DATE
+      // TODAY
       // ==========================================
 
-      if (dateFilter !== "All") {
-        const rawDate = String(row.date || "").trim();
+      if (dateFilter === "Today") {
+        if (rowDate.getTime() !== today.getTime()) {
+          return false;
+        }
+      }
 
-        const parts = rawDate.split("/");
+      // ==========================================
+      // THIS WEEK
+      // ==========================================
 
-        if (parts.length !== 3) return false;
+      if (dateFilter === "This Week") {
+        const weekStart = new Date(today);
 
-        const day = Number(parts[0]);
-        const month = Number(parts[1]);
-        const year = Number(parts[2]);
+        // Sunday = 0
+        weekStart.setDate(
+          today.getDate() - today.getDay()
+        );
 
+        weekStart.setHours(0, 0, 0, 0);
+
+        const weekEnd = new Date(weekStart);
+
+        weekEnd.setDate(
+          weekStart.getDate() + 6
+        );
+
+        weekEnd.setHours(23, 59, 59, 999);
+
+        if (rowDate < weekStart || rowDate > weekEnd) {
+          return false;
+        }
+      }
+
+      // ==========================================
+      // THIS MONTH
+      // ==========================================
+
+      if (dateFilter === "This Month") {
         if (
-          !Number.isInteger(day) ||
-          !Number.isInteger(month) ||
-          !Number.isInteger(year)
+          rowDate.getMonth() !== today.getMonth() ||
+          rowDate.getFullYear() !== today.getFullYear()
         ) {
           return false;
         }
-
-        const rowDate = new Date(year, month - 1, day);
-
-        rowDate.setHours(0, 0, 0, 0);
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // TODAY
-        if (dateFilter === "Today") {
-          if (rowDate.getTime() !== today.getTime()) {
-            return false;
-          }
-        }
-
-        // THIS WEEK
-        if (dateFilter === "This Week") {
-          const weekStart = new Date(today);
-
-          weekStart.setDate(today.getDate() - today.getDay());
-
-          weekStart.setHours(0, 0, 0, 0);
-
-          const weekEnd = new Date(weekStart);
-
-          weekEnd.setDate(weekStart.getDate() + 6);
-
-          weekEnd.setHours(23, 59, 59, 999);
-
-          if (rowDate < weekStart || rowDate > weekEnd) {
-            return false;
-          }
-        }
-
-        // THIS MONTH
-        if (dateFilter === "This Month") {
-          if (
-            rowDate.getMonth() !== today.getMonth() ||
-            rowDate.getFullYear() !== today.getFullYear()
-          ) {
-            return false;
-          }
-        }
       }
+    }
 
-      return true;
-    });
-  }, [salesOrders, search, status, customer, division, dateFilter]);
+    return true;
+  });
+}, [
+  salesOrders,
+  search,
+  status,
+  customer,
+  division,
+  dateFilter,
+]);
+
+
 
   // --------------------------------------------------
   // REFRESH

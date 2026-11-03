@@ -8,7 +8,7 @@ export const productColumns = ({
   handleStatus,
 }) => [
   {
-    field: "sku",
+    field: "skucode",
     headerName: "SKU Code",
     width: 120,
   },
@@ -27,13 +27,13 @@ export const productColumns = ({
   },
 
   {
-    field: "unit",
+    field: "basicUnit",
     headerName: "Unit",
     width: 100,
   },
 
   {
-    field: "meterPerKG",
+    field: "meterPerKg",
     headerName: "Meter/Kg",
     width: 100,
   },
@@ -41,7 +41,7 @@ export const productColumns = ({
   {
     field: "meterPerRoll",
     headerName: "Meter/Roll",
-    width: 100,
+    width: 110,
   },
 
   {
@@ -57,27 +57,38 @@ export const productColumns = ({
   },
 
   {
+    field: "rate",
+    headerName: "Rate",
+    width: 100,
+
+    valueFormatter: (value) =>
+      value !== null &&
+      value !== undefined &&
+      value !== ""
+        ? Number(value).toFixed(2)
+        : "",
+  },
+
+  {
     field: "status",
     headerName: "Status",
     width: 120,
 
-    renderCell: (params) => (
-      <Chip
-        size="small"
-        label={params.value}
-        color={
-          params.value === "Active"
-            ? "success"
-            : "error"
-        }
-      />
-    ),
-  },
+    renderCell: (params) => {
+      const status = String(params.value || "").toUpperCase();
 
-  {
-    field: "updatedBy",
-    headerName: "Updated By",
-    width: 150,
+      return (
+        <Chip
+          size="small"
+          label={status}
+          color={
+            status === "ACTIVE"
+              ? "success"
+              : "error"
+          }
+        />
+      );
+    },
   },
 
   {
@@ -102,52 +113,59 @@ export const productColumns = ({
     sortable: false,
     filterable: false,
 
-    renderCell: (params) => (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-        }}
-      >
-        {/* EDIT */}
+    renderCell: (params) => {
+      const status = String(
+        params.row.status || ""
+      ).toUpperCase();
 
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<EditRoundedIcon />}
-          onClick={() =>
-            handleEdit(params.row.sku)
-          }
+      return (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
         >
-          Edit
-        </Button>
+          {/* EDIT */}
 
-        {/* STATUS */}
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<EditRoundedIcon />}
+            onClick={() =>
+              handleEdit(params.row.skucode)
+            }
+          >
+            Edit
+          </Button>
 
-        <Button
-          size="small"
-          variant="contained"
-          color={
-            params.row.status === "Active"
-              ? "error"
-              : "success"
-          }
-          startIcon={
-            <PowerSettingsNewRoundedIcon />
-          }
-          onClick={() =>
-            handleStatus(
-              params.row.sku,
-              params.row.status
-            )
-          }
-        >
-          {params.row.status === "Active"
-            ? "Deactivate"
-            : "Activate"}
-        </Button>
-      </Box>
-    ),
+          {/* STATUS */}
+
+          <Button
+            size="small"
+            variant="contained"
+            color={
+              status === "ACTIVE"
+                ? "error"
+                : "success"
+            }
+            startIcon={
+              <PowerSettingsNewRoundedIcon />
+            }
+            onClick={() =>
+              handleStatus(
+                params.row.skucode,
+                status
+              )
+            }
+          >
+            {status === "ACTIVE"
+              ? "Deactivate"
+              : "Activate"}
+          </Button>
+        </Box>
+      );
+    },
   },
 ];
+

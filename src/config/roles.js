@@ -6,6 +6,12 @@ export const ROLES = {
   DISPATCH: "dispatch",
 
   SUPERVISOR: "supervisor",
+
   BILLING: "billing",
-  EMPLOYEE:"employee"
+
+  EMPLOYEE:"employee",
+
+  QUALITYSUPERVISOR:"qualitysupervisor",
+  
+  PACKINGSUPERVISOR:"packingsupervisor",
 };

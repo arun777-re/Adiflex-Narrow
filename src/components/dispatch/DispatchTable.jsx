@@ -1,9 +1,11 @@
+
 import { useMemo, useState } from "react";
 
 import {
   Button,
   Chip,
   Box,
+  Checkbox,
   TextField,
   FormControl,
   InputLabel,
@@ -14,68 +16,59 @@ import {
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
-
 import DispatchDialog from "./DispatchDialog";
 
-const DispatchTable = ({
-  rows = [],
-
-  loading = false,
-}) => {
+const DispatchTable = ({ rows = [], loading = false }) => {
+  const [selectedIds, setSelectedIds] = useState([]);
   const [open, setOpen] = useState(false);
+
   const [routeFilter, setRouteFilter] = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
   const [productFilter, setProductFilter] = useState("");
   const [soFilter, setSoFilter] = useState("");
 
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const routes = useMemo(
+    () => [
+      ...new Set(
+        rows.map((row) => String(row.route || "").trim()).filter(Boolean)
+      ),
+    ].sort(),
+    [rows]
+  );
 
-  // filtered values for route
-  const routes = useMemo(() => {
-    return [
+  const customers = useMemo(
+    () => [
       ...new Set(
-        rows.map((row) => String(row.route || "").trim()).filter(Boolean),
+        rows.map((row) => String(row.customer || "").trim()).filter(Boolean)
       ),
-    ].sort();
-  }, [rows]);
+    ].sort(),
+    [rows]
+  );
 
-  // filtered values for customers
-  const customers = useMemo(() => {
-    return [
+  const products = useMemo(
+    () => [
       ...new Set(
-        rows.map((row) => String(row.customer || "").trim()).filter(Boolean),
+        rows
+          .map((row) => String(row.product_name || "").trim())
+          .filter(Boolean)
       ),
-    ].sort();
-  }, [rows]);
-  const products = useMemo(() => {
-    return [
-      ...new Set(
-        rows.map((row) => String(row.product || "").trim()).filter(Boolean),
-      ),
-    ].sort();
-  }, [rows]);
+    ].sort(),
+    [rows]
+  );
 
   const activeRows = useMemo(() => {
-    if (!Array.isArray(rows)) {
-      return [];
-    }
+    if (!Array.isArray(rows)) return [];
 
     return rows.filter((row) => {
-      // Fully dispatched orders hide
-      if (row.status === "Fully Dispatched") {
+      if (Number(row.pending_dispatch_qty) <= 0) return false;
+
+      if (
+        routeFilter &&
+        String(row.route || "").trim() !== routeFilter
+      ) {
         return false;
       }
 
-      // Route filter
-      if (routeFilter && String(row.route || "").trim() !== routeFilter) {
-        return false;
-      }
-      // Product filter
-      if (productFilter && String(row.product || "").trim() !== productFilter) {
-        return false;
-      }
-
-      // Customer filter
       if (
         customerFilter &&
         String(row.customer || "").trim() !== customerFilter
@@ -83,10 +76,16 @@ const DispatchTable = ({
         return false;
       }
 
-      // SO No filter
+      if (
+        productFilter &&
+        String(row.product_name || "").trim() !== productFilter
+      ) {
+        return false;
+      }
+
       if (
         soFilter &&
-        !String(row.soNo || "")
+        !String(row.so_no || "")
           .toLowerCase()
           .includes(soFilter.toLowerCase())
       ) {
@@ -95,92 +94,166 @@ const DispatchTable = ({
 
       return true;
     });
-  }, [rows, routeFilter, customerFilter, soFilter, productFilter]);
+  }, [rows, routeFilter, customerFilter, productFilter, soFilter]);
 
-  const handleOpen = (row) => {
-    setSelectedOrder(row);
+  // Selected reservations are resolved from the original rows.
+  const selectedOrders = useMemo(() => {
+    const selectedSet = new Set(selectedIds.map(String));
+
+    return rows.filter((row) =>
+      selectedSet.has(String(row.reservation_id))
+    );
+  }, [rows, selectedIds]);
+
+  const clearSelection = () => setSelectedIds([]);
+
+  const toggleSelection = (row, checked) => {
+    const reservationId = String(row.reservation_id);
+
+    setSelectedIds((previous) => {
+      if (checked) {
+        return previous.includes(reservationId)
+          ? previous
+          : [...previous, reservationId];
+      }
+
+      return previous.filter((id) => id !== reservationId);
+    });
+  };
+
+  const handleCreateChallan = () => {
+    if (!selectedOrders.length) return;
+
+    // All selected reservations must belong to the same dispatch group.
+    const first = selectedOrders[0];
+
+    const isSameDispatchGroup = selectedOrders.every((row) => {
+      return (
+        String(row.customer || "").trim() ===
+          String(first.customer || "").trim() &&
+        String(row.billing_location || "").trim() ===
+          String(first.billing_location || "").trim() &&
+        String(row.shipping_location || "").trim() ===
+          String(first.shipping_location || "").trim() &&
+        String(row.route || "").trim() ===
+          String(first.route || "").trim()
+      );
+    });
+
+    if (!isSameDispatchGroup) {
+      window.alert(
+        "Selected rows must have the same customer, billing location, shipping location and route."
+      );
+      return;
+    }
+
+    const hasInvalidReservation = selectedOrders.some(
+      (row) =>
+        !row.reservation_id ||
+        Number(row.pending_dispatch_qty) <= 0
+    );
+
+    if (hasInvalidReservation) {
+      window.alert(
+        "One or more selected rows have an invalid reservation or pending quantity. Please refresh the dispatch list."
+      );
+      return;
+    }
 
     setOpen(true);
   };
 
   const handleClose = () => {
     setOpen(false);
-
-    setSelectedOrder(null);
+    clearSelection();
   };
-  console.log("DATAGRID ROW COUNT:", rows.length);
 
-  console.table(
-    rows.map((row) => ({
-      soNo: row.soNo,
-      skuCode: row.skuCode,
-      status: row.status,
-      availableQty: row.availableQty,
-      dispatchQty: row.dispatchQty,
-    })),
-  );
+  const handleClearFilters = () => {
+    setRouteFilter("");
+    setCustomerFilter("");
+    setProductFilter("");
+    setSoFilter("");
+    clearSelection();
+  };
 
-  // column for table
   const columns = useMemo(
     () => [
       {
-        field: "soNo",
-        headerName: "SO No",
+        field: "select",
+        headerName: "Select",
+        width: 75,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => {
+          const reservationId = String(params.row.reservation_id);
+          const checked = selectedIds.includes(reservationId);
+
+          return (
+            <Checkbox
+              checked={checked}
+              disabled={
+                !params.row.reservation_id ||
+                Number(params.row.pending_dispatch_qty) <= 0
+              }
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) =>
+                toggleSelection(params.row, event.target.checked)
+              }
+            />
+          );
+        },
+      },
+      {
+        field: "customer",
+        headerName: "Party Name",
+        width: 150,
+      },
+      {
+        field: "so_no",
+        headerName: "Order No",
         width: 130,
       },
       {
-        field: "skuCode",
+        field: "sku_code",
         headerName: "SKU Code",
-        width: 130,
+        width: 120,
       },
-
       {
-        field: "product",
+        field: "product_name",
         headerName: "Product",
-        flex: 1.5,
-        minWidth: 220,
+        flex: 1,
+        minWidth: 180,
       },
-
       {
         field: "division",
         headerName: "Division",
-        width: 120,
+        width: 110,
       },
       {
         field: "route",
         headerName: "Route",
         width: 120,
       },
-
       {
-        field: "productionQty",
-        headerName: "Production Qty",
-        width: 150,
+        field: "final_rate",
+        headerName: "Rate (₹)",
+        width: 100,
         type: "number",
       },
-
       {
-        field: "rate",
-        headerName: "Rate",
-        width: 110,
-        type: "number",
-      },
-
-      {
-        field: "shippinglocation",
+        field: "shipping_location",
         headerName: "Shipping Location",
-        width: 180,
+        width: 170,
       },
-
       {
-        field: "billinglocation",
+        field: "billing_location",
         headerName: "Billing Location",
-        width: 180,
+        width: 170,
       },
       {
         field: "freight",
         headerName: "Freight",
-        width: 140,
+        width: 100,
         renderCell: (params) => (
           <Chip
             label={params.value ? "Yes" : "No"}
@@ -189,105 +262,70 @@ const DispatchTable = ({
           />
         ),
       },
-
       {
-        field: "wastageQty",
-        headerName: "Wastage Qty",
+        field: "reserved_qty_meter",
+        headerName: "Reserved Qty (m)",
         width: 130,
         type: "number",
       },
-
       {
-        field: "dispatchQty",
-        headerName: "DispatchQty",
-        width: 120,
+        field: "dispatched_qty_meter",
+        headerName: "Dispatched (m)",
+        width: 130,
         type: "number",
       },
-
       {
-        field: "availableQty",
-        headerName: "Available Qty",
-        width: 120,
+        field: "pending_dispatch_qty",
+        headerName: "Pending (m)",
+        width: 130,
         type: "number",
       },
-
       {
         field: "status",
         headerName: "Status",
-        width: 180,
+        width: 170,
         renderCell: (params) => {
           let color = "warning";
 
           if (params.value === "Partially Dispatched") color = "info";
-
           if (params.value === "Fully Dispatched") color = "success";
 
-          return <Chip label={params.value} color={color} size="small" />;
-        },
-      },
-
-      {
-        field: "createdAt",
-        headerName: "Created At",
-        width: 170,
-      },
-      {
-        field: "action",
-        headerName: "Action",
-        width: 170,
-        sortable: false,
-        renderCell: (params) => {
-          if (Number(params.row.availableQty) <= 0) {
-            return (
-              <Chip label="Fully Dispatched" color="success" size="small" />
-            );
-          }
-
           return (
-            <Button
-              variant="contained"
+            <Chip
+              label={params.value || "-"}
+              color={color}
               size="small"
-              onClick={() => handleOpen(params.row)}
-            >
-              Dispatch
-            </Button>
+            />
           );
         },
       },
+      {
+        field: "reserved_at",
+        headerName: "Reserved At",
+        width: 170,
+      },
     ],
-    [],
+    [selectedIds]
   );
-
-  console.log("DispatchTable Rendered", activeRows);
 
   return (
     <>
       <Stack
         direction={{ xs: "column", md: "row" }}
         spacing={1}
-        sx={{
-          mb: 2,
-          px: { xs: 0.5, sm: 1, md: 0 },
-          width: "100%",
-        }}
+        sx={{ mb: 2, width: "100%" }}
       >
-        {/* ROUTE */}
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: 0, md: 180 },
-            width: { xs: "100%", md: "auto" },
-          }}
-        >
+        <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Route</InputLabel>
-
           <Select
             value={routeFilter}
             label="Route"
-            onChange={(e) => setRouteFilter(e.target.value)}
+            onChange={(e) => {
+              setRouteFilter(e.target.value);
+              clearSelection();
+            }}
           >
             <MenuItem value="">All Routes</MenuItem>
-
             {routes.map((route) => (
               <MenuItem key={route} value={route}>
                 {route}
@@ -296,23 +334,17 @@ const DispatchTable = ({
           </Select>
         </FormControl>
 
-        {/* CUSTOMER */}
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: 0, md: 180 },
-            width: { xs: "100%", md: "auto" },
-          }}
-        >
+        <FormControl size="small" sx={{ minWidth: 170 }}>
           <InputLabel>Customer</InputLabel>
-
           <Select
             value={customerFilter}
             label="Customer"
-            onChange={(e) => setCustomerFilter(e.target.value)}
+            onChange={(e) => {
+              setCustomerFilter(e.target.value);
+              clearSelection();
+            }}
           >
             <MenuItem value="">All Customers</MenuItem>
-
             {customers.map((customer) => (
               <MenuItem key={customer} value={customer}>
                 {customer}
@@ -320,18 +352,14 @@ const DispatchTable = ({
             ))}
           </Select>
         </FormControl>
-        {/* PRODUCT */}
+
         <Autocomplete
           size="small"
           options={products}
           value={productFilter || null}
           onChange={(event, newValue) => {
             setProductFilter(newValue || "");
-          }}
-          onInputChange={(event, newInputValue, reason) => {
-            if (reason === "clear") {
-              setProductFilter("");
-            }
+            clearSelection();
           }}
           getOptionLabel={(option) => String(option || "")}
           isOptionEqualToValue={(option, value) => option === value}
@@ -342,103 +370,83 @@ const DispatchTable = ({
               placeholder="Search product..."
             />
           )}
-          sx={{
-            minWidth: { xs: 0, md: 220 },
-            width: { xs: "100%", md: "auto" },
-          }}
+          sx={{ minWidth: 200 }}
         />
-        {/* SO NO */}
+
         <TextField
           size="small"
           label="Search SO No"
           value={soFilter}
-          onChange={(e) => setSoFilter(e.target.value)}
-          sx={{
-            width: { xs: "100%", md: "auto" },
+          onChange={(e) => {
+            setSoFilter(e.target.value);
+            clearSelection();
           }}
         />
 
-        {/* CLEAR */}
-        <Button
-          variant="outlined"
-          onClick={() => {
-            setRouteFilter("");
-            setCustomerFilter("");
-            setSoFilter("");
-          }}
-          sx={{
-            width: { xs: "100%", md: "auto" },
-          }}
-        >
+        <Button variant="outlined" onClick={handleClearFilters}>
           Clear
         </Button>
+      </Stack>
+
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        alignItems={{ xs: "stretch", sm: "center" }}
+        justifyContent="space-between"
+        spacing={1}
+        sx={{ mb: 1 }}
+      >
+        <Chip
+          label={`${selectedOrders.length} reservation(s) selected`}
+          color={selectedOrders.length ? "primary" : "default"}
+        />
+
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            disabled={!selectedIds.length}
+            onClick={clearSelection}
+          >
+            Clear Selection
+          </Button>
+
+          <Button
+            variant="contained"
+            disabled={!selectedOrders.length}
+            onClick={handleCreateChallan}
+          >
+            Create Challan ({selectedOrders.length})
+          </Button>
+        </Stack>
       </Stack>
 
       <Box
         sx={{
           width: "100%",
-          height: "calc(100vh - 150px)",
-          px: { xs: 0, sm: 1, md: 0 },
-          boxSizing: "border-box",
+          height: "calc(100vh - 210px)",
+          minHeight: 400,
         }}
       >
-        <Box
-          sx={{
-            width: "100%",
-            height: "calc(100vh - 150px)",
-            px: { xs: 0, sm: 1, md: 0 },
-
-            // 👇 IMPORTANT
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
+        <DataGrid
+          rows={activeRows}
+          columns={columns}
+          loading={loading}
+          getRowId={(row) => row.reservation_id}
+          disableRowSelectionOnClick
+          density="compact"
+          pageSizeOptions={[10, 20, 50]}
+          initialState={{
+            pagination: {
+              paginationModel: { pageSize: 10 },
+            },
           }}
-        >
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              pb: 3, // 👈 bottom mein proper space
-            }}
-          >
-            <DataGrid
-              rows={activeRows}
-              columns={columns}
-              loading={loading}
-              getRowId={(row) =>
-                `${row.id || `${row.soNo}-${row.skuCode}`}-${row.rowNumber}`
-              }
-              disableRowSelectionOnClick
-              density="compact"
-              pageSizeOptions={[10, 20, 50]}
-              initialState={{
-                pagination: {
-                  paginationModel: {
-                    pageSize: 10,
-                  },
-                },
-              }}
-              // 👇 HEADER + GRID SCROLL CONTROL
-              sx={{
-                height: "100%",
-
-                "& .MuiDataGrid-columnHeaders": {
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 10,
-                  backgroundColor: "background.paper",
-                },
-
-                "& .MuiDataGrid-virtualScroller": {
-                  overflowY: "auto",
-                },
-              }}
-            />
-          </Box>
-        </Box>
+        />
       </Box>
 
-      <DispatchDialog open={open} onClose={handleClose} order={selectedOrder} />
+      <DispatchDialog
+        open={open}
+        onClose={handleClose}
+        selectedOrders={selectedOrders}
+      />
     </>
   );
 };

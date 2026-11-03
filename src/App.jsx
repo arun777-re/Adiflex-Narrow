@@ -22,6 +22,11 @@ import AnalysisPage from "./pages/admin/AnalysisPage";
 import DailyTaskAdmin from "./pages/daily-tasks/admin/DailyTaskAdmin";
 import DailyTaskEmployee from "./pages/daily-tasks/employee/DailyTaskEmployee";
 import DelegationTask from "./pages/daily-tasks/employee/DelegationTask";
+import AdminRoleManager from './pages/admin/AdminRoleManager';
+import QualitySupervisorTable from "./components/production/QualitySupervisorTable";
+import PackingSupervisorTable from "./components/production/PackingSupervisorTable";
+import CompletedPendingOrders from "./pages/Production/CompletedPendingOrders";
+import HolidayPage from "./pages/holiday/HolidayPage";
 
 function App() {
 
@@ -57,6 +62,18 @@ function App() {
           <Route
           path="/production"
           element={<ProductionDashboard/>}
+        />
+          <Route
+          path="/quality-production"
+          element={<QualitySupervisorTable/>}
+        />
+          <Route
+          path="/packing-production"
+          element={<PackingSupervisorTable/>}
+        />
+          <Route
+          path="/pending-completed-orders"
+          element={<CompletedPendingOrders/>}
         />
           <Route
           path="/dispatch"
@@ -113,6 +130,14 @@ function App() {
           <Route
           path="/employee/delegation"
           element={<DelegationTask/>}
+        />
+          <Route
+          path="/admin/create-view/users"
+          element={<AdminRoleManager/>}
+        />
+          <Route
+          path="/company-holidays"
+          element={<HolidayPage/>}
         />
 
       </Route>

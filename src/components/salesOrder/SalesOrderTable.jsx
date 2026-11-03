@@ -1,219 +1,371 @@
-import { useMemo } from "react";
-import { Box, Chip } from "@mui/material";
+import { Box} from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
 const SalesOrderTable = ({ rows = [], loading = false }) => {
-  const columns = useMemo(
-    () => [
-      {
-        field: "soNo",
-        headerName: "SO No",
-        width: 100,
-      },
+ 
 
-      {
-        field: "date",
-        headerName: "Date",
-        width: 100,
-      },
+const columns = [
+  {
+    field: "so_no",
+    headerName: "SO No",
+    minWidth: 120,
+    flex: 0.8,
+  },
 
-      {
-        field: "skucode",
-        headerName: "SKU Code",
-        width: 100,
-      },
+  {
+    field: "order_date",
+    headerName: "Date",
+    minWidth: 120,
+    flex: 0.8,
+    valueFormatter: (value) => {
+      if (!value) return "";
 
-      {
-        field: "customer",
-        headerName: "Customer",
-        minWidth: 200,
-        flex: 1,
-      },
+      const date = new Date(value);
 
-      {
-        field: "product",
-        headerName: "Product Name",
-        minWidth: 220,
-        flex: 1.3,
-      },
-      {
-        field: "shippinglocation",
-        headerName: "Shipping Location",
-        minWidth: 220,
-        flex: 1.3,
-      },
-      {
-        field: "billinglocation",
-        headerName: "Billing Location",
-        minWidth: 220,
-        flex: 1.3,
-      },
-      {
-        field: "route",
-        headerName: "Route",
-        minWidth: 120,
-        flex: 1.4,
-      },
-      {
-        field: "commitedDate",
-        headerName: "Commited Date",
-        minWidth: 120,
-        flex: 1.3,
-      },
-      {
-        field: "productionstatus",
-        headerName: "Production Status",
-        minWidth: 160,
-        flex: 1.3,
-        align: "center",
-        headerAlign: "center",
-        renderCell: ({ value }) => {
-          const isCompleted = value === "Completed";
-          return (
-            <Chip
-              label={isCompleted ? "Completed" : "Pending Production"}
-              color={isCompleted ? "success" : "warning"}
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600, minWidth: 125, borderRadius: "16px" }}
-            />
-          );
-        },
-      },
-      {
-        field: "dispatchstatus",
-        headerName: "Dispatch Status",
-        minWidth: 150,
-        flex: 1.3,
-        align: "center",
-        headerAlign: "center",
-        renderCell: ({ value }) => {
-          const isDispatched = value === "Dispatched";
-          return (
-            <Chip
-              label={isDispatched ? "Dispatched" : "Pending Dispatch"}
-              color={isDispatched ? "success" : "warning"}
-              size="small"
-              variant="outlined"
-              sx={{ fontWeight: 600, minWidth: 120, borderRadius: "16px" }}
-            />
-          );
-        },
-      },
+      if (Number.isNaN(date.getTime())) return "";
 
-      {
-        field: "ordertype",
-        headerName: "Order Type",
-        width: 120,
-      },
+      return date.toLocaleDateString("en-IN");
+    },
+  },
 
-      {
-        field: "division",
-        headerName: "Division",
-        width: 110,
-      },
+  {
+    field: "skucode",
+    headerName: "SKU Code",
+    minWidth: 110,
+    flex: 0.8,
+  },
 
-      {
-        field: "qty",
-        headerName: "SO Qty",
-        width: 100,
-        align: "center",
-        headerAlign: "center",
-      },
+  {
+    field: "customer",
+    headerName: "Customer",
+    minWidth: 180,
+    flex: 1.3,
+  },
 
-      {
-        field: "rate",
-        headerName: "Std Rate",
-        width: 110,
-        align: "center",
-        headerAlign: "center",
-        renderCell: ({ row }) => `₹ ${Number(row.rate || 0).toFixed(2)}`,
-      },
+  {
+    field: "product_name",
+    headerName: "Product",
+    minWidth: 180,
+    flex: 1.3,
+  },
 
-      {
-        field: "rateadjustment",
-        headerName: "Adjustment",
-        width: 120,
-        align: "center",
-        headerAlign: "center",
-        renderCell: ({ row }) =>
-          `₹ ${Number(row.rateadjustment || 0).toFixed(2)}`,
-      },
+  {
+    field: "shipping_location",
+    headerName: "Shipping Location",
+    minWidth: 180,
+    flex: 1.2,
+  },
 
-      {
-        field: "finalrate",
-        headerName: "Final Rate",
-        width: 120,
-        align: "center",
-        headerAlign: "center",
-        renderCell: ({ row }) => (
-          <strong>₹ {Number(row.finalrate || 0).toFixed(2)}</strong>
-        ),
-      },
+  {
+    field: "billing_location",
+    headerName: "Billing Location",
+    minWidth: 180,
+    flex: 1.2,
+  },
 
-      {
-        field: "unit",
-        headerName: "Unit",
-        width: 90,
-        align: "center",
-        headerAlign: "center",
-      },
+  {
+    field: "route",
+    headerName: "Route",
+    minWidth: 120,
+    flex: 0.8,
+  },
 
-      {
-        field: "openingFgQty",
-        headerName: "Opening FG",
-        width: 120,
-        align: "center",
-        headerAlign: "center",
-      },
+  {
+    field: "committed_date",
+    headerName: "Committed Date",
+    minWidth: 130,
+    flex: 0.9,
+    valueFormatter: (value) => {
+      if (!value) return "";
 
-      {
-        field: "productionQty",
-        headerName: "Production",
-        width: 120,
-        align: "center",
-        headerAlign: "center",
-      },
+      const date = new Date(value);
 
-      {
-        field: "jobWork",
-        headerName: "Job Work",
-        width: 110,
-        align: "center",
-        headerAlign: "center",
-        renderCell: ({ row }) => (
-          <Chip
-            size="small"
-            label={row.jobWork ? "Yes" : "No"}
-            color={row.jobWork ? "success" : "default"}
-          />
-        ),
-      },
+      if (Number.isNaN(date.getTime())) return "";
 
-      {
-        field: "manufacturedQty",
-        headerName: "Manufactured",
-        width: 130,
-        align: "center",
-        headerAlign: "center",
-      },
+      return date.toLocaleDateString("en-IN");
+    },
+  },
 
-      {
-        field: "dispatchedQty",
-        headerName: "Dispatched",
-        width: 120,
-        align: "center",
-        headerAlign: "center",
-      },
+  {
+    field: "status",
+    headerName: "Production Status",
+    minWidth: 160,
+    flex: 1,
+    renderCell: (params) => {
+      const value = params?.value || "-";
 
-      {
-        field: "orderReceivedBy",
-        headerName: "Created By",
-        width: 150,
-      },
-    ],
-    [],
-  );
+      return value;
+    },
+  },
+
+  {
+    field: "dispatch_status",
+    headerName: "Dispatch Status",
+    minWidth: 140,
+    flex: 0.9,
+    valueGetter: (value, row) => {
+      const dispatched = Number(row?.dispatched_qty || 0);
+      const ordered = Number(row?.so_qty_in_meter || 0);
+
+      if (ordered <= 0) return "Pending";
+
+      if (dispatched >= ordered) {
+        return "Dispatched";
+      }
+
+      if (dispatched > 0) {
+        return "Partially Dispatched";
+      }
+
+      return "Pending";
+    },
+    renderCell: (params) => {
+      return params?.value || "Pending";
+    },
+  },
+
+  {
+    field: "order_type",
+    headerName: "Order Type",
+    minWidth: 120,
+    flex: 0.8,
+  },
+
+  {
+    field: "division",
+    headerName: "Division",
+    minWidth: 100,
+    flex: 0.7,
+  },
+
+  {
+    field: "so_qty",
+    headerName: "SO Qty",
+    minWidth: 100,
+    flex: 0.7,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0";
+      }
+
+      return Number(value).toLocaleString("en-IN");
+    },
+  },
+
+  {
+    field: "so_qty_in_meter",
+    headerName: "SO Qty (Meter)",
+    minWidth: 140,
+    flex: 0.9,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0";
+      }
+
+      return Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    },
+  },
+
+  {
+    field: "unit",
+    headerName: "Unit",
+    minWidth: 90,
+    flex: 0.6,
+  },
+
+  {
+    field: "standard_rate",
+    headerName: "Standard Rate",
+    minWidth: 120,
+    flex: 0.8,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0.00";
+      }
+
+      return Number(value).toFixed(2);
+    },
+  },
+
+  {
+    field: "rate_adjustment",
+    headerName: "Rate Adjustment",
+    minWidth: 130,
+    flex: 0.9,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0.00";
+      }
+
+      return Number(value).toFixed(2);
+    },
+  },
+
+  {
+    field: "final_rate",
+    headerName: "Final Rate",
+    minWidth: 110,
+    flex: 0.8,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0.00";
+      }
+
+      return Number(value).toFixed(2);
+    },
+  },
+
+  {
+    field: "opening_fg_qty",
+    headerName: "Opening FG",
+    minWidth: 120,
+    flex: 0.8,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0.00";
+      }
+
+      return Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    },
+  },
+
+  {
+    field: "production_qty",
+    headerName: "Production Qty",
+    minWidth: 130,
+    flex: 0.9,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0.00";
+      }
+
+      return Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    },
+  },
+
+  {
+    field: "job_work",
+    headerName: "Job Work",
+    minWidth: 100,
+    flex: 0.7,
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "-";
+      }
+
+      return value;
+    },
+  },
+
+  {
+    field: "manufactured_qty",
+    headerName: "Manufactured Qty",
+    minWidth: 140,
+    flex: 0.9,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0.00";
+      }
+
+      return Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    },
+  },
+
+  {
+    field: "dispatched_qty",
+    headerName: "Dispatched Qty",
+    minWidth: 130,
+    flex: 0.9,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0.00";
+      }
+
+      return Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    },
+  },
+  {
+    field: "total_wastage_qty",
+    headerName: "Wastage Qty",
+    minWidth: 130,
+    flex: 0.9,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "0.00";
+      }
+
+      return Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    },
+  },
+
+  {
+    field: "order_received_by",
+    headerName: "Order Received By",
+    minWidth: 140,
+    flex: 1,
+  },
+
+  {
+    field: "order_amount",
+    headerName: "Order Amount",
+    minWidth: 130,
+    flex: 0.9,
+    type: "number",
+    valueFormatter: (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "₹ 0.00";
+      }
+
+      return `₹ ${Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    },
+  },
+];
+
+
+
+
+
+
+console.table(
+  rows.map((row, index) => ({
+    index,
+    id: row.id,
+    so_no: row.so_no,
+    product_name: row.product_name,
+    keys: `${row.so_no}-${row.product_name}-${row.sales_items_id}`,
+  }))
+);
 
   return (
     <Box
@@ -227,7 +379,7 @@ const SalesOrderTable = ({ rows = [], loading = false }) => {
         rows={rows}
         columns={columns}
         loading={loading}
-        getRowId={(row) => `${row.soNo}-${row.product}`}
+        getRowId={(row) => String(row.sales_items_id)}
         disableRowSelectionOnClick
         density="compact"
         pageSizeOptions={[10, 20, 50, 100]}

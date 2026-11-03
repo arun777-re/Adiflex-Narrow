@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Box,
@@ -16,12 +16,10 @@ import {
 
 import { useDispatch, useSelector } from "react-redux";
 
-import {
-  fetchAllFG,
-  updateFG,
-} from "../redux/slices/fgSlice";
+import { fetchAllFG, updateFG } from "../redux/slices/fgSlice";
 
 import InventoryDataGrid from "../components/InventoryDataGrid";
+import UpdateInventoryDialog from "../components/inventory/UpdateInventoryDialog";
 
 const Inventory = () => {
   const dispatch = useDispatch();
@@ -35,10 +33,11 @@ const Inventory = () => {
   const [selectedItem, setSelectedItem] = useState(null);
 
   const [newFGQty, setNewFGQty] = useState("");
+  const [stockUnit, setStockUnit] = useState("METER");
 
   // Product filter
   const [productFilter, setProductFilter] = useState("");
-
+const stockUnitRef = useRef("METER");
   // SKU filter
   const [skuFilter, setSkuFilter] = useState("");
 
@@ -46,13 +45,9 @@ const Inventory = () => {
   // REDUX
   // ============================================================
 
-  const { inventory, loading } = useSelector(
-    (state) => state?.fginventory
-  );
+  const { inventory, loading } = useSelector((state) => state?.fginventory);
 
-  const { user } = useSelector(
-    (state) => state.auth?.user || {}
-  );
+  const { user } = useSelector((state) => state.auth?.user || {});
 
   // ============================================================
   // FETCH INVENTORY
@@ -66,9 +61,7 @@ const Inventory = () => {
   // INVENTORY DATA
   // ============================================================
 
-  const inventoryData = Array.isArray(inventory?.data)
-    ? inventory.data
-    : [];
+  const inventoryData = Array.isArray(inventory?.data) ? inventory.data : [];
 
   // ============================================================
   // DIVISION FILTER
@@ -79,9 +72,7 @@ const Inventory = () => {
       return [];
     }
 
-    const userDivision = String(
-      user?.division || ""
-    )
+    const userDivision = String(user?.division || "")
       .trim()
       .toLowerCase();
 
@@ -107,14 +98,10 @@ const Inventory = () => {
     return [
       ...new Set(
         divisionData
-          .map((item) =>
-            String(item?.[1] || "").trim()
-          )
-          .filter(Boolean)
+          .map((item) => String(item?.[1] || "").trim())
+          .filter(Boolean),
       ),
-    ].sort((a, b) =>
-      a.localeCompare(b)
-    );
+    ].sort((a, b) => a.localeCompare(b));
   }, [divisionData]);
 
   // ============================================================
@@ -125,14 +112,10 @@ const Inventory = () => {
     return [
       ...new Set(
         divisionData
-          .map((item) =>
-            String(item?.[0] || "").trim()
-          )
-          .filter(Boolean)
+          .map((item) => String(item?.[0] || "").trim())
+          .filter(Boolean),
       ),
-    ].sort((a, b) =>
-      a.localeCompare(b)
-    );
+    ].sort((a, b) => a.localeCompare(b));
   }, [divisionData]);
 
   // ============================================================
@@ -141,13 +124,9 @@ const Inventory = () => {
 
   const filteredData = useMemo(() => {
     return divisionData.filter((item) => {
-      const product = String(
-        item?.[1] || ""
-      ).trim();
+      const product = String(item?.[1] || "").trim();
 
-      const skuCode = String(
-        item?.[0] || ""
-      ).trim();
+      const skuCode = String(item?.[0] || "").trim();
 
       // --------------------------------------------------------
       // PRODUCT FILTER
@@ -155,8 +134,7 @@ const Inventory = () => {
 
       if (
         productFilter &&
-        product.toLowerCase() !==
-          productFilter.toLowerCase()
+        product.toLowerCase() !== productFilter.toLowerCase()
       ) {
         return false;
       }
@@ -165,46 +143,28 @@ const Inventory = () => {
       // SKU FILTER
       // --------------------------------------------------------
 
-      if (
-        skuFilter &&
-        skuCode.toLowerCase() !==
-          skuFilter.toLowerCase()
-      ) {
+      if (skuFilter && skuCode.toLowerCase() !== skuFilter.toLowerCase()) {
         return false;
       }
 
       return true;
     });
-  }, [
-    divisionData,
-    productFilter,
-    skuFilter,
-  ]);
+  }, [divisionData, productFilter, skuFilter]);
 
   // ============================================================
   // SUMMARY
   // ============================================================
 
   const availableFGStock = useMemo(() => {
-    return filteredData.reduce(
-      (sum, item) =>
-        sum + Number(item?.[4] || 0),
-      0
-    );
+    return filteredData.reduce((sum, item) => sum + Number(item?.[4] || 0), 0);
   }, [filteredData]);
 
   const lowStockItemsLength = useMemo(() => {
-    return filteredData.filter(
-      (item) =>
-        Number(item?.[4] || 0) < 100
-    ).length;
+    return filteredData.filter((item) => Number(item?.[4] || 0) < 100).length;
   }, [filteredData]);
 
   const outOfStockItemsLength = useMemo(() => {
-    return filteredData.filter(
-      (item) =>
-        Number(item?.[4] || 0) <= 0
-    ).length;
+    return filteredData.filter((item) => Number(item?.[4] || 0) <= 0).length;
   }, [filteredData]);
 
   // ============================================================
@@ -224,10 +184,9 @@ const Inventory = () => {
     if (!item) return;
 
     setSelectedItem(item);
+    console.log("selected item", item);
 
-    setNewFGQty(
-      item?.[4] ?? ""
-    );
+    setNewFGQty(item?.[4] ?? "");
 
     setEditOpen(true);
   };
@@ -248,64 +207,55 @@ const Inventory = () => {
   // UPDATE STOCK
   // ============================================================
 
-  const handleUpdateStock = async () => {
-    if (!selectedItem) {
-      return;
-    }
+const handleUpdateStock = async () => {
+  if (!selectedItem) return;
 
-    const skucode = selectedItem?.[0];
+  const skucode = selectedItem.sku;
+  const enteredQty = Number(newFGQty);
+  const selectedUnit = stockUnitRef.current;
+  const meterPerRoll = Number(selectedItem.meterPerRoll);
 
-    const qty = Number(newFGQty);
+  if (!skucode || !Number.isFinite(enteredQty) || enteredQty < 0) {
+    console.error("Invalid SKU or quantity");
+    return;
+  }
 
-    // ----------------------------------------------------------
-    // VALIDATION
-    // ----------------------------------------------------------
+  if (
+    selectedUnit === "ROLL" &&
+    (!Number.isFinite(meterPerRoll) || meterPerRoll <= 0)
+  ) {
+    console.error("Invalid meter per roll");
+    return;
+  }
 
-    if (!Number.isFinite(qty) || qty < 0) {
-      return;
-    }
+  const qtyInMeter =
+    selectedUnit === "ROLL"
+      ? enteredQty * meterPerRoll
+      : enteredQty;
 
-    if (!skucode) {
-      console.error("❌ SKU Code missing");
+  try {
+    console.log("FINAL STOCK UPDATE:", {
+      skucode,
+      selectedUnit,
+      enteredQty,
+      qtyInMeter,
+    });
 
-      return;
-    }
+    const result = await dispatch(
+      updateFG({
+        skucode,
+        newFGQty: qtyInMeter,
+      })
+    ).unwrap();
 
-    try {
-      console.log(
-        "📦 Updating FG Stock:",
-        {
-          skucode,
-          qty,
-        }
-      );
+    console.log("Stock updated:", result);
 
-      const result = await dispatch(
-        updateFG({
-          skucode,
-          newFGQty: qty,
-        })
-      ).unwrap();
-
-      console.log(
-        "✅ Stock updated:",
-        result
-      );
-
-      // Close dialog
-      handleCloseEdit();
-
-      // Refresh inventory
-      await dispatch(
-        fetchAllFG()
-      );
-    } catch (error) {
-      console.error(
-        "❌ Stock update failed:",
-        error
-      );
-    }
-  };
+    handleCloseEdit();
+    await dispatch(fetchAllFG());
+  } catch (error) {
+    console.error("Stock update failed:", error);
+  }
+};
 
   // ============================================================
   // RENDER
@@ -322,12 +272,7 @@ const Inventory = () => {
       {/* ======================================================
           HEADING
       ====================================================== */}
-
-      <Typography
-        variant="h5"
-        fontWeight={600}
-        mb={3}
-      >
+      <Typography variant="h5" fontWeight={600} mb={3}>
         Finished Goods Inventory
       </Typography>
 
@@ -345,15 +290,10 @@ const Inventory = () => {
           borderRadius: 2,
         }}
       >
-        <Grid
-          container
-          spacing={2}
-          alignItems="center"
-        >
+        <Grid container spacing={2} alignItems="center">
           {/* ==================================================
               PRODUCT NAME
           ================================================== */}
-
           <Grid
             size={{
               xs: 12,
@@ -363,26 +303,13 @@ const Inventory = () => {
             <Autocomplete
               size="small"
               options={productOptions}
-              value={
-                productFilter || null
-              }
-              onChange={(
-                event,
-                newValue
-              ) => {
-                setProductFilter(
-                  newValue || ""
-                );
+              value={productFilter || null}
+              onChange={(event, newValue) => {
+                setProductFilter(newValue || "");
               }}
-              getOptionLabel={(option) =>
-                String(option || "")
-              }
-              isOptionEqualToValue={(
-                option,
-                value
-              ) =>
-                String(option) ===
-                String(value)
+              getOptionLabel={(option) => String(option || "")}
+              isOptionEqualToValue={(option, value) =>
+                String(option) === String(value)
               }
               renderInput={(params) => (
                 <TextField
@@ -408,26 +335,13 @@ const Inventory = () => {
             <Autocomplete
               size="small"
               options={skuOptions}
-              value={
-                skuFilter || null
-              }
-              onChange={(
-                event,
-                newValue
-              ) => {
-                setSkuFilter(
-                  newValue || ""
-                );
+              value={skuFilter || null}
+              onChange={(event, newValue) => {
+                setSkuFilter(newValue || "");
               }}
-              getOptionLabel={(option) =>
-                String(option || "")
-              }
-              isOptionEqualToValue={(
-                option,
-                value
-              ) =>
-                String(option) ===
-                String(value)
+              getOptionLabel={(option) => String(option || "")}
+              isOptionEqualToValue={(option, value) =>
+                String(option) === String(value)
               }
               renderInput={(params) => (
                 <TextField
@@ -453,9 +367,7 @@ const Inventory = () => {
             <Button
               variant="outlined"
               fullWidth
-              onClick={
-                handleClearFilters
-              }
+              onClick={handleClearFilters}
               sx={{
                 height: 40,
               }}
@@ -470,11 +382,7 @@ const Inventory = () => {
           SUMMARY CARDS
       ====================================================== */}
 
-      <Grid
-        container
-        spacing={2}
-        mb={3}
-      >
+      <Grid container spacing={2} mb={3}>
         {/* TOTAL SKU */}
 
         <Grid
@@ -489,13 +397,9 @@ const Inventory = () => {
               p: 2,
             }}
           >
-            <Typography variant="body2">
-              Total SKU
-            </Typography>
+            <Typography variant="body2">Total SKU</Typography>
 
-            <Typography variant="h5">
-              {filteredData.length}
-            </Typography>
+            <Typography variant="h5">{filteredData.length}</Typography>
           </Paper>
         </Grid>
 
@@ -513,13 +417,9 @@ const Inventory = () => {
               p: 2,
             }}
           >
-            <Typography variant="body2">
-              Available Qty
-            </Typography>
+            <Typography variant="body2">Available Qty</Typography>
 
-            <Typography variant="h5">
-              {availableFGStock}
-            </Typography>
+            <Typography variant="h5">{availableFGStock}</Typography>
           </Paper>
         </Grid>
 
@@ -537,13 +437,9 @@ const Inventory = () => {
               p: 2,
             }}
           >
-            <Typography variant="body2">
-              Low Stock
-            </Typography>
+            <Typography variant="body2">Low Stock</Typography>
 
-            <Typography variant="h5">
-              {lowStockItemsLength}
-            </Typography>
+            <Typography variant="h5">{lowStockItemsLength}</Typography>
           </Paper>
         </Grid>
 
@@ -561,13 +457,9 @@ const Inventory = () => {
               p: 2,
             }}
           >
-            <Typography variant="body2">
-              Out Of Stock
-            </Typography>
+            <Typography variant="body2">Out Of Stock</Typography>
 
-            <Typography variant="h5">
-              {outOfStockItemsLength}
-            </Typography>
+            <Typography variant="h5">{outOfStockItemsLength}</Typography>
           </Paper>
         </Grid>
       </Grid>
@@ -576,7 +468,7 @@ const Inventory = () => {
           DATA GRID
       ====================================================== */}
 
-      <InventoryDataGrid
+      <InventoryDataGrid 
         data={filteredData}
         loading={loading}
         onEdit={handleEditStock}
@@ -585,87 +477,20 @@ const Inventory = () => {
       {/* ======================================================
           EDIT STOCK DIALOG
       ====================================================== */}
-
-      <Dialog
-        open={editOpen}
-        onClose={handleCloseEdit}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle>
-          Edit FG Stock
-        </DialogTitle>
-
-        <DialogContent>
-          {/* SKU */}
-
-          <TextField
-            fullWidth
-            label="SKU Code"
-            value={
-              selectedItem?.[0] || ""
-            }
-            disabled
-            margin="normal"
-          />
-
-          {/* CURRENT STOCK */}
-
-          <TextField
-            fullWidth
-            label="Current FG Qty"
-            value={
-              selectedItem?.[4] ?? ""
-            }
-            disabled
-            margin="normal"
-          />
-
-          {/* NEW STOCK */}
-
-          <TextField
-            fullWidth
-            label="New FG Qty"
-            type="number"
-            value={newFGQty}
-            onChange={(e) =>
-              setNewFGQty(
-                e.target.value
-              )
-            }
-            margin="normal"
-            inputProps={{
-              min: 0,
-            }}
-            autoFocus
-          />
-        </DialogContent>
-
-        <DialogActions>
-          <Button
-            onClick={
-              handleCloseEdit
-            }
-          >
-            Cancel
-          </Button>
-
-          <Button
-            variant="contained"
-            onClick={
-              handleUpdateStock
-            }
-            disabled={
-              newFGQty === ""
-            }
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <UpdateInventoryDialog
+        editOpen={editOpen}
+        handleCloseEdit={handleCloseEdit}
+        handleUpdateStock={handleUpdateStock}
+        selectedItem={selectedItem}
+        newFGQty={newFGQty}
+        setNewFGQty={setNewFGQty}
+        loading={loading}
+        stockUnit={stockUnit}
+        setStockUnit={setStockUnit}
+        stockUnitRef={stockUnitRef}
+      />
     </Box>
   );
 };
 
 export default Inventory;
-

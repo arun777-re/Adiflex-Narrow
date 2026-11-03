@@ -1,5 +1,7 @@
+
 import { useMemo, useState, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
+
 import {
   addCommitedDateToOrder,
   getAllProductions,
@@ -18,77 +20,91 @@ import {
 
 import SearchIcon from "@mui/icons-material/Search";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
+import PrintIcon from "@mui/icons-material/Print";
 
 import { DataGrid } from "@mui/x-data-grid";
+import toast from "react-hot-toast";
 
 import UpdateProductionDialog from "./UpdateProductionDialog";
+
 import {
   PROCESS_ORDER,
   getCurrentProcess,
+  SUPERVISOR_PROCESSES,
 } from "../../constant/productionProcess";
-import PrintIcon from "@mui/icons-material/Print";
+
 import SalesOrderPrint from "../salesOrder/salesorder-print/SalesOrderPrint";
 import { productionPrintColumns } from "../../constant/printColumns/productionPrintColumn";
-import toast from "react-hot-toast";
 
-// =====================================================
-// COMPONENT
-// =====================================================
+const PRODUCTION_PROCESSES = [
+  "JOB_WORK",
+  "WARPING",
+  "FILLING",
+  "MACHINE",
+];
+
+const normalize = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_");
 
 const ProductionTable = ({ rows = [], loading = false }) => {
   const dispatch = useDispatch();
+
   const user = useSelector((state) => state.auth?.user?.user);
 
   const [open, setOpen] = useState(false);
-
   const [selectedOrder, setSelectedOrder] = useState(null);
-
   const [selectedAction, setSelectedAction] = useState(null);
 
-  // =====================================================
-  // FILTER STATES
-  // =====================================================
-
   const [search, setSearch] = useState("");
-
   const [divisionFilter, setDivisionFilter] = useState("all");
-
   const [customerFilter, setCustomerFilter] = useState("all");
-
   const [productFilter, setProductFilter] = useState("all");
-
   const [processFilter, setProcessFilter] = useState("all");
-
   const [statusFilter, setStatusFilter] = useState("all");
-
-  // =====================================================
-  // QUICK FILTER
-  // =====================================================
-
   const [quickFilter, setQuickFilter] = useState("all");
 
-  // =====================================================
-  // REMOVE COMPLETED ROWS
-  // =====================================================
+  const userRole = String(
+    user?.role || user?.roleName || user?.role_name || ""
+  )
+    .trim()
+    .toLowerCase();
 
-  const activeRows = useMemo(() => {
-    if (!Array.isArray(rows)) {
-      return [];
+  const allowedProcesses = useMemo(() => {
+    if (userRole === "admin") {
+      return PROCESS_ORDER.map((process) => normalize(process.key))
+        .filter((process) => PRODUCTION_PROCESSES.includes(process));
     }
 
+    return (SUPERVISOR_PROCESSES?.[userRole] || [])
+      .map(normalize)
+      .filter((process) => PRODUCTION_PROCESSES.includes(process));
+  }, [userRole]);
+
+  const allowedProcessesSet = useMemo(
+    () => new Set(allowedProcesses),
+    [allowedProcesses]
+  );
+
+  // Only show active cycles whose current process is up to Machine.
+  const activeRows = useMemo(() => {
+    if (!Array.isArray(rows)) return [];
+
     return rows.filter((row) => {
-      return (
-        row.status !== "Completed" &&
-        row.status !== "Cycle Completed" &&
-        row.overAllStatus !== "Completed" &&
-        row.overAllStatus !== "Cycle Completed"
-      );
+      const masterStatus = normalize(row.production_status);
+
+      if (!["PENDING", "IN_PROGRESS"].includes(masterStatus)) {
+        return false;
+      }
+
+      const currentProcess = getCurrentProcess(row);
+      const currentProcessKey = normalize(currentProcess?.key);
+
+      return PRODUCTION_PROCESSES.includes(currentProcessKey);
     });
   }, [rows]);
-
-  // =====================================================
-  // DROPDOWN OPTIONS
-  // =====================================================
 
   const filterOptions = useMemo(() => {
     const divisions = [
@@ -100,19 +116,19 @@ const ProductionTable = ({ rows = [], loading = false }) => {
     ].sort();
 
     const products = [
-      ...new Set(activeRows.map((row) => row.product).filter(Boolean)),
+      ...new Set(activeRows.map((row) => row.product_name).filter(Boolean)),
     ].sort();
 
-    return {
-      divisions,
-      customers,
-      products,
-    };
+    return { divisions, customers, products };
   }, [activeRows]);
 
-  // =====================================================
-  // FILTERED ROWS
-  // =====================================================
+  const processOptions = useMemo(
+    () =>
+      PROCESS_ORDER.filter((process) =>
+        allowedProcessesSet.has(normalize(process.key))
+      ),
+    [allowedProcessesSet]
+  );
 
   const filteredRows = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
@@ -120,16 +136,12 @@ const ProductionTable = ({ rows = [], loading = false }) => {
     return activeRows.filter((row) => {
       const currentProcess = getCurrentProcess(row);
 
-      // =================================================
-      // SEARCH
-      // =================================================
-
       const searchableText = [
-        row.soNo,
-        row.cycleID,
+        row.so_no,
+        row.cycle_id,
         row.customer,
-        row.product,
-        row.skuCode,
+        row.product_name,
+        row.sku_code,
         row.division,
       ]
         .filter(Boolean)
@@ -139,46 +151,27 @@ const ProductionTable = ({ rows = [], loading = false }) => {
       const matchesSearch =
         !searchValue || searchableText.includes(searchValue);
 
-      // =================================================
-      // DIVISION
-      // =================================================
-
       const matchesDivision =
         divisionFilter === "all" ||
         String(row.division || "") === divisionFilter;
-
-      // =================================================
-      // CUSTOMER
-      // =================================================
 
       const matchesCustomer =
         customerFilter === "all" ||
         String(row.customer || "") === customerFilter;
 
-      // =================================================
-      // PRODUCT
-      // =================================================
-
       const matchesProduct =
-        productFilter === "all" || String(row.product || "") === productFilter;
+        productFilter === "all" ||
+        String(row.product_name || "") === productFilter;
 
-      // =================================================
-      // PROCESS
-      // =================================================
+      const currentProcessKey = normalize(currentProcess?.key);
 
       const matchesProcess =
-        processFilter === "all" || currentProcess.key === processFilter;
-
-      // =================================================
-      // STATUS
-      // =================================================
+        processFilter === "all" ||
+        currentProcessKey === normalize(processFilter);
 
       const matchesStatus =
-        statusFilter === "all" || currentProcess.status === statusFilter;
-
-      // =================================================
-      // QUICK FILTER
-      // =================================================
+        statusFilter === "all" ||
+        currentProcess.status === statusFilter;
 
       let matchesQuickFilter = true;
 
@@ -189,10 +182,6 @@ const ProductionTable = ({ rows = [], loading = false }) => {
       if (quickFilter === "progress") {
         matchesQuickFilter = currentProcess.status === "In Progress";
       }
-
-      // =================================================
-      // FINAL
-      // =================================================
 
       return (
         matchesSearch &&
@@ -215,34 +204,19 @@ const ProductionTable = ({ rows = [], loading = false }) => {
     quickFilter,
   ]);
 
-  // =====================================================
-  // RESET FILTERS
-  // =====================================================
-
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setSearch("");
-
     setDivisionFilter("all");
-
     setCustomerFilter("all");
-
     setProductFilter("all");
-
     setProcessFilter("all");
-
     setStatusFilter("all");
-
     setQuickFilter("all");
-  };
+  }, []);
 
-  // =====================================================
-  // UPDATE COMMITTED DATE
-  // =====================================================
-
+  // Committed Date functionality remains enabled.
   const handleCommittedDateChange = useCallback(
     async (row, committedDate) => {
-      console.log("📅 DATE SELECTED:", committedDate);
-
       if (!committedDate) {
         toast.error("Please select committed date");
         return;
@@ -251,138 +225,99 @@ const ProductionTable = ({ rows = [], loading = false }) => {
       try {
         const result = await dispatch(
           addCommitedDateToOrder({
-            cycleID: row.cycleID,
+            cycleID: row.cycle_id,
             division: row.division,
-            committedDate: committedDate,
+            committedDate,
             updatedBy: user?.userName || user?.name || "",
-          }),
+          })
         ).unwrap();
 
-        toast.success(result?.message || "Committed date updated successfully");
+        toast.success(
+          result?.message || "Committed date updated successfully"
+        );
+
         await dispatch(getAllProductions(row.division)).unwrap();
       } catch (error) {
-        console.error("❌ Committed date update error:", error);
+        console.error("Committed date update error:", error);
 
-        let errorMessage = "Failed to update committed date";
+        const errorMessage =
+          typeof error === "string"
+            ? error
+            : error?.message ||
+              error?.error ||
+              "Failed to update committed date";
 
-        if (typeof error === "string") {
-          errorMessage = error;
-        } else if (error?.message) {
-          errorMessage =
-            typeof error.message === "string"
-              ? error.message
-              : JSON.stringify(error.message);
-        } else if (error?.error) {
-          errorMessage =
-            typeof error.error === "string"
-              ? error.error
-              : JSON.stringify(error.error);
-        }
-
-        toast.error(errorMessage);
+        toast.error(
+          typeof errorMessage === "string"
+            ? errorMessage
+            : JSON.stringify(errorMessage)
+        );
       }
     },
-    [dispatch, user],
+    [dispatch, user]
   );
-  // =====================================================
-  // OPEN DIALOG
-  // =====================================================
 
-  const handleProcessAction = (row, action, process) => {
+  const handleProcessAction = useCallback((row, action, process) => {
     setSelectedOrder({
       ...row,
       currentProcess: process,
     });
 
     setSelectedAction(action);
-
     setOpen(true);
-  };
+  }, []);
 
-  // =====================================================
-  // CLOSE DIALOG
-  // =====================================================
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setOpen(false);
-
     setSelectedOrder(null);
-
     setSelectedAction(null);
-  };
-
-  // =====================================================
-  // COLUMNS
-  // =====================================================
+  }, []);
 
   const columns = useMemo(
     () => [
-      // =================================================
-      // SO NO
-      // =================================================
-
       {
-        field: "soNo",
+        field: "so_no",
         headerName: "SO No",
         width: 130,
       },
       {
-        field: "receivedAt",
+        field: "created_at",
         headerName: "Received At",
-        width: 130,
+        width: 170,
+        valueFormatter: (value) =>
+          value ? new Date(value).toLocaleDateString("en-IN") : "-",
       },
-
-      // =================================================
-      // CYCLE
-      // =================================================
-
       {
-        field: "cycleID",
-
+        field: "cycle_id",
         headerName: "Cycle ID",
-
-        width: 130,
+        width: 220,
       },
-
-      // =================================================
-      // CUSTOMER
-      // =================================================
-
       {
         field: "customer",
-
         headerName: "Customer",
-
-        width: 180,
+        width: 150,
       },
-
-      // =================================================
-      // PRODUCT
-      // =================================================
-
       {
-        field: "product",
-
+        field: "product_name",
         headerName: "Product",
-
-        flex: 1.5,
-
-        minWidth: 220,
+        flex: 1,
+        minWidth: 200,
       },
-
-      // =================================================
-      // DIVISION
-      // =================================================
       {
-        field: "committedDate",
+        field: "division",
+        headerName: "Division",
+        width: 110,
+        valueFormatter: (value) =>
+          value ? String(value).toUpperCase() : "-",
+      },
+      {
+        field: "commited_date",
         headerName: "Committed Date",
-        width: 170,
+        width: 160,
         sortable: false,
-
         renderCell: (params) => {
-          const value = params.row.committedDate || "";
+          const value = params.row.commited_date || "";
 
-          // Date already available
           if (value) {
             return (
               <Typography
@@ -390,22 +325,22 @@ const ProductionTable = ({ rows = [], loading = false }) => {
                 sx={{
                   fontSize: "13px",
                   fontWeight: 500,
-                  cursor: "pointer",
                 }}
-                onClick={() => handleCommittedDateChange(params.row, value)}
               >
                 {value}
               </Typography>
             );
           }
 
-          // Date not available → show calendar
           return (
             <input
               type="date"
               value=""
-              onChange={(e) =>
-                handleCommittedDateChange(params.row, e.target.value)
+              onChange={(event) =>
+                handleCommittedDateChange(
+                  params.row,
+                  event.target.value
+                )
               }
               style={{
                 width: "145px",
@@ -420,51 +355,48 @@ const ProductionTable = ({ rows = [], loading = false }) => {
           );
         },
       },
-
-      // =================================================
-      // TARGET
-      // =================================================
-
       {
-        field: "productionTargetQty",
-        headerName: "Target Qty",
+        field: "production_target_qty",
+        headerName: "Target Qty (m)",
         type: "number",
-        width: 130,
+        width: 140,
         align: "center",
         headerAlign: "center",
+        valueFormatter: (value) =>
+          value == null ? 0 : Number(value),
       },
-
-      // =================================================
-      // PRODUCTION QTY
-      // =================================================
-
       {
-        field: "productionQty",
-
-        headerName: "Production Qty",
-
+        field: "total_production_qty",
+        headerName: "Total Produced Qty (m)",
         type: "number",
-
-        width: 150,
-
+        width: 160,
         align: "center",
-
         headerAlign: "center",
+        valueFormatter: (value) =>
+          value == null ? 0 : Number(value),
       },
+      {
+        field: "production_qty",
+        headerName: "Input Qty (m)",
+        width: 140,
+        align: "center",
+        headerAlign: "center",
+        sortable: false,
+        valueGetter: (_value, row) => {
+          const firstStage = row.stages?.find((stage) =>
+            ["JOB_WORK", "WARPING"].includes(
+              normalize(stage.stage_code)
+            )
+          );
 
-      // =================================================
-      // CURRENT PROCESS
-      // =================================================
-
+          return Number(firstStage?.input_qty || 0);
+        },
+      },
       {
         field: "currentProcess",
-
         headerName: "Current Process",
-
-        width: 170,
-
+        width: 160,
         sortable: false,
-
         renderCell: (params) => {
           const process = getCurrentProcess(params.row);
 
@@ -483,62 +415,60 @@ const ProductionTable = ({ rows = [], loading = false }) => {
           );
         },
       },
-
-      // =================================================
-      // STATUS
-      // =================================================
-
       {
         field: "currentStatus",
-
         headerName: "Status",
-
         width: 140,
-
         sortable: false,
-
         renderCell: (params) => {
           const process = getCurrentProcess(params.row);
 
-          let color = "warning";
-
-          if (process.status === "In Progress") {
-            color = "info";
-          }
-
-          if (process.status === "Completed") {
-            color = "success";
-          }
-
-          return <Chip label={process.status} color={color} size="small" />;
+          return (
+            <Chip
+              label={process.status}
+              color={
+                process.status === "Completed"
+                  ? "success"
+                  : process.status === "In Progress"
+                    ? "info"
+                    : "warning"
+              }
+              size="small"
+            />
+          );
         },
       },
-
-      // =================================================
-      // ACTION
-      // =================================================
-
       {
         field: "action",
-
         headerName: "Action",
-
         width: 220,
-
         sortable: false,
-
         renderCell: (params) => {
           const process = getCurrentProcess(params.row);
+          const processKey = normalize(process?.key);
 
-          // ALL COMPLETED
-
-          if (process.status === "Completed") {
+          if (
+            userRole !== "admin" &&
+            !allowedProcessesSet.has(processKey)
+          ) {
             return (
-              <Chip label="Production Completed" color="success" size="small" />
+              <Chip
+                label="Other Department"
+                variant="outlined"
+                size="small"
+              />
             );
           }
 
-          // PENDING
+          if (process.status === "Completed") {
+            return (
+              <Chip
+                label="Production Completed"
+                color="success"
+                size="small"
+              />
+            );
+          }
 
           if (process.status === "Pending") {
             return (
@@ -547,7 +477,11 @@ const ProductionTable = ({ rows = [], loading = false }) => {
                 color="primary"
                 size="small"
                 onClick={() =>
-                  handleProcessAction(params.row, "start", process.key)
+                  handleProcessAction(
+                    params.row,
+                    "start",
+                    process.key
+                  )
                 }
               >
                 Start {process.label}
@@ -555,16 +489,22 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             );
           }
 
-          // IN PROGRESS
-
-          if (process.status === "In Progress") {
+          if (
+            ["In Progress", "Partially Released"].includes(
+              process.status
+            )
+          ) {
             return (
               <Button
                 variant="contained"
                 color="success"
                 size="small"
                 onClick={() =>
-                  handleProcessAction(params.row, "complete", process.key)
+                  handleProcessAction(
+                    params.row,
+                    "complete",
+                    process.key
+                  )
                 }
               >
                 Complete {process.label}
@@ -576,20 +516,17 @@ const ProductionTable = ({ rows = [], loading = false }) => {
         },
       },
     ],
-    [handleCommittedDateChange],
+    [
+      handleCommittedDateChange,
+      handleProcessAction,
+      userRole,
+      allowedProcessesSet,
+    ]
   );
-
-  // =====================================================
-  // UI
-  // =====================================================
 
   return (
     <>
       <Box sx={{ width: "100%" }}>
-        {/* =================================================
-            FILTER PANEL
-        ================================================= */}
-
         <Box
           sx={{
             mb: 2,
@@ -599,10 +536,6 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             border: "1px solid #e0e0e0",
           }}
         >
-          {/* =============================================
-              TITLE
-          ============================================= */}
-
           <Stack
             direction="row"
             justifyContent="space-between"
@@ -615,7 +548,7 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               </Typography>
 
               <Typography variant="body2" color="text.secondary">
-                Find production cycles that need attention
+                Production cycles from Job Work through Machine
               </Typography>
             </Box>
 
@@ -637,16 +570,12 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             </Stack>
           </Stack>
 
-          {/* =============================================
-              SEARCH
-          ============================================= */}
-
           <TextField
             fullWidth
             size="small"
             placeholder="Search SO No, Customer, Product, Cycle ID..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             sx={{ mb: 2 }}
             InputProps={{
               startAdornment: (
@@ -656,10 +585,6 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               ),
             }}
           />
-
-          {/* =============================================
-              DROPDOWN FILTERS
-          ============================================= */}
 
           <Box
             sx={{
@@ -672,17 +597,16 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               gap: 1.5,
             }}
           >
-            {/* DIVISION */}
-
             <TextField
               select
               size="small"
               label="Division"
               value={divisionFilter}
-              onChange={(e) => setDivisionFilter(e.target.value)}
+              onChange={(event) =>
+                setDivisionFilter(event.target.value)
+              }
             >
               <MenuItem value="all">All Divisions</MenuItem>
-
               {filterOptions.divisions.map((division) => (
                 <MenuItem key={division} value={division}>
                   {division}
@@ -690,17 +614,16 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               ))}
             </TextField>
 
-            {/* CUSTOMER */}
-
             <TextField
               select
               size="small"
               label="Customer"
               value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value)}
+              onChange={(event) =>
+                setCustomerFilter(event.target.value)
+              }
             >
               <MenuItem value="all">All Customers</MenuItem>
-
               {filterOptions.customers.map((customer) => (
                 <MenuItem key={customer} value={customer}>
                   {customer}
@@ -708,17 +631,16 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               ))}
             </TextField>
 
-            {/* PRODUCT */}
-
             <TextField
               select
               size="small"
               label="Product"
               value={productFilter}
-              onChange={(e) => setProductFilter(e.target.value)}
+              onChange={(event) =>
+                setProductFilter(event.target.value)
+              }
             >
               <MenuItem value="all">All Products</MenuItem>
-
               {filterOptions.products.map((product) => (
                 <MenuItem key={product} value={product}>
                   {product}
@@ -726,46 +648,41 @@ const ProductionTable = ({ rows = [], loading = false }) => {
               ))}
             </TextField>
 
-            {/* PROCESS */}
-
             <TextField
               select
               size="small"
               label="Process"
               value={processFilter}
-              onChange={(e) => setProcessFilter(e.target.value)}
+              onChange={(event) =>
+                setProcessFilter(event.target.value)
+              }
             >
-              <MenuItem value="all">All Processes</MenuItem>
-
-              {PROCESS_ORDER.map((process) => (
+              <MenuItem value="all">All My Processes</MenuItem>
+              {processOptions.map((process) => (
                 <MenuItem key={process.key} value={process.key}>
                   {process.label}
                 </MenuItem>
               ))}
-
-              <MenuItem value="jobWork">Job Work</MenuItem>
             </TextField>
-
-            {/* STATUS */}
 
             <TextField
               select
               size="small"
               label="Status"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(event) =>
+                setStatusFilter(event.target.value)
+              }
             >
               <MenuItem value="all">All Status</MenuItem>
-
               <MenuItem value="Pending">Pending</MenuItem>
-
               <MenuItem value="In Progress">In Progress</MenuItem>
+              <MenuItem value="Partially Released">
+                Partially Released
+              </MenuItem>
+              <MenuItem value="Completed">Completed</MenuItem>
             </TextField>
           </Box>
-
-          {/* =============================================
-              QUICK FILTERS
-          ============================================= */}
 
           <Stack
             direction="row"
@@ -777,17 +694,16 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             <Typography
               variant="body2"
               fontWeight={600}
-              sx={{
-                alignSelf: "center",
-                mr: 0.5,
-              }}
+              sx={{ alignSelf: "center", mr: 0.5 }}
             >
               Quick:
             </Typography>
 
             <Button
               size="small"
-              variant={quickFilter === "all" ? "contained" : "outlined"}
+              variant={
+                quickFilter === "all" ? "contained" : "outlined"
+              }
               onClick={() => setQuickFilter("all")}
             >
               All
@@ -795,7 +711,9 @@ const ProductionTable = ({ rows = [], loading = false }) => {
 
             <Button
               size="small"
-              variant={quickFilter === "ready" ? "contained" : "outlined"}
+              variant={
+                quickFilter === "ready" ? "contained" : "outlined"
+              }
               color="warning"
               onClick={() => setQuickFilter("ready")}
             >
@@ -804,14 +722,14 @@ const ProductionTable = ({ rows = [], loading = false }) => {
 
             <Button
               size="small"
-              variant={quickFilter === "progress" ? "contained" : "outlined"}
+              variant={
+                quickFilter === "progress" ? "contained" : "outlined"
+              }
               color="info"
               onClick={() => setQuickFilter("progress")}
             >
               In Progress
             </Button>
-
-            {/* RESET */}
 
             <Button
               size="small"
@@ -826,10 +744,6 @@ const ProductionTable = ({ rows = [], loading = false }) => {
           </Stack>
         </Box>
 
-        {/* =================================================
-            DATA GRID
-        ================================================= */}
-
         <Box
           sx={{
             width: "100%",
@@ -841,29 +755,26 @@ const ProductionTable = ({ rows = [], loading = false }) => {
             rows={filteredRows}
             columns={columns}
             loading={loading}
-            getRowId={(row) => row.id || row.cycleID}
+            getRowId={(row) =>
+              row.production_id || row.cycle_id
+            }
             disableRowSelectionOnClick
             density="compact"
             pageSizeOptions={[10, 20, 50]}
             initialState={{
               pagination: {
-                paginationModel: {
-                  pageSize: 10,
-                },
+                paginationModel: { pageSize: 10 },
               },
             }}
             sx={{
               borderRadius: 2,
-
               "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: "#f5f5f5",
                 fontWeight: 700,
               },
-
               "& .MuiDataGrid-columnHeaderTitle": {
                 fontWeight: 700,
               },
-
               "& .MuiDataGrid-row:hover": {
                 backgroundColor: "#f1f8ff",
               },
@@ -871,9 +782,6 @@ const ProductionTable = ({ rows = [], loading = false }) => {
           />
         </Box>
       </Box>
-      {/* =================================================
-          PRINT ONLY
-      ================================================= */}
 
       <Box className="production-print-only">
         <SalesOrderPrint
@@ -888,9 +796,6 @@ const ProductionTable = ({ rows = [], loading = false }) => {
           ]}
         />
       </Box>
-      {/* =================================================
-          PROCESS DIALOG
-      ================================================= */}
 
       <UpdateProductionDialog
         open={open}

@@ -13,8 +13,8 @@ export const fetchSalesOrders = createAsyncThunk(
   "salesOrders/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const data = await getSalesOrders();
-      return data.orders;
+      const res = await getSalesOrders();
+      return res;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || error.message

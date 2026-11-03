@@ -79,6 +79,12 @@ export const menuConfig = {
       path: "/admin/daily-tasks",
       icon: <HistoryRoundedIcon />,
     },
+    {
+      id: 9 ,
+      title: "Create Users",
+      path: "/admin/create-view/users",
+      icon: <HistoryRoundedIcon />,
+    },
   ],
 
   // ==========================================
@@ -115,10 +121,76 @@ export const menuConfig = {
     },
     {
       id: 5,
+      title: "Completed Pendings Orders",
+      path: "/pending-completed-orders",
+      icon: <AssignmentRoundedIcon />,
+    },
+    {
+      id: 6,
       title: "Job Work Orders",
       path: "/jobwork-orders",
       icon: <AssignmentRoundedIcon />,
     },
+  ],
+  [ROLES.QUALITYSUPERVISOR]: [
+    {
+      id: 1,
+      title: "Dashboard",
+      path: "/dashboard",
+      icon: <DashboardRoundedIcon />,
+    },
+
+    {
+      id: 2,
+      title: "Production",
+      path: "/quality-production",
+      icon: <PrecisionManufacturingRoundedIcon />,
+    },
+
+    {
+      id: 3,
+      title: "FG Inventory",
+      path: "/inventory",
+      icon: <Inventory2RoundedIcon />,
+    },
+
+    {
+      id: 4,
+      title: "All Products",
+      path: "/view-product",
+      icon: <AssignmentRoundedIcon />,
+    },
+   
+  ],
+  [ROLES.PACKINGSUPERVISOR]: [
+    {
+      id: 1,
+      title: "Dashboard",
+      path: "/dashboard",
+      icon: <DashboardRoundedIcon />,
+    },
+
+    {
+      id: 2,
+      title: "Production",
+      path: "/packing-production",
+      icon: <PrecisionManufacturingRoundedIcon />,
+    },
+
+    {
+      id: 3,
+      title: "FG Inventory",
+      path: "/inventory",
+      icon: <Inventory2RoundedIcon />,
+    },
+
+    {
+      id: 4,
+      title: "All Products",
+      path: "/view-product",
+      icon: <AssignmentRoundedIcon />,
+    },
+   
   ],
 
   // ==========================================
@@ -212,6 +284,12 @@ export const menuConfig = {
       id: 7,
       title: "Billing Done",
       path: "/billing-done",
+      icon: <TaskAltRoundedIcon />,
+    },
+    {
+      id: 8,
+      title: "Holiday",
+      path: "/company-holidays",
       icon: <TaskAltRoundedIcon />,
     },
   ],

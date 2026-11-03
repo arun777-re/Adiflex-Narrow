@@ -1,7 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
 import api from "../../services/api";
-import { columnGroupsStateInitializer } from "@mui/x-data-grid/internals";
 
 const API_URL = `${import.meta.env.VITE_API_URL}/daily-tasks`;
 
@@ -13,7 +11,7 @@ export const fetchDailyTasks = createAsyncThunk(
   "dailyTask/fetchDailyTasks",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/get`);
+      const response = await api.get(`${API_URL}/get`);
 
       return response.data;
     } catch (error) {
@@ -34,7 +32,7 @@ export const createDailyTask = createAsyncThunk(
   "dailyTask/createDailyTask",
   async (taskData, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/create`, taskData);
+      const response = await api.post(`${API_URL}/create`, taskData);
 
       return response.data;
     } catch (error) {
@@ -55,7 +53,7 @@ export const updateDailyTask = createAsyncThunk(
   "dailyTask/updateDailyTask",
   async ({ taskId, updates }, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(
+      const response = await api.patch(
         `${API_URL}/update/${taskId}`,
         updates,
       );
@@ -166,23 +164,33 @@ export const getDelegationTasksofEmployee = createAsyncThunk(
   },
 );
 
+
 export const completeDelegationTask = createAsyncThunk(
   "/complete-delegation",
-  async ({ taskID, userID, userName }, { rejectWithValue }) => {
+  async ({ taskId }, { rejectWithValue }) => {
     try {
       const response = await api.patch(
-        `/delegation-tasks/complete/${taskID}?userID=${userID}&userName=${userName}`,
+        `/delegation-tasks/complete/${taskId}`,
+        {
+          taskId,
+        }
       );
+
       return response.data;
     } catch (error) {
-      console.error("Failed to complete delegation tasks error", error);
+      console.error(
+        "Failed to complete delegation task:",
+        error
+      );
+
       return rejectWithValue(
         error.response?.data?.message ||
-          `Failed to complete delegation tasks`,
+          "Failed to complete delegation task"
       );
     }
-  },
+  }
 );
+
 export const notCompleteDelegationTask = createAsyncThunk(
   "/not-complete-delegation",
   async ({ taskID, userID, userName }, { rejectWithValue }) => {
