@@ -68,105 +68,104 @@ const stockUnitRef = useRef("METER");
   // ============================================================
 
   const divisionData = useMemo(() => {
-    if (!Array.isArray(inventoryData)) {
-      return [];
-    }
+  const userDivision = String(user?.division || "")
+    .trim()
+    .toLowerCase();
 
-    const userDivision = String(user?.division || "")
+  if (!userDivision || userDivision === "all") {
+    return inventoryData;
+  }
+
+  return inventoryData.filter((item) => {
+    const itemDivision = String(item?.division || "")
       .trim()
       .toLowerCase();
 
-    // Admin / All division
-    if (!userDivision || userDivision === "all") {
-      return inventoryData;
-    }
-
-    return inventoryData.filter((item) => {
-      const itemDivision = String(item?.[2] || "")
-        .trim()
-        .toLowerCase();
-
-      return itemDivision === userDivision;
-    });
-  }, [inventoryData, user?.division]);
+    return itemDivision === userDivision;
+  });
+}, [inventoryData, user?.division]);
 
   // ============================================================
   // PRODUCT OPTIONS
   // ============================================================
-
-  const productOptions = useMemo(() => {
-    return [
-      ...new Set(
-        divisionData
-          .map((item) => String(item?.[1] || "").trim())
-          .filter(Boolean),
-      ),
-    ].sort((a, b) => a.localeCompare(b));
-  }, [divisionData]);
+const productOptions = useMemo(() => {
+  return [
+    ...new Set(
+      divisionData
+        .map((item) => String(item?.productName || "").trim())
+        .filter(Boolean)
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+}, [divisionData]);
 
   // ============================================================
   // SKU OPTIONS
   // ============================================================
 
   const skuOptions = useMemo(() => {
-    return [
-      ...new Set(
-        divisionData
-          .map((item) => String(item?.[0] || "").trim())
-          .filter(Boolean),
-      ),
-    ].sort((a, b) => a.localeCompare(b));
-  }, [divisionData]);
+  return [
+    ...new Set(
+      divisionData
+        .map((item) => String(item?.sku || "").trim())
+        .filter(Boolean)
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+}, [divisionData]);
 
   // ============================================================
   // FILTERED DATA
   // ============================================================
 
-  const filteredData = useMemo(() => {
-    return divisionData.filter((item) => {
-      const product = String(item?.[1] || "").trim();
+ const filteredData = useMemo(() => {
+  return divisionData.filter((item) => {
+    const product = String(item?.productName || "").trim();
+    const skuCode = String(item?.sku || "").trim();
 
-      const skuCode = String(item?.[0] || "").trim();
+    if (
+      productFilter &&
+      product.toLowerCase() !== productFilter.toLowerCase()
+    ) {
+      return false;
+    }
 
-      // --------------------------------------------------------
-      // PRODUCT FILTER
-      // --------------------------------------------------------
+    if (
+      skuFilter &&
+      skuCode.toLowerCase() !== skuFilter.toLowerCase()
+    ) {
+      return false;
+    }
 
-      if (
-        productFilter &&
-        product.toLowerCase() !== productFilter.toLowerCase()
-      ) {
-        return false;
-      }
-
-      // --------------------------------------------------------
-      // SKU FILTER
-      // --------------------------------------------------------
-
-      if (skuFilter && skuCode.toLowerCase() !== skuFilter.toLowerCase()) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [divisionData, productFilter, skuFilter]);
+    return true;
+  });
+}, [divisionData, productFilter, skuFilter]);
 
   // ============================================================
   // SUMMARY
   // ============================================================
 
-  const availableFGStock = useMemo(() => {
-    return filteredData.reduce((sum, item) => sum + Number(item?.[4] || 0), 0);
-  }, [filteredData]);
+ const availableFGStock = useMemo(() => {
+  return filteredData.reduce(
+    (sum, item) => sum + Number(item?.availableQty || 0),
+    0
+  );
+}, [filteredData]);
 
-  const lowStockItemsLength = useMemo(() => {
-    return filteredData.filter((item) => Number(item?.[4] || 0) < 100).length;
-  }, [filteredData]);
+const lowStockItemsLength = useMemo(() => {
+  return filteredData.filter(
+    (item) => {
 
-  const outOfStockItemsLength = useMemo(() => {
-    return filteredData.filter((item) => Number(item?.[4] || 0) <= 0).length;
-  }, [filteredData]);
+    const qty = Number(item?.availableQty);
+ return Number.isFinite(qty) && qty<=1000;
+}).length;
+}, [filteredData]);
 
+const outOfStockItemsLength = useMemo(() => {
+  return filteredData.filter(
+    (item) => {
+      const qty = Number(item?.availableQty);
+      return Number.isFinite(qty) && qty <= 0;
+}).length;
+}, [filteredData]);
   // ============================================================
   // CLEAR FILTERS
   // ============================================================
@@ -180,16 +179,24 @@ const stockUnitRef = useRef("METER");
   // EDIT STOCK
   // ============================================================
 
-  const handleEditStock = (item) => {
-    if (!item) return;
+ const handleEditStock = (item) => {
+  if (!item) return;
 
-    setSelectedItem(item);
-    console.log("selected item", item);
+  setSelectedItem(item);
 
-    setNewFGQty(item?.[4] ?? "");
+  setNewFGQty(item?.availableQty ?? "");
 
-    setEditOpen(true);
-  };
+  setStockUnit("METER");
+  stockUnitRef.current = "METER";
+
+  setEditOpen(true);
+};
+
+
+const handleStockUnitChange = (value) => {
+  setStockUnit(value);
+  stockUnitRef.current = value;
+};
 
   // ============================================================
   // CLOSE EDIT DIALOG
@@ -417,7 +424,7 @@ const handleUpdateStock = async () => {
               p: 2,
             }}
           >
-            <Typography variant="body2">Available Qty</Typography>
+            <Typography variant="body2">Available Qty(meter)</Typography>
 
             <Typography variant="h5">{availableFGStock}</Typography>
           </Paper>
@@ -486,7 +493,7 @@ const handleUpdateStock = async () => {
         setNewFGQty={setNewFGQty}
         loading={loading}
         stockUnit={stockUnit}
-        setStockUnit={setStockUnit}
+        setStockUnit={handleStockUnitChange}
         stockUnitRef={stockUnitRef}
       />
     </Box>

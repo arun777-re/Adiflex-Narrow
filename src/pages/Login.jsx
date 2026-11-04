@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState,useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import loginPic from "../assets/SR.Tech.png";
 import toast from "react-hot-toast";
@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 import { login } from "../redux/slices/authSlices";
 
@@ -25,7 +25,7 @@ const Login = () => {
   const dispatch = useDispatch();
 
   // const { loading } = useSelector((state) => state.auth);
-  const loading = React.useRef(false);
+  const loading = useRef(false);
 
   // ==========================================
   // FORM DATA
@@ -283,7 +283,7 @@ const Login = () => {
               fullWidth
               type="submit"
               variant="contained"
-              disabled={loading}
+              disabled={loading.current}
               sx={{
                 mt: 3,
                 py: 1.6,
@@ -295,7 +295,7 @@ const Login = () => {
                   "0 10px 25px rgba(25,118,210,.35)",
               }}
             >
-              {loading
+              {loading.current
                 ? "Logging in..."
                 : "Login"}
             </Button>

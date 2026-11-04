@@ -38,9 +38,18 @@ const SalesOrder = () => {
   const { loading } = useSelector(
     (state) => state.salesOrder,
   );
-  const salesOrders = useSelector(
-    (state) => state.salesOrder.salesOrders.data,
-  );
+  
+ const salesOrdersResponse = useSelector(
+  (state) => state.salesOrder?.salesOrders
+);
+
+const salesOrders = Array.isArray(salesOrdersResponse)
+  ? salesOrdersResponse
+  : Array.isArray(salesOrdersResponse?.data)
+  ? salesOrdersResponse.data
+  : Array.isArray(salesOrdersResponse?.data?.data)
+  ? salesOrdersResponse.data.data
+  : [];
 
   const {role} = useSelector((state)=> state.auth?.user?.user)
 
@@ -98,7 +107,7 @@ const SalesOrder = () => {
     const customerSet = new Set();
 
     for (const item of salesOrders) {
-      if (item.customer) {
+      if (item?.customer) {
         customerSet.add(item.customer);
       }
     }

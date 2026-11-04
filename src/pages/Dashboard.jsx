@@ -1,4 +1,4 @@
-
+import React from "react";
 import {
   useSelector,
 } from "react-redux";
@@ -11,7 +11,7 @@ const DashBoard = ()=>{
 
 const {user} = useSelector((state)=> state.auth);
 
-const DashboardComponent = DASHBOARD_COMPONENTS[user?.user.role]
+const DashboardComponent = DASHBOARD_COMPONENTS[user?.user?.role]
   return DashboardComponent ? <DashboardComponent/> : null;
 }
 

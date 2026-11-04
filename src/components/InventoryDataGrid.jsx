@@ -39,7 +39,7 @@ const InventoryDataGrid = ({
 }) => {
   const [search, setSearch] = useState("");
   const [selectedInventory, setSelectedInventory] = useState(null);
-
+console.log("data in fg",data)
   // MAP API DATA TO DATAGRID ROWS
   const rows = useMemo(() => {
     if (!Array.isArray(data)) return [];
