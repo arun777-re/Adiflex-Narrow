@@ -36,6 +36,7 @@ const InventoryDataGrid = ({
   data = [],
   loading = false,
   onEdit,
+  canEdit
 }) => {
   const [search, setSearch] = useState("");
   const [selectedInventory, setSelectedInventory] = useState(null);
@@ -90,8 +91,9 @@ console.log("data in fg",data)
   };
 
   // MAIN GRID COLUMNS
-  const columns = useMemo(
-    () => [
+const columns = useMemo(
+  () => {
+    const baseColumns = [
       {
         field: "sku",
         headerName: "SKU",
@@ -208,7 +210,11 @@ console.log("data in fg",data)
           </Button>
         ),
       },
-      {
+    ];
+
+    // EDIT COLUMN ONLY FOR DISPATCH
+    if (canEdit) {
+      baseColumns.push({
         field: "actions",
         headerName: "Actions",
         width: 110,
@@ -226,10 +232,13 @@ console.log("data in fg",data)
             Edit
           </Button>
         ),
-      },
-    ],
-    [onEdit]
-  );
+      });
+    }
+
+    return baseColumns;
+  },
+  [onEdit, canEdit]
+);
 
   // SELECTED PRODUCT RESERVATIONS
   const reservations = selectedInventory?.reservations ?? [];

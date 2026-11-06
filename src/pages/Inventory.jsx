@@ -48,6 +48,7 @@ const stockUnitRef = useRef("METER");
   const { inventory, loading } = useSelector((state) => state?.fginventory);
 
   const { user } = useSelector((state) => state.auth?.user || {});
+  const canEditStock = String(user?.role || "").trim().toLowerCase() === "dispatch";
 
   // ============================================================
   // FETCH INVENTORY
@@ -479,6 +480,7 @@ const handleUpdateStock = async () => {
         data={filteredData}
         loading={loading}
         onEdit={handleEditStock}
+        canEdit={canEditStock}
       />
 
       {/* ======================================================

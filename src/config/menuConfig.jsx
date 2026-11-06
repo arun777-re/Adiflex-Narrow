@@ -212,25 +212,32 @@ export const menuConfig = {
       icon: <LocalShippingOutlinedIcon />,
     },
 
+ 
     {
       id: 3,
-      title: "FG Inventory",
-      path: "/inventory",
-      icon: <Inventory2RoundedIcon />,
-    },
-
-    {
-      id: 4,
       title: "Complete Dispatch Orders",
       path: "/complete-dispatch",
       icon: <CheckCircleRoundedIcon />,
     },
      {
-      id: 5,
+      id: 4,
       title: "Sales Orders",
       path: "/sales-order",
       icon: <ShoppingCartRoundedIcon />,
     },
+     {
+      id: 5,
+      title: "Products",
+      path: "/view-product",
+      icon: <ShoppingCartRoundedIcon />,
+    },
+       {
+      id: 6,
+      title: "FG Inventory",
+      path: "/inventory",
+      icon: <Inventory2RoundedIcon />,
+    },
+
   ],
 
   // ==========================================

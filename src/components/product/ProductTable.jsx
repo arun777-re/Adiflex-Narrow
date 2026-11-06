@@ -13,7 +13,6 @@ import {
   CircularProgress,
 } from "@mui/material";
 
-
 import { DataGrid } from "@mui/x-data-grid";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -22,7 +21,7 @@ import {
   fetchProductBySku,
   changeProductStatus,
   fetchProducts,
-  editProduct as updateProductThunk
+  editProduct as updateProductThunk,
 } from "../../redux/slices/productSlice";
 import { productColumns } from "../../constant/productColumn";
 import toast from "react-hot-toast";
@@ -128,45 +127,43 @@ const ProductTable = () => {
   };
 
   const handleUpdateProduct = async () => {
-  try {
-    setEditLoading(true);
+    try {
+      setEditLoading(true);
 
-    const res = await dispatch(
-      updateProductThunk({
-        sku: editForm.sku,
-        productName: editForm.productName,
-        division: editForm.division,
-        unit: editForm.unit,
-        meterPerKG: editForm.meterPerKG,
-        meterPerRoll: editForm.meterPerRoll,
-        color: editForm.color,
-        size: editForm.size,
-        rate: editForm.rate,
-        updatedBy: user?.user?.name,
-      }),
-    );
-
-    if (updateProductThunk.fulfilled.match(res)) {
-      toast.success("Product updated successfully");
-
-      setEditOpen(false);
-      setEditProduct(null);
-
-      // latest product data
-      dispatch(fetchProducts());
-    } else {
-      toast.error(
-        res.payload?.message || "Failed to update product",
+      const res = await dispatch(
+        updateProductThunk({
+          sku: editForm.sku,
+          productName: editForm.productName,
+          division: editForm.division,
+          unit: editForm.unit,
+          meterPerKG: editForm.meterPerKG,
+          meterPerRoll: editForm.meterPerRoll,
+          color: editForm.color,
+          size: editForm.size,
+          rate: editForm.rate,
+          updatedBy: user?.user?.name,
+        }),
       );
-    }
-  } catch (error) {
-    console.error("Update product error:", error);
 
-    toast.error("Something went wrong while updating product");
-  } finally {
-    setEditLoading(false);
-  }
-};
+      if (updateProductThunk.fulfilled.match(res)) {
+        toast.success("Product updated successfully");
+
+        setEditOpen(false);
+        setEditProduct(null);
+
+        // latest product data
+        dispatch(fetchProducts());
+      } else {
+        toast.error(res.payload?.message || "Failed to update product");
+      }
+    } catch (error) {
+      console.error("Update product error:", error);
+
+      toast.error("Something went wrong while updating product");
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   // =====================================================
   // STATUS CHANGE
@@ -198,17 +195,25 @@ const ProductTable = () => {
     const normalize = (value) =>
       String(value ?? "")
         .trim()
-        .toLowerCase();
+        .toLowerCase()
+        .replace(/\s+/g, " ");
 
     return products.filter((item) => {
       const searchValue = normalize(search);
 
-      const searchMatch =
-        searchValue === "" ||
-        [item.sku, item.productName, item.color, item.size]
-          .join(" ")
-          .toLowerCase()
-          .includes(searchValue);
+      const searchableText = [
+        item.sku,
+        item.sku_code,
+        item.skucode,
+        item.productName,
+        item.product_name,
+        item.color,
+        item.size,
+      ]
+        .map(normalize)
+        .join(" ");
+
+      const searchMatch = !searchValue || searchableText.includes(searchValue);
 
       const divisionMatch =
         division === "All" || normalize(item.division) === normalize(division);
@@ -336,29 +341,27 @@ const ProductTable = () => {
           height: "calc(100vh - 260px)",
         }}
       >
-        
-
-<DataGrid
-  rows={filteredRows}
-  columns={columns}
-  loading={loading}
-  getRowId={(row) => String(row.id)}
-  disableRowSelectionOnClick
-  density="compact"
-  pageSizeOptions={[10, 20, 50, 100]}
-  columnHeaderHeight={48}
-  rowHeight={42}
-  initialState={{
-    pagination: {
-      paginationModel: {
-        pageSize: 10,
-      },
-    },
-  }}
-  sx={{
-    border: "none",
-  }}
-/>
+        <DataGrid
+          rows={filteredRows}
+          columns={columns}
+          loading={loading}
+          getRowId={(row) => String(row.id)}
+          disableRowSelectionOnClick
+          density="compact"
+          pageSizeOptions={[10, 20, 50, 100]}
+          columnHeaderHeight={48}
+          rowHeight={42}
+          initialState={{
+            pagination: {
+              paginationModel: {
+                pageSize: 10,
+              },
+            },
+          }}
+          sx={{
+            border: "none",
+          }}
+        />
       </Box>
 
       {/* =================================================
