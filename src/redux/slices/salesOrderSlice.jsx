@@ -120,17 +120,30 @@ const salesOrderSlice = createSlice({
         state.loading = true;
       })
 
-      .addCase(editSalesOrder.fulfilled, (state, action) => {
-        state.loading = false;
+     .addCase(editSalesOrder.fulfilled, (state, action) => {
+  state.loading = false;
 
-        const index = state.salesOrders.findIndex(
-          (item) => item.soNo === action.payload.soNo
-        );
+  const updatedOrder = action.payload;
 
-        if (index !== -1) {
-          state.salesOrders[index] = action.payload;
-        }
-      })
+  if (!Array.isArray(state.salesOrders)) {
+    console.error(
+      "salesOrders is not an array:",
+      state.salesOrders
+    );
+    return;
+  }
+
+  const index = state.salesOrders.findIndex(
+    (item) => item.so_no === updatedOrder.so_no
+  );
+
+  if (index !== -1) {
+    state.salesOrders[index] = {
+      ...state.salesOrders[index],
+      ...updatedOrder,
+    };
+  }
+})
 
       .addCase(editSalesOrder.rejected, (state, action) => {
         state.loading = false;

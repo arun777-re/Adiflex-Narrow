@@ -1,3 +1,4 @@
+
 import { Box, Tooltip, Typography } from "@mui/material";
 
 import {
@@ -21,51 +22,71 @@ const ProcessCircle = ({
     processConfig
   );
 
-  const circleStyles = {
-    notStarted: {
-      backgroundColor: "transparent",
-      border: "2px solid #bdbdbd",
-      color: "#9e9e9e",
-    },
+  const stage = status.stage;
 
-    notApplicable: {
-      backgroundColor: "#f5f5f5",
-      border: "2px solid #e0e0e0",
-      color: "#bdbdbd",
-    },
+ 
+const circleStyles = {
+  notStarted: {
+    backgroundColor: "transparent",
+    border: "2px solid #bdbdbd",
+    color: "#9e9e9e",
+  },
 
-    running: {
-      backgroundColor: "#fff8e1",
-      border: "3px solid #f9a825",
-      color: "#f57f17",
-    },
+  notApplicable: {
+    backgroundColor: "#f5f5f5",
+    border: "2px solid #e0e0e0",
+    color: "#bdbdbd",
+  },
 
-    late: {
-      backgroundColor: "#ffebee",
-      border: "3px solid #d32f2f",
-      color: "#c62828",
-    },
+  running: {
+    backgroundColor: "#fff8e1",
+    border: "3px solid #f9a825",
+    color: "#f57f17",
+  },
 
-    ontime: {
-      backgroundColor: "#e8f5e9",
-      border: "3px solid #2e7d32",
-      color: "#2e7d32",
-    },
+  partiallyReleased: {
+    backgroundColor: "#fff3e0",
+    border: "3px solid #ef6c00",
+    color: "#e65100",
+  },
 
-    faster: {
-      backgroundColor: "#e3f2fd",
-      border: "3px solid #1976d2",
-      color: "#1976d2",
-    },
-  };
+  late: {
+    backgroundColor: "#ffebee",
+    border: "3px solid #d32f2f",
+    color: "#c62828",
+  },
+
+  ontime: {
+    backgroundColor: "#e8f5e9",
+    border: "3px solid #2e7d32",
+    color: "#2e7d32",
+  },
+
+  faster: {
+    backgroundColor: "#e3f2fd",
+    border: "3px solid #1976d2",
+    color: "#1976d2",
+  },
+
+  completed: {
+    backgroundColor: "#e8f5e9",
+    border: "3px solid #2e7d32",
+    color: "#2e7d32",
+  },
+
+  cancelled: {
+    backgroundColor: "#eeeeee",
+    border: "2px solid #757575",
+    color: "#616161",
+  },
+};
+
 
   const idealMinutes =
-    IDEAL_PROCESS_TIMES[
-      processConfig.name
-    ];
+    IDEAL_PROCESS_TIMES[processConfig.name];
 
   const tooltipContent = (
-    <Box sx={{ p: 0.5 }}>
+    <Box sx={{ p: 0.5, minWidth: 150 }}>
       <Typography
         variant="body2"
         fontWeight={700}
@@ -74,31 +95,41 @@ const ProcessCircle = ({
         {processConfig.name}
       </Typography>
 
-      <Typography
-        variant="caption"
-        display="block"
-      >
-        Ideal:{" "}
-        {formatDuration(idealMinutes)}
+      <Typography variant="caption" display="block">
+        Stage Status: {stage?.status || status.label}
       </Typography>
 
-      <Typography
-        variant="caption"
-        display="block"
-      >
+      <Typography variant="caption" display="block">
+        Ideal:{" "}
+        {idealMinutes !== undefined
+          ? formatDuration(idealMinutes)
+          : "-"}
+      </Typography>
+
+      <Typography variant="caption" display="block">
         Actual:{" "}
         {status.actualMinutes !== null
-          ? formatDuration(
-              status.actualMinutes
-            )
+          ? formatDuration(status.actualMinutes)
           : "-"}
+      </Typography>
+
+      <Typography variant="caption" display="block">
+        Input Qty: {Number(stage?.input_qty || 0).toLocaleString("en-IN")}
+      </Typography>
+
+      <Typography variant="caption" display="block">
+        Accepted Qty: {Number(stage?.accepted_qty || 0).toLocaleString("en-IN")}
+      </Typography>
+
+      <Typography variant="caption" display="block">
+        Released Qty: {Number(stage?.released_qty || 0).toLocaleString("en-IN")}
       </Typography>
 
       <Typography
         variant="caption"
         display="block"
         fontWeight={700}
-        sx={{ mt: 0.25 }}
+        sx={{ mt: 0.5 }}
       >
         {status.label}
       </Typography>
@@ -127,12 +158,9 @@ const ProcessCircle = ({
           fontSize: 14,
           fontWeight: 800,
 
-          transition:
-            "all 0.2s ease",
+          transition: "all 0.2s ease",
 
-          ...circleStyles[
-            status.type
-          ],
+          ...circleStyles[status.type],
 
           "&:hover": {
             transform: "scale(1.12)",
@@ -155,6 +183,8 @@ const ProcessCircle = ({
         {status.type === "ontime" && "✓"}
 
         {status.type === "faster" && "✓"}
+
+        {status.type === "notStarted" && ""}
       </Box>
     </Tooltip>
   );

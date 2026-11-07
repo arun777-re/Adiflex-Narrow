@@ -1,5 +1,5 @@
-import React from "react";
 
+import React from "react";
 import {
   Box,
   Card,
@@ -37,109 +37,302 @@ const InfoItem = ({ label, value }) => (
         wordBreak: "break-word",
       }}
     >
-      {value || "-"}
+      {value !== null && value !== undefined && value !== ""
+        ? value
+        : "-"}
     </Typography>
   </Box>
 );
 
-const SalesOrderCard = ({ row, onEdit }) => {
-  const isProductionCompleted =
-    row.productionstatus === "Completed";
+const formatQty = (value) =>
+  Number(value || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  });
 
-  const isDispatched =
-    row.dispatchstatus === "Dispatched";
+const formatDate = (value) => {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const SalesOrderCard = ({ row, onEdit }) => {
+  const productionQty = Number(row?.production_qty || 0);
+  const manufacturedQty = Number(row?.manufactured_qty || 0);
+
+  const soQtyInMeter = Number(row?.so_qty_in_meter || 0);
+  const dispatchedQty = Number(row?.dispatched_qty || 0);
+
+  // Production Status
+  const productionRemaining = Math.max(
+    0,
+    productionQty - manufacturedQty
+  );
+
+  const productionStatus =
+    productionRemaining <= 0
+      ? "Completed"
+      : manufacturedQty <= 0
+        ? "Pending"
+        : "Partial";
+
+  const productionColor =
+    productionStatus === "Completed"
+      ? "success"
+      : productionStatus === "Partial"
+        ? "info"
+        : "warning";
+
+  // Dispatch Status
+  const dispatchRemaining = Math.max(
+    0,
+    soQtyInMeter - dispatchedQty
+  );
+
+  const dispatchStatus =
+    soQtyInMeter > 0 && dispatchRemaining <= 0
+      ? "Dispatched"
+      : dispatchedQty <= 0
+        ? "Pending Dispatch"
+        : "Partial Dispatch";
+
+  const dispatchColor =
+    dispatchStatus === "Dispatched"
+      ? "success"
+      : dispatchStatus === "Partial Dispatch"
+        ? "info"
+        : "warning";
 
   return (
     <Card
-      elevation={0}
+      elevation={2}
       sx={{
+        borderRadius: 2,
         height: "100%",
-        border: "1px solid #e0e0e0",
-        borderRadius: 3,
-        transition: "all 0.2s ease",
-        overflow: "hidden",
-
-        "&:hover": {
-          boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
-          transform: "translateY(-2px)",
-        },
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <CardContent sx={{ p: 2 }}>
-        {/* ================= HEADER ================= */}
-
+      <CardContent sx={{ flexGrow: 1 }}>
+        {/* Header */}
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="flex-start"
-          gap={1}
-          mb={1}
+          spacing={1}
+          mb={2}
         >
           <Box sx={{ minWidth: 0 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 800,
-                lineHeight: 1.2,
-              }}
-            >
-              {row.soNo}
+            <Typography variant="h6" fontWeight={700}>
+              {row?.so_no || "-"}
             </Typography>
 
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{
-                mt: 0.5,
-                fontWeight: 600,
-              }}
+              fontWeight={600}
             >
-              {row.customer || "-"}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.primary"
-              sx={{
-                mt: 0.5,
-                fontWeight: 600,
-              }}
-            >
-              commited Date
-              {row.commitedDate || "-"}
+              {row?.customer || "-"}
             </Typography>
           </Box>
 
-          <Chip
-            label={
-              isProductionCompleted
-                ? "Completed"
-                : "Pending Production"
-            }
-            color={
-              isProductionCompleted
-                ? "success"
-                : "warning"
-            }
-            size="small"
-            variant="outlined"
-            sx={{
-              fontWeight: 700,
-              flexShrink: 0,
-            }}
-          />
+          <Stack
+            direction="row"
+            spacing={0.5}
+            flexWrap="wrap"
+            justifyContent="flex-end"
+          >
+            <Chip
+              label={row?.order_type || "-"}
+              size="small"
+              color={
+                row?.order_type === "CUSTOMER"
+                  ? "primary"
+                  : "secondary"
+              }
+            />
+
+            <Chip
+              label={row?.division || "-"}
+              size="small"
+              variant="outlined"
+            />
+          </Stack>
         </Stack>
 
-        {/* ================= PRODUCT ================= */}
+        <Divider sx={{ mb: 2 }} />
 
+        {/* Product Details */}
+        <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <InfoItem
+              label="Product"
+              value={row?.product_name}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="SKU Code"
+              value={row?.skucode}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Order Date"
+              value={formatDate(row?.order_date)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Committed Date"
+              value={formatDate(row?.committed_date)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Party PO"
+              value={row?.party_po}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Received By"
+              value={row?.order_received_by}
+            />
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Order Details */}
         <Typography
-          variant="subtitle1"
-          sx={{
-            fontWeight: 700,
-            mb: 0.5,
-            lineHeight: 1.35,
-          }}
+          variant="subtitle2"
+          fontWeight={700}
+          mb={1.5}
         >
-          {row.product || "-"}
+          Order Details
+        </Typography>
+
+        <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <InfoItem
+              label="SO Quantity"
+              value={`${formatQty(row?.so_qty)} ${row?.unit || ""}`}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Rate"
+              value={`₹${formatQty(row?.final_rate)}`}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Order Amount"
+              value={`₹${formatQty(row?.order_amount)}`}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Rate Adjustment"
+              value={`₹${formatQty(row?.rate_adjustment)}`}
+            />
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Stock & Production */}
+        <Typography
+          variant="subtitle2"
+          fontWeight={700}
+          mb={1.5}
+        >
+          Stock & Production (MTR)
+        </Typography>
+
+        <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <InfoItem
+              label="Opening FG"
+              value={formatQty(row?.opening_fg_qty)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Production Target"
+              value={formatQty(row?.production_qty)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Manufactured"
+              value={formatQty(row?.manufactured_qty)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Production Remaining"
+              value={formatQty(productionRemaining)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Dispatched"
+              value={formatQty(row?.dispatched_qty)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Dispatch Remaining"
+              value={formatQty(dispatchRemaining)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Total SO Quantity"
+              value={formatQty(row?.so_qty_in_meter)}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Total Wastage"
+              value={formatQty(row?.total_wastage_qty)}
+            />
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Status */}
+        <Typography
+          variant="subtitle2"
+          fontWeight={700}
+          mb={1}
+        >
+          Status
         </Typography>
 
         <Stack
@@ -147,214 +340,74 @@ const SalesOrderCard = ({ row, onEdit }) => {
           spacing={1}
           flexWrap="wrap"
           useFlexGap
-          mb={2}
         >
           <Chip
-            label={`SKU: ${row.skucode || "-"}`}
+            label={`Production: ${productionStatus}`}
+            color={productionColor}
             size="small"
-            variant="outlined"
           />
 
           <Chip
-            label={row.division || "-"}
+            label={`Dispatch: ${dispatchStatus}`}
+            color={dispatchColor}
             size="small"
-            variant="outlined"
-          />
-
-          <Chip
-            label={row.ordertype || "-"}
-            size="small"
-            variant="outlined"
           />
         </Stack>
 
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ my: 2 }} />
 
-        {/* ================= MAIN INFO ================= */}
-
+        {/* Other Details */}
         <Grid container spacing={2}>
           <Grid item xs={6}>
             <InfoItem
-              label="Date"
-              value={row.date}
-            />
-          </Grid>
-
-          <Grid item xs={6}>
-            <InfoItem
-              label="SO Qty"
-              value={`${row.qty || 0} ${row.unit || ""}`}
-            />
-          </Grid>
-
-          <Grid item xs={6}>
-            <InfoItem
-              label="Final Rate"
-              value={`₹ ${Number(
-                row.finalrate || 0
-              ).toFixed(2)}`}
-            />
-          </Grid>
-
-          <Grid item xs={6}>
-            <InfoItem
-              label="Opening FG"
-              value={`${row.openingFgQty || 0} ${
-                row.unit || ""
-              }`}
-            />
-          </Grid>
-
-          <Grid item xs={6}>
-            <InfoItem
-              label="Production"
-              value={`${row.productionQty || 0} ${
-                row.unit || ""
-              }`}
-            />
-          </Grid>
-
-          <Grid item xs={6}>
-            <InfoItem
-              label="Manufactured"
-              value={`${row.manufacturedQty || 0} ${
-                row.unit || ""
-              }`}
-            />
-          </Grid>
-
-          <Grid item xs={6}>
-            <InfoItem
-              label="Dispatched"
-              value={`${row.dispatchedQty || 0} ${
-                row.unit || ""
-              }`}
-            />
-          </Grid>
-
-          <Grid item xs={6}>
-            <InfoItem
               label="Job Work"
-              value={row.jobWork ? "Yes" : "No"}
+              value={
+                row?.job_work === true ||
+                String(row?.job_work).toLowerCase() === "true"
+                  ? "Yes"
+                  : "No"
+              }
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Route"
+              value={row?.route}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Shipping Location"
+              value={row?.shipping_location}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <InfoItem
+              label="Billing Location"
+              value={row?.billing_location}
             />
           </Grid>
         </Grid>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* ================= STATUS ================= */}
-
-        <Stack spacing={1}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Typography
-              variant="body2"
-              fontWeight={600}
-            >
-              Production
-            </Typography>
-
-            <Chip
-              label={
-                isProductionCompleted
-                  ? "Completed"
-                  : "Pending Production"
-              }
-              color={
-                isProductionCompleted
-                  ? "success"
-                  : "warning"
-              }
-              size="small"
-            />
-          </Stack>
-
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Typography
-              variant="body2"
-              fontWeight={600}
-            >
-              Dispatch
-            </Typography>
-
-            <Chip
-              label={
-                isDispatched
-                  ? "Dispatched"
-                  : "Pending Dispatch"
-              }
-              color={
-                isDispatched
-                  ? "success"
-                  : "warning"
-              }
-              size="small"
-            />
-          </Stack>
-        </Stack>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* ================= LOCATIONS ================= */}
-
-        <Stack spacing={1.5}>
-          <InfoItem
-            label="Shipping Location"
-            value={row.shippinglocation}
-          />
-
-          <InfoItem
-            label="Billing Location"
-            value={row.billinglocation}
-          />
-
-          <InfoItem
-            label="Route"
-            value={row.route}
-          />
-
-          <InfoItem
-            label="Created By"
-            value={row.orderReceivedBy}
-          />
-        </Stack>
       </CardContent>
 
-      {/* ================= EDIT ACTION ================= */}
-
+      {/* Actions */}
       <CardActions
         sx={{
-          px: 2,
-          py: 1.2,
-          borderTop: "1px solid #eeeeee",
-          backgroundColor: "#fafafa",
           justifyContent: "flex-end",
+          px: 2,
+          pb: 2,
         }}
       >
         <Tooltip title="Edit Sales Order">
           <IconButton
-            size="small"
             color="primary"
             onClick={() => onEdit?.(row)}
-            aria-label={`Edit sales order ${row.soNo}`}
-            sx={{
-              border: "1px solid",
-              borderColor: "primary.main",
-              borderRadius: 2,
-              "&:hover": {
-                backgroundColor: "primary.main",
-                color: "#fff",
-              },
-            }}
+            aria-label={`Edit ${row?.so_no || "sales order"}`}
           >
-            <EditIcon fontSize="small" />
+            <EditIcon />
           </IconButton>
         </Tooltip>
       </CardActions>

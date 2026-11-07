@@ -21,51 +21,34 @@ import SaveIcon from "@mui/icons-material/Save";
 
 import { editSalesOrder } from "../../redux/slices/salesOrderSlice";
 
-
 // =========================================================
 // ALLOWED UNITS
 // =========================================================
 
-const ALLOWED_UNITS = [
-  "Meter",
-  "Roll",
-  "Kg",
-  "Piece",
-];
-
-
-// =========================================================
-// NORMALIZE UNIT
-// =========================================================
-// Important:
-// We DO NOT blindly convert "2" into any unit.
-// If old data contains an unknown value, return "" so
-// user can select the correct unit from the dropdown.
-// =========================================================
+const ALLOWED_UNITS = ["Meter", "Roll", "Kg"];
 
 const normalizeUnit = (unit) => {
   if (!unit) return "";
 
-  const value = String(unit).trim();
+  const value = String(unit).trim().toUpperCase();
 
-  const matchedUnit = ALLOWED_UNITS.find(
-    (item) => item.toLowerCase() === value.toLowerCase()
-  );
+  const unitMap = {
+    METER: "Meter",
+    METERS: "Meter",
+    ROLL: "Roll",
+    ROLLS: "Roll",
+    KG: "Kg",
+    KGS: "Kg",
+  };
 
-  return matchedUnit || "";
+  return unitMap[value] || "";
 };
-
 
 // =========================================================
 // COMPONENT
 // =========================================================
 
-const EditSalesOrderDialog = ({
-  open,
-  row,
-  onClose,
-  onSuccess,
-}) => {
+const EditSalesOrderDialog = ({ open, row, onClose, onSuccess }) => {
   const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
@@ -84,7 +67,6 @@ const EditSalesOrderDialog = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-
   // =========================================================
   // LOAD ROW DATA
   // =========================================================
@@ -92,60 +74,33 @@ const EditSalesOrderDialog = ({
   useEffect(() => {
     if (!row || !open) return;
 
-    console.log("========================================");
-    console.log("[EDIT SO] Loading row");
-    console.log("[EDIT SO] Row:", row);
-    console.log("[EDIT SO] Original unit:", row.unit);
-    console.log("[EDIT SO] Normalized unit:", normalizeUnit(row.unit));
-    console.log("========================================");
+    console.log("[EDIT SO] Current API Row:", row);
 
     setFormData({
-      soQty:
-        row.qty ??
-        row.soQty ??
-        "",
+      soQty: row.so_qty ?? "",
 
-      rate:
-        row.rate ??
-        row.standardrate ??
-        "",
+      rate: row.standard_rate ?? "",
 
-      rateadjustment:
-        row.rateadjustment ??
-        row.rateAdjustment ??
-        "",
+      rateadjustment: row.rate_adjustment ?? "",
 
-      finalrate:
-        row.finalrate ??
-        "",
+      finalrate: row.final_rate ?? "",
 
       unit: normalizeUnit(row.unit),
 
       jobWork:
-        row.jobWork === true ||
-        row.jobWork === "true" ||
-        row.jobWork === "Yes",
+        row.job_work === true || String(row.job_work).toLowerCase() === "true",
 
-      shippinglocation:
-        row.shippinglocation ??
-        "",
+      shippinglocation: row.shipping_location ?? "",
 
-      billinglocation:
-        row.billinglocation ??
-        "",
+      billinglocation: row.billing_location ?? "",
 
-      route:
-        row.route ??
-        "",
+      route: row.route ?? "",
 
-      skucode:
-        row.skucode ??
-        "",
+      skucode: row.skucode ?? "",
     });
 
     setError("");
   }, [row, open]);
-
 
   // =========================================================
   // HANDLE INPUT
@@ -160,7 +115,6 @@ const EditSalesOrderDialog = ({
     }));
   };
 
-
   // =========================================================
   // HANDLE JOB WORK
   // =========================================================
@@ -172,34 +126,27 @@ const EditSalesOrderDialog = ({
     }));
   };
 
-
   // =========================================================
   // SUBMIT
   // =========================================================
 
   const handleSubmit = async () => {
-
     // -------------------------------------------------------
     // Basic validation
     // -------------------------------------------------------
 
-    if (!row?.soNo) {
+    if (!row?.so_no) {
       setError("Sales Order Number is missing.");
       return;
     }
 
-    if (
-      formData.soQty === "" ||
-      Number(formData.soQty) < 0
-    ) {
+    if (formData.soQty === "" || Number(formData.soQty) < 0) {
       setError("Valid SO Quantity is required.");
       return;
     }
 
     if (!ALLOWED_UNITS.includes(formData.unit)) {
-      setError(
-        "Please select a valid Unit: Meter, Roll, Kg or Piece."
-      );
+      setError("Please select a valid Unit: Meter, Roll, Kg .");
       return;
     }
 
@@ -208,7 +155,6 @@ const EditSalesOrderDialog = ({
       return;
     }
 
-
     // -------------------------------------------------------
     // Build payload
     // -------------------------------------------------------
@@ -216,38 +162,25 @@ const EditSalesOrderDialog = ({
     const payload = {
       soQty: Number(formData.soQty),
 
-      rate:
-        formData.rate === ""
-          ? 0
-          : Number(formData.rate),
+      rate: formData.rate === "" ? 0 : Number(formData.rate),
 
       rateadjustment:
-        formData.rateadjustment === ""
-          ? 0
-          : Number(formData.rateadjustment),
+        formData.rateadjustment === "" ? 0 : Number(formData.rateadjustment),
 
-      finalrate:
-        formData.finalrate === ""
-          ? 0
-          : Number(formData.finalrate),
+      finalrate: formData.finalrate === "" ? 0 : Number(formData.finalrate),
 
-      unit: formData.unit,
+      unit: formData.unit.toUpperCase(),
 
       jobWork: Boolean(formData.jobWork),
 
-      shippinglocation:
-        formData.shippinglocation?.trim() || "",
+      shippinglocation: formData.shippinglocation?.trim() || "",
 
-      billinglocation:
-        formData.billinglocation?.trim() || "",
+      billinglocation: formData.billinglocation?.trim() || "",
 
-      route:
-        formData.route?.trim() || "",
+      route: formData.route?.trim() || "",
 
-      skucode:
-        formData.skucode?.trim() || "",
+      skucode: formData.skucode?.trim() || "",
     };
-
 
     try {
       setSaving(true);
@@ -259,18 +192,16 @@ const EditSalesOrderDialog = ({
       console.log("[EDIT SO] Payload:", payload);
       console.log("========================================");
 
-
       // -----------------------------------------------------
       // DISPATCH THUNK
       // -----------------------------------------------------
 
       const result = await dispatch(
         editSalesOrder({
-          soNo: row.soNo,
+          soNo: row.so_no,
           payload,
-        })
+        }),
       ).unwrap();
-
 
       // -----------------------------------------------------
       // SUCCESS
@@ -281,30 +212,21 @@ const EditSalesOrderDialog = ({
       console.log("[EDIT SO] Result:", result);
       console.log("========================================");
 
-
       onSuccess?.(result);
 
       onClose?.();
-
     } catch (error) {
-
-      console.error(
-        "[EDIT SO] Update failed:",
-        error
-      );
+      console.error("[EDIT SO] Update failed:", error);
 
       setError(
         typeof error === "string"
           ? error
-          : error?.message ||
-            "Failed to update Sales Order"
+          : error?.message || "Failed to update Sales Order",
       );
-
     } finally {
       setSaving(false);
     }
   };
-
 
   // =========================================================
   // CLOSE
@@ -317,7 +239,6 @@ const EditSalesOrderDialog = ({
 
     onClose?.();
   };
-
 
   // =========================================================
   // UI
@@ -335,7 +256,6 @@ const EditSalesOrderDialog = ({
         },
       }}
     >
-
       {/* =====================================================
           HEADER
       ===================================================== */}
@@ -347,8 +267,7 @@ const EditSalesOrderDialog = ({
         }}
       >
         Edit Sales Order
-
-        {row?.soNo && (
+        {row?.so_no && (
           <Typography
             variant="body2"
             color="text.secondary"
@@ -356,11 +275,10 @@ const EditSalesOrderDialog = ({
               mt: 0.5,
             }}
           >
-            Sales Order: {row.soNo}
+            Sales Order: {row.so_no}
           </Typography>
         )}
       </DialogTitle>
-
 
       {/* =====================================================
           CONTENT
@@ -368,25 +286,19 @@ const EditSalesOrderDialog = ({
 
       <DialogContent dividers>
         <Stack spacing={2.5}>
-
           {/* ERROR */}
 
           {error && (
-            <Alert
-              severity="error"
-              onClose={() => setError("")}
-            >
+            <Alert severity="error" onClose={() => setError("")}>
               {error}
             </Alert>
           )}
-
 
           {/* =================================================
               READ ONLY INFORMATION
           ================================================= */}
 
           <Grid container spacing={2}>
-
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -401,21 +313,18 @@ const EditSalesOrderDialog = ({
               <TextField
                 fullWidth
                 label="Product"
-                value={row?.product || ""}
+                value={row?.product_name || ""}
                 disabled
                 size="small"
               />
             </Grid>
-
           </Grid>
-
 
           {/* =================================================
               EDITABLE FIELDS
           ================================================= */}
 
           <Grid container spacing={2}>
-
             {/* SO QUANTITY */}
 
             <Grid item xs={12} sm={6}>
@@ -435,7 +344,6 @@ const EditSalesOrderDialog = ({
               />
             </Grid>
 
-
             {/* UNIT */}
 
             <Grid item xs={12} sm={6}>
@@ -448,34 +356,12 @@ const EditSalesOrderDialog = ({
                 onChange={handleChange}
                 size="small"
                 required
-                error={
-                  formData.unit !== "" &&
-                  !ALLOWED_UNITS.includes(formData.unit)
-                }
-                helperText={
-                  formData.unit === ""
-                    ? "Select unit"
-                    : ""
-                }
               >
-                <MenuItem value="Meter">
-                  Meter
-                </MenuItem>
-
-                <MenuItem value="Roll">
-                  Roll
-                </MenuItem>
-
-                <MenuItem value="Kg">
-                  Kg
-                </MenuItem>
-
-                <MenuItem value="Piece">
-                  Piece
-                </MenuItem>
+                <MenuItem value="Meter">Meter</MenuItem>
+                <MenuItem value="Roll">Roll</MenuItem>
+                <MenuItem value="Kg">Kg</MenuItem>
               </TextField>
             </Grid>
-
 
             {/* RATE */}
 
@@ -495,7 +381,6 @@ const EditSalesOrderDialog = ({
               />
             </Grid>
 
-
             {/* RATE ADJUSTMENT */}
 
             <Grid item xs={12} sm={4}>
@@ -512,7 +397,6 @@ const EditSalesOrderDialog = ({
                 }}
               />
             </Grid>
-
 
             {/* FINAL RATE */}
 
@@ -532,7 +416,6 @@ const EditSalesOrderDialog = ({
               />
             </Grid>
 
-
             {/* JOB WORK */}
 
             <Grid item xs={12} sm={6}>
@@ -545,16 +428,11 @@ const EditSalesOrderDialog = ({
                 onChange={handleJobWorkChange}
                 size="small"
               >
-                <MenuItem value="false">
-                  No
-                </MenuItem>
+                <MenuItem value="false">No</MenuItem>
 
-                <MenuItem value="true">
-                  Yes
-                </MenuItem>
+                <MenuItem value="true">Yes</MenuItem>
               </TextField>
             </Grid>
-
 
             {/* SKU */}
 
@@ -570,7 +448,6 @@ const EditSalesOrderDialog = ({
               />
             </Grid>
 
-
             {/* SHIPPING LOCATION */}
 
             <Grid item xs={12} sm={6}>
@@ -583,7 +460,6 @@ const EditSalesOrderDialog = ({
                 size="small"
               />
             </Grid>
-
 
             {/* BILLING LOCATION */}
 
@@ -598,7 +474,6 @@ const EditSalesOrderDialog = ({
               />
             </Grid>
 
-
             {/* ROUTE */}
 
             <Grid item xs={12}>
@@ -611,12 +486,9 @@ const EditSalesOrderDialog = ({
                 size="small"
               />
             </Grid>
-
           </Grid>
-
         </Stack>
       </DialogContent>
-
 
       {/* =====================================================
           ACTIONS
@@ -629,7 +501,6 @@ const EditSalesOrderDialog = ({
           gap: 1,
         }}
       >
-
         <Button
           variant="outlined"
           color="inherit"
@@ -640,15 +511,11 @@ const EditSalesOrderDialog = ({
           Cancel
         </Button>
 
-
         <Button
           variant="contained"
           startIcon={
             saving ? (
-              <CircularProgress
-                size={18}
-                color="inherit"
-              />
+              <CircularProgress size={18} color="inherit" />
             ) : (
               <SaveIcon />
             )
@@ -656,16 +523,11 @@ const EditSalesOrderDialog = ({
           onClick={handleSubmit}
           disabled={saving}
         >
-          {saving
-            ? "Updating..."
-            : "Update Sales Order"}
+          {saving ? "Updating..." : "Update Sales Order"}
         </Button>
-
       </DialogActions>
-
     </Dialog>
   );
 };
-
 
 export default EditSalesOrderDialog;

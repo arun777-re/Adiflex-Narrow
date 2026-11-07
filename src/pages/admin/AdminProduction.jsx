@@ -17,13 +17,14 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 
 import { getAllProductions } from "../../redux/slices/productionSlice";
-import ProcessCircle from '../../components/admin/ProcessCircle';
+import ProcessCircle from "../../components/admin/ProcessCircle";
+
 import { PROCESS_CONFIG } from "../../config/productionProcess.config";
 import { getProcessStatus } from "../../utils/productionStatus.utils";
 
-
 const AdminProduction = () => {
   const dispatch = useDispatch();
+
   // ==========================================================
   // REDUX
   // ==========================================================
@@ -31,41 +32,29 @@ const AdminProduction = () => {
   const {
     allProductionOrders = [],
     loading = false,
-  } = useSelector(
-    (state) => state.production
-  );
+  } = useSelector((state) => state.production);
 
   // ==========================================================
   // FILTER STATES
   // ==========================================================
 
-  const [division, setDivision] =
-    useState("WOVEN");
-
-  const [process, setProcess] =
-    useState("ALL");
-
-  const [status, setStatus] =
-    useState("ALL");
-
-  const [search, setSearch] =
-    useState("");
+  const [division, setDivision] = useState("WOVEN");
+  const [process, setProcess] = useState("ALL");
+  const [status, setStatus] = useState("ALL");
+  const [search, setSearch] = useState("");
 
   // ==========================================================
   // LIVE CLOCK
   // ==========================================================
 
-  const [now, setNow] =
-    useState(new Date());
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    const interval =
-      setInterval(() => {
-        setNow(new Date());
-      }, 30000);
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 30000);
 
-    return () =>
-      clearInterval(interval);
+    return () => clearInterval(interval);
   }, []);
 
   // ==========================================================
@@ -73,244 +62,201 @@ const AdminProduction = () => {
   // ==========================================================
 
   useEffect(() => {
-    if (!division) {
-      return;
-    }
+    if (!division) return;
 
-    dispatch(
-      getAllProductions(division)
-    )
+    dispatch(getAllProductions(division))
       .unwrap()
       .catch((error) => {
-        console.error(
-          "❌ getAllProductions failed:",
-          error
-        );
+        console.error("getAllProductions failed:", error);
       });
   }, [dispatch, division]);
 
   // ==========================================================
-  // ONE ROW = ONE PRODUCTION ORDER
+  // NORMALIZE NEW API DATA
+  // ONE ROW = ONE PRODUCTION CYCLE
   // ==========================================================
 
-  const productionRows =
-    useMemo(() => {
-      return allProductionOrders.map(
-        (order, index) => ({
-          id:
-            order.id ||
-            `${index}-${order.soNo}-${order.cycleID}`,
+  const productionRows = useMemo(() => {
+    return allProductionOrders.map((order) => {
+      const stages = Array.isArray(order.stages)
+        ? order.stages
+        : Array.isArray(order.production_stage_runs)
+          ? order.production_stage_runs
+          : [];
 
-          soNo:
-            order.soNo || "-",
-            skucode:
-            order.skucode || "-",
+      const normalizedOrder = {
+        ...order,
 
-          cycleID:
-            order.cycleID || "-",
+        id: order.production_id ?? order.id,
 
-          skuCode:
-            order.skuCode || "-",
+        soNo: order.so_no || "-",
+        cycleID: order.cycle_id || "-",
 
-          productName:
-            order.productName ||
-            order.product ||
-            "-",
+        skuCode:
+          order.sku_code ||
+          order.skuCode ||
+          order.skucode ||
+          "-",
 
-          customer:
-            order.customer || "-",
+        productName:
+          order.product_name ||
+          order.productName ||
+          order.product ||
+          "-",
 
-          productionQty:
-            order.productionQty ??
-            order.productionTargetQty ??
-            0,
+        customer: order.customer || "-",
 
-          division:
-            order.division ||
-            division,
+        productionQty: Number(
+          order.production_target_qty ??
+          order.productionTargetQty ??
+          order.productionQty ??
+          0
+        ),
 
-          order,
-        })
-      );
-    }, [
-      allProductionOrders,
-      division,
-    ]);
+        productionStatus:
+          order.production_status ||
+          order.status ||
+          "PENDING",
+
+        stages,
+
+        // Compatibility with existing process utilities
+        production_stage_runs: stages,
+      };
+
+      return {
+        id:
+          normalizedOrder.id ??
+          normalizedOrder.cycleID,
+
+        soNo: normalizedOrder.soNo,
+        cycleID: normalizedOrder.cycleID,
+        skuCode: normalizedOrder.skuCode,
+        productName: normalizedOrder.productName,
+        customer: normalizedOrder.customer,
+        productionQty: normalizedOrder.productionQty,
+
+        division: String(
+          normalizedOrder.division || division
+        ).toUpperCase(),
+
+        order: normalizedOrder,
+      };
+    });
+  }, [allProductionOrders, division]);
 
   // ==========================================================
   // FILTERED ROWS
   // ==========================================================
 
-  const filteredRows =
-    useMemo(() => {
-      const searchText =
-        search
-          .toLowerCase()
-          .trim();
+  const filteredRows = useMemo(() => {
+    const searchText = search.trim().toLowerCase();
 
-      return productionRows.filter(
-        (row) => {
-          const order =
-            row.order;
+    return productionRows.filter((row) => {
+      const order = row.order;
 
-          // --------------------------------------------------
-          // SEARCH
-          // --------------------------------------------------
+      // ------------------------------------------------------
+      // SEARCH FILTER
+      // ------------------------------------------------------
 
-          const searchMatch =
-            !searchText ||
-            String(row.soNo)
-              .toLowerCase()
-              .includes(searchText) ||
-            String(row.cycleID)
-              .toLowerCase()
-              .includes(searchText) ||
-            String(row.skuCode)
-              .toLowerCase()
-              .includes(searchText) ||
-            String(row.productName)
-              .toLowerCase()
-              .includes(searchText) ||
-            String(row.customer)
-              .toLowerCase()
-              .includes(searchText);
+      const searchMatch =
+        !searchText ||
+        String(row.soNo).toLowerCase().includes(searchText) ||
+        String(row.cycleID).toLowerCase().includes(searchText) ||
+        String(row.skuCode).toLowerCase().includes(searchText) ||
+        String(row.productName).toLowerCase().includes(searchText) ||
+        String(row.customer).toLowerCase().includes(searchText);
 
-          if (!searchMatch) {
+      if (!searchMatch) return false;
+
+      // ------------------------------------------------------
+      // PROCESS FILTER
+      // ------------------------------------------------------
+
+      if (process !== "ALL") {
+        const selectedProcess = PROCESS_CONFIG.find(
+          (item) => item.name === process
+        );
+
+        if (selectedProcess) {
+          const processStatus = getProcessStatus(
+            order,
+            selectedProcess
+          );
+
+          if (
+            processStatus.type === "notApplicable" ||
+            processStatus.type === "notStarted"
+          ) {
             return false;
           }
-
-          // --------------------------------------------------
-          // PROCESS FILTER
-          // --------------------------------------------------
-
-          if (
-            process !== "ALL"
-          ) {
-            const selectedProcess =
-              PROCESS_CONFIG.find(
-                (item) =>
-                  item.name ===
-                  process
-              );
-
-            if (selectedProcess) {
-              const processStatus =
-                getProcessStatus(
-                  order,
-                  selectedProcess
-                );
-
-              if (
-                processStatus.type ===
-                  "notApplicable" ||
-                processStatus.type ===
-                  "notStarted"
-              ) {
-                return false;
-              }
-            }
-          }
-
-          // --------------------------------------------------
-          // STATUS FILTER
-          // --------------------------------------------------
-
-          if (
-            status !== "ALL"
-          ) {
-            const processStatuses =
-              PROCESS_CONFIG.map(
-                (config) =>
-                  getProcessStatus(
-                    order,
-                    config
-                  )
-              );
-
-            let statusMatch =
-              false;
-
-            if (
-              status ===
-              "RUNNING"
-            ) {
-              statusMatch =
-                processStatuses.some(
-                  (item) =>
-                    item.type ===
-                    "running"
-                );
-            }
-
-            if (
-              status === "LATE"
-            ) {
-              statusMatch =
-                processStatuses.some(
-                  (item) =>
-                    item.type ===
-                    "late"
-                );
-            }
-
-            if (
-              status ===
-              "ON_TIME"
-            ) {
-              statusMatch =
-                processStatuses.some(
-                  (item) =>
-                    item.type ===
-                    "ontime"
-                );
-            }
-
-            if (
-              status ===
-              "FASTER"
-            ) {
-              statusMatch =
-                processStatuses.some(
-                  (item) =>
-                    item.type ===
-                    "faster"
-                );
-            }
-
-            if (
-              status ===
-              "COMPLETED"
-            ) {
-              statusMatch =
-                processStatuses.some(
-                  (item) =>
-                    item.type ===
-                      "completed" ||
-                    item.type ===
-                      "ontime" ||
-                    item.type ===
-                      "faster"
-                );
-            }
-
-            if (!statusMatch) {
-              return false;
-            }
-          }
-
-          return true;
         }
-      );
-    }, [
-      productionRows,
-      process,
-      status,
-      search,
-      now,
-    ]);
+      }
+
+      // ------------------------------------------------------
+      // STATUS FILTER
+      // ------------------------------------------------------
+
+      if (status !== "ALL") {
+        const processStatuses = PROCESS_CONFIG.map(
+          (config) => getProcessStatus(order, config)
+        );
+
+        let statusMatch = false;
+
+        switch (status) {
+          case "RUNNING":
+            statusMatch = processStatuses.some(
+              (item) => item.type === "running"
+            );
+            break;
+
+          case "LATE":
+            statusMatch = processStatuses.some(
+              (item) => item.type === "late"
+            );
+            break;
+
+          case "ON_TIME":
+            statusMatch = processStatuses.some(
+              (item) => item.type === "ontime"
+            );
+            break;
+
+          case "FASTER":
+            statusMatch = processStatuses.some(
+              (item) => item.type === "faster"
+            );
+            break;
+
+          case "COMPLETED":
+            statusMatch = processStatuses.some(
+              (item) =>
+                item.type === "completed" ||
+                item.type === "ontime" ||
+                item.type === "faster"
+            );
+            break;
+
+          default:
+            statusMatch = true;
+        }
+
+        if (!statusMatch) return false;
+      }
+
+      return true;
+    });
+  }, [
+    productionRows,
+    process,
+    status,
+    search,
+    now,
+  ]);
 
   // ==========================================================
-  // COLUMNS
+  // DATAGRID COLUMNS
   // ==========================================================
 
   const columns = useMemo(() => {
@@ -318,19 +264,19 @@ const AdminProduction = () => {
       {
         field: "soNo",
         headerName: "SO No.",
-        width: 110,
+        width: 120,
       },
 
       {
         field: "cycleID",
         headerName: "Cycle ID",
-        width: 180,
+        width: 190,
       },
 
       {
-        field: "skucode",
+        field: "skuCode",
         headerName: "SKU Code",
-        width: 110,
+        width: 120,
       },
 
       {
@@ -343,55 +289,47 @@ const AdminProduction = () => {
       {
         field: "customer",
         headerName: "Customer",
-        width: 180,
+        width: 190,
       },
 
       {
         field: "productionQty",
         headerName: "Production Qty",
-        width: 130,
+        width: 140,
         type: "number",
+        valueFormatter: (value) =>
+          Number(value || 0).toLocaleString("en-IN"),
       },
 
-      // ======================================================
+      // ------------------------------------------------------
       // PROCESS COLUMNS
-      // ======================================================
+      // ------------------------------------------------------
 
-      ...PROCESS_CONFIG.map(
-        (processConfig) => ({
-          field: processConfig.name,
-          headerName:
-            processConfig.name,
-          width: 110,
+      ...PROCESS_CONFIG.map((processConfig) => ({
+        field: processConfig.name,
+        headerName: processConfig.name,
+        width: 115,
 
-          sortable: false,
-          filterable: false,
+        sortable: false,
+        filterable: false,
 
-          renderCell: (params) => (
-            <Box
-              sx={{
-                width: "100%",
-                height: "100%",
-
-                display: "flex",
-                alignItems: "center",
-                justifyContent:
-                  "center",
-              }}
-            >
-              <ProcessCircle
-                order={
-                  params.row
-                    .order
-                }
-                processConfig={
-                  processConfig
-                }
-              />
-            </Box>
-          ),
-        })
-      ),
+        renderCell: (params) => (
+          <Box
+            sx={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <ProcessCircle
+              order={params.row.order}
+              processConfig={processConfig}
+            />
+          </Box>
+        ),
+      })),
     ];
   }, [now]);
 
@@ -409,9 +347,7 @@ const AdminProduction = () => {
         },
       }}
     >
-      {/* ======================================================
-          HEADER
-      ====================================================== */}
+      {/* HEADER */}
 
       <Stack
         direction="row"
@@ -419,27 +355,16 @@ const AdminProduction = () => {
         justifyContent="space-between"
         sx={{ mb: 1.5 }}
       >
-        <Typography
-          variant="h5"
-          fontWeight={700}
-        >
+        <Typography variant="h5" fontWeight={700}>
           Production Management
         </Typography>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-        >
-          {
-            filteredRows.length
-          }{" "}
-          production orders
+        <Typography variant="body2" color="text.secondary">
+          {filteredRows.length} production orders
         </Typography>
       </Stack>
 
-      {/* ======================================================
-          FILTER BAR
-      ====================================================== */}
+      {/* FILTER BAR */}
 
       <Paper
         elevation={1}
@@ -456,152 +381,77 @@ const AdminProduction = () => {
           }}
           spacing={1.5}
         >
-          {/* ==================================================
-              DIVISION
-          ================================================== */}
+          {/* DIVISION */}
 
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 150,
-            }}
-          >
-            <InputLabel>
-              Division
-            </InputLabel>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Division</InputLabel>
 
             <Select
               value={division}
               label="Division"
               onChange={(e) => {
-                setDivision(
-                  e.target.value
-                );
-
+                setDivision(e.target.value);
                 setProcess("ALL");
                 setStatus("ALL");
               }}
             >
-              <MenuItem value="WOVEN">
-                Woven
-              </MenuItem>
-
-              <MenuItem value="CROCHET">
-                Crochet
-              </MenuItem>
+              <MenuItem value="WOVEN">Woven</MenuItem>
+              <MenuItem value="CROCHET">Crochet</MenuItem>
             </Select>
           </FormControl>
 
-          {/* ==================================================
-              PROCESS
-          ================================================== */}
+          {/* PROCESS */}
 
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 150,
-            }}
-          >
-            <InputLabel>
-              Process
-            </InputLabel>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Process</InputLabel>
 
             <Select
               value={process}
               label="Process"
-              onChange={(e) =>
-                setProcess(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setProcess(e.target.value)}
             >
-              <MenuItem value="ALL">
-                All Processes
-              </MenuItem>
+              <MenuItem value="ALL">All Processes</MenuItem>
 
-              {PROCESS_CONFIG.map(
-                (item) => (
-                  <MenuItem
-                    key={item.name}
-                    value={item.name}
-                  >
-                    {item.name}
-                  </MenuItem>
-                )
-              )}
+              {PROCESS_CONFIG.map((item) => (
+                <MenuItem key={item.name} value={item.name}>
+                  {item.name}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
-          {/* ==================================================
-              STATUS
-          ================================================== */}
+          {/* STATUS */}
 
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 150,
-            }}
-          >
-            <InputLabel>
-              Status
-            </InputLabel>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Status</InputLabel>
 
             <Select
               value={status}
               label="Status"
-              onChange={(e) =>
-                setStatus(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setStatus(e.target.value)}
             >
-              <MenuItem value="ALL">
-                All Status
-              </MenuItem>
-
-              <MenuItem value="RUNNING">
-                Running
-              </MenuItem>
-
-              <MenuItem value="LATE">
-                Late
-              </MenuItem>
-
-              <MenuItem value="ON_TIME">
-                On Time
-              </MenuItem>
-
-              <MenuItem value="FASTER">
-                Faster
-              </MenuItem>
-
-              <MenuItem value="COMPLETED">
-                Completed
-              </MenuItem>
+              <MenuItem value="ALL">All Status</MenuItem>
+              <MenuItem value="RUNNING">Running</MenuItem>
+              <MenuItem value="LATE">Late</MenuItem>
+              <MenuItem value="ON_TIME">On Time</MenuItem>
+              <MenuItem value="FASTER">Faster</MenuItem>
+              <MenuItem value="COMPLETED">Completed</MenuItem>
             </Select>
           </FormControl>
 
-          {/* ==================================================
-              SEARCH
-          ================================================== */}
+          {/* SEARCH */}
 
           <TextField
             size="small"
             fullWidth
             label="Search SO / Cycle / SKU / Product"
             value={search}
-            onChange={(e) =>
-              setSearch(
-                e.target.value
-              )
-            }
+            onChange={(e) => setSearch(e.target.value)}
           />
         </Stack>
       </Paper>
 
-      {/* ======================================================
-          TABLE
-      ====================================================== */}
+      {/* PRODUCTION TABLE */}
 
       <Paper
         elevation={1}
@@ -618,11 +468,7 @@ const AdminProduction = () => {
           autoHeight
           disableRowSelectionOnClick
           hideFooterSelectedRowCount
-          pageSizeOptions={[
-            10,
-            25,
-            50,
-          ]}
+          pageSizeOptions={[10, 25, 50]}
           initialState={{
             pagination: {
               paginationModel: {
@@ -634,22 +480,18 @@ const AdminProduction = () => {
           sx={{
             border: 0,
 
-            "& .MuiDataGrid-columnHeaders":
-              {
-                fontWeight: 700,
-              },
+            "& .MuiDataGrid-columnHeaders": {
+              fontWeight: 700,
+            },
 
             "& .MuiDataGrid-cell": {
               display: "flex",
-              alignItems:
-                "center",
+              alignItems: "center",
             },
 
-            "& .MuiDataGrid-row:hover":
-              {
-                backgroundColor:
-                  "action.hover",
-              },
+            "& .MuiDataGrid-row:hover": {
+              backgroundColor: "action.hover",
+            },
           }}
         />
       </Paper>
@@ -658,4 +500,3 @@ const AdminProduction = () => {
 };
 
 export default AdminProduction;
-
