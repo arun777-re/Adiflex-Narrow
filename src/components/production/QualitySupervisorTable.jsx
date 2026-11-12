@@ -57,7 +57,7 @@ const QualitySupervisorTable = () => {
             gap: 2,
           }}
         >
-          <Box>
+          {/* <Box>
             <Typography variant="h6" fontWeight={600}>
               Quality & Finishing Orders
             </Typography>
@@ -65,7 +65,7 @@ const QualitySupervisorTable = () => {
             <Typography variant="body2" color="text.secondary">
               Orders released to the Quality department
             </Typography>
-          </Box>
+          </Box> */}
 
           <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel id="quality-division-label">
