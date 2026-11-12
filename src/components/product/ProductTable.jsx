@@ -1,4 +1,6 @@
+
 import { useMemo, useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   Box,
@@ -15,36 +17,99 @@ import {
 
 import { DataGrid } from "@mui/x-data-grid";
 
-import { useDispatch, useSelector } from "react-redux";
-
 import {
   fetchProductBySku,
   changeProductStatus,
   fetchProducts,
   editProduct as updateProductThunk,
 } from "../../redux/slices/productSlice";
+
 import { productColumns } from "../../constant/productColumn";
+
 import toast from "react-hot-toast";
+
+const initialEditForm = {
+  sku: "",
+  productName: "",
+  division: "",
+  unit: "",
+  meterPerKG: "",
+  meterPerRoll: "",
+  color: "",
+  size: "",
+  rate: "",
+};
+
+// Normalize product fields returned by API
+const normalizeProduct = (product) => ({
+  sku:
+    product?.sku ??
+    product?.sku_code ??
+    product?.skucode ??
+    "",
+
+  productName:
+    product?.productName ??
+    product?.product_name ??
+    "",
+
+  division: product?.division ?? "",
+
+  unit:
+    product?.unit ??
+    product?.basicUnit ??
+    product?.basic_unit ??
+    "",
+
+  meterPerKG:
+    product?.meterPerKG ??
+    product?.meterPerKg ??
+    product?.meter_per_kg ??
+    "",
+
+  meterPerRoll:
+    product?.meterPerRoll ??
+    product?.meter_per_roll ??
+    "",
+
+  color: product?.color ?? "",
+  size: product?.size ?? "",
+  rate: product?.rate ?? "",
+});
 
 const ProductTable = () => {
   const dispatch = useDispatch();
 
-  const {role} = useSelector((state)=> state.auth?.user?.user);
-
-  const canEditProduct = role === "dispatch";
   // =====================================================
-  // PRODUCTS
+  // AUTH USER - SINGLE SELECTOR
+  // =====================================================
+
+  const authUser = useSelector(
+    (state) => state.auth?.user?.user
+  );
+
+  const role = authUser?.role;
+  const updatedBy = authUser?.name ?? "";
+
+  // Only dispatch can edit products
+  const canEditProduct = role === "dispatch";
+
+  // =====================================================
+  // PRODUCT REDUX STATE
+  // =====================================================
+
+  const {
+    allproducts,
+    loading,
+  } = useSelector((state) => state.product);
+
+  // =====================================================
+  // FETCH PRODUCTS
   // =====================================================
 
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
-
-  const { allproducts, loading, selectedProduct } = useSelector(
-    (state) => state.product,
-  );
-
-  const { user } = useSelector((state) => state.auth);
 
   // =====================================================
   // FILTER STATES
@@ -62,59 +127,62 @@ const ProductTable = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
-  const [editForm, setEditForm] = useState({
-    sku: "",
-    productName: "",
-    division: "",
-    unit: "",
-    meterPerKG: "",
-    meterPerRoll: "",
-    color: "",
-    size: "",
-    rate: "",
-  });
+
+  const [editForm, setEditForm] = useState(initialEditForm);
 
   // =====================================================
   // EDIT PRODUCT
   // =====================================================
 
   const handleEdit = async (sku) => {
-    if(!canEditProduct){
+    if (!canEditProduct) {
       toast.error("You don't have permission to edit products");
       return;
     }
+
+    if (!sku) {
+      toast.error("Product SKU is missing");
+      return;
+    }
+
     try {
       setEditLoading(true);
 
       const res = await dispatch(fetchProductBySku(sku));
 
       if (fetchProductBySku.fulfilled.match(res)) {
-        const product = res.payload?.data || res.payload;
+        const responseData = res.payload?.data ?? res.payload;
+
+        const product =
+          responseData?.data ??
+          responseData?.product ??
+          responseData;
+
+        if (!product || typeof product !== "object") {
+          toast.error("Product data not found");
+          return;
+        }
+
         setEditProduct(product);
+        setEditForm(normalizeProduct(product));
         setEditOpen(true);
+      } else {
+        toast.error(
+          res.payload?.message || "Failed to fetch product"
+        );
       }
     } catch (error) {
-      console.error("Error fetching product:", error);
+      console.error("Fetch product error:", error);
+
+      toast.error("Something went wrong while fetching product");
     } finally {
       setEditLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (editProduct) {
-      setEditForm({
-        sku: editProduct.sku || "",
-        productName: editProduct.productName || "",
-        division: editProduct.division || "",
-        unit: editProduct.unit || "",
-        meterPerKG: editProduct.meterPerKG || "",
-        meterPerRoll: editProduct.meterPerRoll || "",
-        color: editProduct.color || "",
-        size: editProduct.size || "",
-        rate: editProduct.rate || "",
-      });
-    }
-  }, [editProduct]);
+  // =====================================================
+  // EDIT FORM CHANGE
+  // =====================================================
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
@@ -126,26 +194,44 @@ const ProductTable = () => {
   };
 
   // =====================================================
-  // CLOSE EDIT
+  // CLOSE EDIT DIALOG
   // =====================================================
 
   const handleEditClose = () => {
+    if (editLoading) return;
+
     setEditOpen(false);
     setEditProduct(null);
+    setEditForm(initialEditForm);
   };
 
+  // =====================================================
+  // UPDATE PRODUCT
+  // =====================================================
+
   const handleUpdateProduct = async () => {
-    if(!canEditProduct){
+    if (!canEditProduct) {
       toast.error("You don't have permission to update products");
       return;
     }
+
+    if (!editForm.sku) {
+      toast.error("Product SKU is missing");
+      return;
+    }
+
+    if (!editForm.productName.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
+
     try {
       setEditLoading(true);
 
       const res = await dispatch(
         updateProductThunk({
           sku: editForm.sku,
-          productName: editForm.productName,
+          productName: editForm.productName.trim(),
           division: editForm.division,
           unit: editForm.unit,
           meterPerKG: editForm.meterPerKG,
@@ -153,8 +239,8 @@ const ProductTable = () => {
           color: editForm.color,
           size: editForm.size,
           rate: editForm.rate,
-          updatedBy: user?.user?.name,
-        }),
+          updatedBy,
+        })
       );
 
       if (updateProductThunk.fulfilled.match(res)) {
@@ -162,47 +248,72 @@ const ProductTable = () => {
 
         setEditOpen(false);
         setEditProduct(null);
+        setEditForm(initialEditForm);
 
-        // latest product data
         dispatch(fetchProducts());
       } else {
-        toast.error(res.payload?.message || "Failed to update product");
+        toast.error(
+          res.payload?.message || "Failed to update product"
+        );
       }
     } catch (error) {
       console.error("Update product error:", error);
 
-      toast.error("Something went wrong while updating product");
+      toast.error(
+        "Something went wrong while updating product"
+      );
     } finally {
       setEditLoading(false);
     }
   };
 
   // =====================================================
-  // STATUS CHANGE
+  // CHANGE PRODUCT STATUS
   // =====================================================
 
   const handleStatus = async (sku, currentStatus) => {
-    const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+    if (!sku) {
+      toast.error("Product SKU is missing");
+      return;
+    }
 
-    const res = await dispatch(
-      changeProductStatus({
-        sku,
-        status: newStatus,
-        updatedBy: user?.user?.name,
-      }),
-    );
+    try {
+      const isActive =
+        String(currentStatus || "").toUpperCase() === "ACTIVE";
 
-    if (res.payload?.success) {
-      dispatch(fetchProducts());
+      const newStatus = isActive ? "Inactive" : "Active";
+
+      const res = await dispatch(
+        changeProductStatus({
+          sku,
+          status: newStatus,
+          updatedBy,
+        })
+      );
+
+      if (res.payload?.success) {
+        toast.success(`Product ${newStatus} successfully`);
+        dispatch(fetchProducts());
+      } else {
+        toast.error(
+          res.payload?.message || "Failed to change product status"
+        );
+      }
+    } catch (error) {
+      console.error("Change product status error:", error);
+
+      toast.error("Something went wrong while changing status");
     }
   };
 
   // =====================================================
-  // FILTERED DATA
+  // FILTERED PRODUCTS
   // =====================================================
 
   const filteredRows = useMemo(() => {
-    const products = Array.isArray(allproducts) ? allproducts : [];
+    const products = Array.isArray(allproducts)
+      ? allproducts
+      : [];
 
     const normalize = (value) =>
       String(value ?? "")
@@ -225,29 +336,43 @@ const ProductTable = () => {
         .map(normalize)
         .join(" ");
 
-      const searchMatch = !searchValue || searchableText.includes(searchValue);
+      const searchMatch =
+        !searchValue || searchableText.includes(searchValue);
 
       const divisionMatch =
-        division === "All" || normalize(item.division) === normalize(division);
+        division === "All" ||
+        normalize(item.division) === normalize(division);
 
       const statusMatch =
-        status === "All" || normalize(item.status) === normalize(status);
+        status === "All" ||
+        normalize(item.status) === normalize(status);
 
       const sizeMatch =
-        size === "All" || normalize(item.size) === normalize(size);
+        size === "All" ||
+        normalize(item.size) === normalize(size);
 
-      return searchMatch && divisionMatch && statusMatch && sizeMatch;
+      return (
+        searchMatch &&
+        divisionMatch &&
+        statusMatch &&
+        sizeMatch
+      );
     });
   }, [allproducts, search, division, status, size]);
 
   // =====================================================
   // DATAGRID COLUMNS
   // =====================================================
-  const columns = productColumns({
-    handleEdit,
-    handleStatus,
-    canEditProduct,
-  });
+
+  const columns = useMemo(
+    () =>
+      productColumns({
+        handleEdit,
+        handleStatus,
+        canEditProduct,
+      }),
+    [canEditProduct]
+  );
 
   // =====================================================
   // UNIQUE SIZES
@@ -258,7 +383,7 @@ const ProductTable = () => {
       ...new Set(
         (allproducts || [])
           .map((item) => String(item.size ?? "").trim())
-          .filter(Boolean),
+          .filter(Boolean)
       ),
     ].sort((a, b) => {
       const numA = parseFloat(a);
@@ -278,9 +403,7 @@ const ProductTable = () => {
 
   return (
     <Box>
-      {/* =================================================
-          FILTERS
-      ================================================= */}
+      {/* FILTERS */}
 
       <Grid container spacing={2} mb={3}>
         <Grid size={{ xs: 12, md: 5 }}>
@@ -302,9 +425,7 @@ const ProductTable = () => {
             onChange={(e) => setDivision(e.target.value)}
           >
             <MenuItem value="All">All</MenuItem>
-
             <MenuItem value="Woven">Woven</MenuItem>
-
             <MenuItem value="Crochet">Crochet</MenuItem>
           </TextField>
         </Grid>
@@ -336,17 +457,13 @@ const ProductTable = () => {
             onChange={(e) => setStatus(e.target.value)}
           >
             <MenuItem value="All">All</MenuItem>
-
             <MenuItem value="Active">Active</MenuItem>
-
             <MenuItem value="Inactive">Inactive</MenuItem>
           </TextField>
         </Grid>
       </Grid>
 
-      {/* =================================================
-          DATA GRID
-      ================================================= */}
+      {/* DATA GRID */}
 
       <Box
         sx={{
@@ -377,11 +494,14 @@ const ProductTable = () => {
         />
       </Box>
 
-      {/* =================================================
-          EDIT PRODUCT DIALOG
-      ================================================= */}
+      {/* EDIT PRODUCT DIALOG */}
 
-      <Dialog open={editOpen} onClose={handleEditClose} fullWidth maxWidth="md">
+      <Dialog
+        open={canEditProduct && editOpen}
+        onClose={handleEditClose}
+        fullWidth
+        maxWidth="md"
+      >
         <DialogTitle>Edit Product</DialogTitle>
 
         <DialogContent dividers>
@@ -399,13 +519,14 @@ const ProductTable = () => {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                },
                 gap: 2,
                 pt: 1,
               }}
             >
-              {/* SKU */}
-
               <TextField
                 label="SKU Code"
                 name="sku"
@@ -414,8 +535,6 @@ const ProductTable = () => {
                 fullWidth
               />
 
-              {/* PRODUCT NAME */}
-
               <TextField
                 label="Product Name"
                 name="productName"
@@ -423,8 +542,6 @@ const ProductTable = () => {
                 onChange={handleEditChange}
                 fullWidth
               />
-
-              {/* DIVISION */}
 
               <TextField
                 select
@@ -435,11 +552,8 @@ const ProductTable = () => {
                 fullWidth
               >
                 <MenuItem value="Woven">WOVEN</MenuItem>
-
                 <MenuItem value="Crochet">CROCHET</MenuItem>
               </TextField>
-
-              {/* UNIT */}
 
               <TextField
                 select
@@ -450,9 +564,9 @@ const ProductTable = () => {
                 fullWidth
               >
                 <MenuItem value="Meter">Meter</MenuItem>
+                <MenuItem value="Roll">Roll</MenuItem>
+                <MenuItem value="KG">KG</MenuItem>
               </TextField>
-
-              {/* METER / KG */}
 
               <TextField
                 label="Meter / KG"
@@ -467,8 +581,6 @@ const ProductTable = () => {
                 }}
               />
 
-              {/* METER / ROLL */}
-
               <TextField
                 label="Meter / Roll"
                 name="meterPerRoll"
@@ -482,8 +594,6 @@ const ProductTable = () => {
                 }}
               />
 
-              {/* COLOR */}
-
               <TextField
                 label="Color"
                 name="color"
@@ -491,8 +601,6 @@ const ProductTable = () => {
                 onChange={handleEditChange}
                 fullWidth
               />
-
-              {/* SIZE */}
 
               <TextField
                 label="Size"
@@ -506,8 +614,6 @@ const ProductTable = () => {
                   step: "0.01",
                 }}
               />
-
-              {/* RATE */}
 
               <TextField
                 label="Rate"
@@ -528,14 +634,23 @@ const ProductTable = () => {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={handleEditClose}>Cancel</Button>
+          <Button
+            onClick={handleEditClose}
+            disabled={editLoading}
+          >
+            Cancel
+          </Button>
 
           <Button
             variant="contained"
-            disabled={!editProduct || editLoading}
+            disabled={
+              !canEditProduct ||
+              !editProduct ||
+              editLoading
+            }
             onClick={handleUpdateProduct}
           >
-            Update Product
+            {editLoading ? "Updating..." : "Update Product"}
           </Button>
         </DialogActions>
       </Dialog>
