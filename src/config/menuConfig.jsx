@@ -347,6 +347,12 @@ export const menuConfig = {
       title:"FG Inventory",
       path:"/inventory",
       icon:<AssignmentIndOutlinedIcon/>
-    }
+    },
+    {
+      id:3,
+      title:"Sales Orders",
+      path:"/sales-order",
+      icon:<AssignmentIndOutlinedIcon/>
+    },
   ],
 };
