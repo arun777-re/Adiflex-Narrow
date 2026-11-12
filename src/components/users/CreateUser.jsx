@@ -202,6 +202,7 @@ const CreateUser = () => {
                 <MenuItem value={ROLES.DISPATCH}>Dispatch</MenuItem>
                 <MenuItem value={ROLES.SUPERVISOR}>Supervisor</MenuItem>
                 <MenuItem value={ROLES.EMPLOYEE}>Employee</MenuItem>
+                <MenuItem value={ROLES.SENIORMERCHANDISER}>Senior Merchandiser</MenuItem>
               </TextField>
             </Grid>
 

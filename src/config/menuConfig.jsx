@@ -334,5 +334,19 @@ export const menuConfig = {
       path:"/employee/delegation",
       icon:<AssignmentIndOutlinedIcon/>
     }
-  ]
+  ],
+  [ROLES.SENIORMERCHANDISER]:[
+    {
+      id:1,
+      title:"Production Status",
+      path:"/admin-production",
+      icon:<AssignmentOutlinedIcon/>
+    },
+    {
+      id:2,
+      title:"FG Inventory",
+      path:"/inventory",
+      icon:<AssignmentIndOutlinedIcon/>
+    }
+  ],
 };

@@ -14,4 +14,5 @@ export const ROLES = {
   QUALITYSUPERVISOR:"qualitysupervisor",
   
   PACKINGSUPERVISOR:"packingsupervisor",
+  SENIORMERCHANDISER:"seniormerchandiser",
 };
