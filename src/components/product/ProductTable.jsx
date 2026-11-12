@@ -28,6 +28,10 @@ import toast from "react-hot-toast";
 
 const ProductTable = () => {
   const dispatch = useDispatch();
+
+  const {role} = useSelector((state)=> state.auth?.user?.user);
+
+  const canEditProduct = role === "dispatch";
   // =====================================================
   // PRODUCTS
   // =====================================================
@@ -75,6 +79,10 @@ const ProductTable = () => {
   // =====================================================
 
   const handleEdit = async (sku) => {
+    if(!canEditProduct){
+      toast.error("You don't have permission to edit products");
+      return;
+    }
     try {
       setEditLoading(true);
 
@@ -127,6 +135,10 @@ const ProductTable = () => {
   };
 
   const handleUpdateProduct = async () => {
+    if(!canEditProduct){
+      toast.error("You don't have permission to update products");
+      return;
+    }
     try {
       setEditLoading(true);
 
@@ -234,6 +246,7 @@ const ProductTable = () => {
   const columns = productColumns({
     handleEdit,
     handleStatus,
+    canEditProduct,
   });
 
   // =====================================================

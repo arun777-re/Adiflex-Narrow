@@ -1,3 +1,4 @@
+
 import { Box, Button, Chip } from "@mui/material";
 
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
@@ -6,61 +7,53 @@ import PowerSettingsNewRoundedIcon from "@mui/icons-material/PowerSettingsNewRou
 export const productColumns = ({
   handleEdit,
   handleStatus,
+  canEditProduct,
 }) => [
   {
     field: "skucode",
     headerName: "SKU Code",
     width: 120,
   },
-
   {
     field: "productName",
     headerName: "Product Name",
     flex: 1,
     minWidth: 220,
   },
-
   {
     field: "division",
     headerName: "Division",
     width: 120,
   },
-
   {
     field: "basicUnit",
     headerName: "Unit",
     width: 100,
   },
-
   {
     field: "meterPerKg",
     headerName: "Meter/Kg",
     width: 100,
   },
-
   {
     field: "meterPerRoll",
     headerName: "Meter/Roll",
     width: 110,
   },
-
   {
     field: "color",
     headerName: "Color",
     width: 120,
   },
-
   {
     field: "size",
     headerName: "Size",
     width: 100,
   },
-
   {
     field: "rate",
     headerName: "Rate",
     width: 100,
-
     valueFormatter: (value) =>
       value !== null &&
       value !== undefined &&
@@ -68,12 +61,10 @@ export const productColumns = ({
         ? Number(value).toFixed(2)
         : "",
   },
-
   {
     field: "status",
     headerName: "Status",
     width: 120,
-
     renderCell: (params) => {
       const status = String(params.value || "").toUpperCase();
 
@@ -81,35 +72,22 @@ export const productColumns = ({
         <Chip
           size="small"
           label={status}
-          color={
-            status === "ACTIVE"
-              ? "success"
-              : "error"
-          }
+          color={status === "ACTIVE" ? "success" : "error"}
         />
       );
     },
   },
-
   {
     field: "updatedAt",
     headerName: "Updated At",
     width: 180,
-
     valueFormatter: (value) =>
-      value
-        ? new Date(value).toLocaleString("en-IN")
-        : "",
+      value ? new Date(value).toLocaleString("en-IN") : "",
   },
-
-  // ==========================================
-  // ACTIONS
-  // ==========================================
-
   {
     field: "actions",
     headerName: "Actions",
-    width: 230,
+    width: canEditProduct ? 230 : 130,
     sortable: false,
     filterable: false,
 
@@ -126,46 +104,30 @@ export const productColumns = ({
             gap: 1,
           }}
         >
-          {/* EDIT */}
-
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<EditRoundedIcon />}
-            onClick={() =>
-              handleEdit(params.row.skucode)
-            }
-          >
-            Edit
-          </Button>
-
-          {/* STATUS */}
+          {canEditProduct && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EditRoundedIcon />}
+              onClick={() => handleEdit(params.row.skucode)}
+            >
+              Edit
+            </Button>
+          )}
 
           <Button
             size="small"
             variant="contained"
-            color={
-              status === "ACTIVE"
-                ? "error"
-                : "success"
-            }
-            startIcon={
-              <PowerSettingsNewRoundedIcon />
-            }
+            color={status === "ACTIVE" ? "error" : "success"}
+            startIcon={<PowerSettingsNewRoundedIcon />}
             onClick={() =>
-              handleStatus(
-                params.row.skucode,
-                status
-              )
+              handleStatus(params.row.skucode, status)
             }
           >
-            {status === "ACTIVE"
-              ? "Deactivate"
-              : "Activate"}
+            {status === "ACTIVE" ? "Deactivate" : "Activate"}
           </Button>
         </Box>
       );
     },
   },
 ];
-
