@@ -37,9 +37,10 @@ const Inventory = () => {
 
   // Product filter
   const [productFilter, setProductFilter] = useState("");
-const stockUnitRef = useRef("METER");
+  const stockUnitRef = useRef("METER");
   // SKU filter
   const [skuFilter, setSkuFilter] = useState("");
+  const [sizeFilter, setSizeFilter] = useState("");
 
   // ============================================================
   // REDUX
@@ -48,7 +49,10 @@ const stockUnitRef = useRef("METER");
   const { inventory, loading } = useSelector((state) => state?.fginventory);
 
   const { user } = useSelector((state) => state.auth?.user || {});
-  const canEditStock = String(user?.role || "").trim().toLowerCase() === "dispatch";
+  const canEditStock =
+    String(user?.role || "")
+      .trim()
+      .toLowerCase() === "dispatch";
 
   // ============================================================
   // FETCH INVENTORY
@@ -69,104 +73,112 @@ const stockUnitRef = useRef("METER");
   // ============================================================
 
   const divisionData = useMemo(() => {
-  const userDivision = String(user?.division || "")
-    .trim()
-    .toLowerCase();
-
-  if (!userDivision || userDivision === "all") {
-    return inventoryData;
-  }
-
-  return inventoryData.filter((item) => {
-    const itemDivision = String(item?.division || "")
+    const userDivision = String(user?.division || "")
       .trim()
       .toLowerCase();
 
-    return itemDivision === userDivision;
-  });
-}, [inventoryData, user?.division]);
+    if (!userDivision || userDivision === "all") {
+      return inventoryData;
+    }
+
+    return inventoryData.filter((item) => {
+      const itemDivision = String(item?.division || "")
+        .trim()
+        .toLowerCase();
+
+      return itemDivision === userDivision;
+    });
+  }, [inventoryData, user?.division]);
 
   // ============================================================
   // PRODUCT OPTIONS
   // ============================================================
-const productOptions = useMemo(() => {
-  return [
-    ...new Set(
-      divisionData
-        .map((item) => String(item?.productName || "").trim())
-        .filter(Boolean)
-    ),
-  ].sort((a, b) => a.localeCompare(b));
-}, [divisionData]);
+  const productOptions = useMemo(() => {
+    return [
+      ...new Set(
+        divisionData
+          .map((item) => String(item?.productName || "").trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+  }, [divisionData]);
 
   // ============================================================
   // SKU OPTIONS
   // ============================================================
 
   const skuOptions = useMemo(() => {
-  return [
-    ...new Set(
-      divisionData
-        .map((item) => String(item?.sku || "").trim())
-        .filter(Boolean)
-    ),
-  ].sort((a, b) => a.localeCompare(b));
-}, [divisionData]);
+    return [
+      ...new Set(
+        divisionData
+          .map((item) => String(item?.sku || "").trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+  }, [divisionData]);
+
+  const sizeOptions = useMemo(() => {
+    return [
+      ...new Set(
+        divisionData
+          .map((item) => String(item?.size || "").trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+  }, [divisionData]);
 
   // ============================================================
   // FILTERED DATA
   // ============================================================
+  const filteredData = useMemo(() => {
+    return divisionData.filter((item) => {
+      const product = String(item?.productName || "").trim();
+      const skuCode = String(item?.sku || "").trim();
+      const size = String(item?.size || "").trim();
 
- const filteredData = useMemo(() => {
-  return divisionData.filter((item) => {
-    const product = String(item?.productName || "").trim();
-    const skuCode = String(item?.sku || "").trim();
+      if (
+        productFilter &&
+        product.toLowerCase() !== productFilter.toLowerCase()
+      ) {
+        return false;
+      }
 
-    if (
-      productFilter &&
-      product.toLowerCase() !== productFilter.toLowerCase()
-    ) {
-      return false;
-    }
+      if (skuFilter && skuCode.toLowerCase() !== skuFilter.toLowerCase()) {
+        return false;
+      }
 
-    if (
-      skuFilter &&
-      skuCode.toLowerCase() !== skuFilter.toLowerCase()
-    ) {
-      return false;
-    }
+      if (sizeFilter && size.toLowerCase() !== sizeFilter.toLowerCase()) {
+        return false;
+      }
 
-    return true;
-  });
-}, [divisionData, productFilter, skuFilter]);
+      return true;
+    });
+  }, [divisionData, productFilter, skuFilter, sizeFilter]);
 
   // ============================================================
   // SUMMARY
   // ============================================================
 
- const availableFGStock = useMemo(() => {
-  return filteredData.reduce(
-    (sum, item) => sum + Number(item?.availableQty || 0),
-    0
-  );
-}, [filteredData]);
+  const availableFGStock = useMemo(() => {
+    return filteredData.reduce(
+      (sum, item) => sum + Number(item?.availableQty || 0),
+      0,
+    );
+  }, [filteredData]);
 
-const lowStockItemsLength = useMemo(() => {
-  return filteredData.filter(
-    (item) => {
+  const lowStockItemsLength = useMemo(() => {
+    return filteredData.filter((item) => {
+      const qty = Number(item?.availableQty);
+      return Number.isFinite(qty) && qty <= 1000;
+    }).length;
+  }, [filteredData]);
 
-    const qty = Number(item?.availableQty);
- return Number.isFinite(qty) && qty<=1000;
-}).length;
-}, [filteredData]);
-
-const outOfStockItemsLength = useMemo(() => {
-  return filteredData.filter(
-    (item) => {
+  const outOfStockItemsLength = useMemo(() => {
+    return filteredData.filter((item) => {
       const qty = Number(item?.availableQty);
       return Number.isFinite(qty) && qty <= 0;
-}).length;
-}, [filteredData]);
+    }).length;
+  }, [filteredData]);
   // ============================================================
   // CLEAR FILTERS
   // ============================================================
@@ -174,30 +186,30 @@ const outOfStockItemsLength = useMemo(() => {
   const handleClearFilters = () => {
     setProductFilter("");
     setSkuFilter("");
+    setSizeFilter("");
   };
 
   // ============================================================
   // EDIT STOCK
   // ============================================================
 
- const handleEditStock = (item) => {
-  if (!item) return;
+  const handleEditStock = (item) => {
+    if (!item) return;
 
-  setSelectedItem(item);
+    setSelectedItem(item);
 
-  setNewFGQty(item?.availableQty ?? "");
+    setNewFGQty(item?.availableQty ?? "");
 
-  setStockUnit("METER");
-  stockUnitRef.current = "METER";
+    setStockUnit("METER");
+    stockUnitRef.current = "METER";
 
-  setEditOpen(true);
-};
+    setEditOpen(true);
+  };
 
-
-const handleStockUnitChange = (value) => {
-  setStockUnit(value);
-  stockUnitRef.current = value;
-};
+  const handleStockUnitChange = (value) => {
+    setStockUnit(value);
+    stockUnitRef.current = value;
+  };
 
   // ============================================================
   // CLOSE EDIT DIALOG
@@ -215,55 +227,53 @@ const handleStockUnitChange = (value) => {
   // UPDATE STOCK
   // ============================================================
 
-const handleUpdateStock = async () => {
-  if (!selectedItem) return;
+  const handleUpdateStock = async () => {
+    if (!selectedItem) return;
 
-  const skucode = selectedItem.sku;
-  const enteredQty = Number(newFGQty);
-  const selectedUnit = stockUnitRef.current;
-  const meterPerRoll = Number(selectedItem.meterPerRoll);
+    const skucode = selectedItem.sku;
+    const enteredQty = Number(newFGQty);
+    const selectedUnit = stockUnitRef.current;
+    const meterPerRoll = Number(selectedItem.meterPerRoll);
 
-  if (!skucode || !Number.isFinite(enteredQty) || enteredQty < 0) {
-    console.error("Invalid SKU or quantity");
-    return;
-  }
+    if (!skucode || !Number.isFinite(enteredQty) || enteredQty < 0) {
+      console.error("Invalid SKU or quantity");
+      return;
+    }
 
-  if (
-    selectedUnit === "ROLL" &&
-    (!Number.isFinite(meterPerRoll) || meterPerRoll <= 0)
-  ) {
-    console.error("Invalid meter per roll");
-    return;
-  }
+    if (
+      selectedUnit === "ROLL" &&
+      (!Number.isFinite(meterPerRoll) || meterPerRoll <= 0)
+    ) {
+      console.error("Invalid meter per roll");
+      return;
+    }
 
-  const qtyInMeter =
-    selectedUnit === "ROLL"
-      ? enteredQty * meterPerRoll
-      : enteredQty;
+    const qtyInMeter =
+      selectedUnit === "ROLL" ? enteredQty * meterPerRoll : enteredQty;
 
-  try {
-    console.log("FINAL STOCK UPDATE:", {
-      skucode,
-      selectedUnit,
-      enteredQty,
-      qtyInMeter,
-    });
-
-    const result = await dispatch(
-      updateFG({
+    try {
+      console.log("FINAL STOCK UPDATE:", {
         skucode,
-        newFGQty: qtyInMeter,
-      })
-    ).unwrap();
+        selectedUnit,
+        enteredQty,
+        qtyInMeter,
+      });
 
-    console.log("Stock updated:", result);
+      const result = await dispatch(
+        updateFG({
+          skucode,
+          newFGQty: qtyInMeter,
+        }),
+      ).unwrap();
 
-    handleCloseEdit();
-    await dispatch(fetchAllFG());
-  } catch (error) {
-    console.error("Stock update failed:", error);
-  }
-};
+      console.log("Stock updated:", result);
+
+      handleCloseEdit();
+      await dispatch(fetchAllFG());
+    } catch (error) {
+      console.error("Stock update failed:", error);
+    }
+  };
 
   // ============================================================
   // RENDER
@@ -299,15 +309,8 @@ const handleUpdateStock = async () => {
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          {/* ==================================================
-              PRODUCT NAME
-          ================================================== */}
-          <Grid
-            size={{
-              xs: 12,
-              md: 5,
-            }}
-          >
+          {/* PRODUCT NAME */}
+          <Grid size={{ xs: 12, md: 4 }}>
             <Autocomplete
               size="small"
               options={productOptions}
@@ -330,16 +333,8 @@ const handleUpdateStock = async () => {
             />
           </Grid>
 
-          {/* ==================================================
-              SKU CODE
-          ================================================== */}
-
-          <Grid
-            size={{
-              xs: 12,
-              md: 4,
-            }}
-          >
+          {/* SKU CODE */}
+          <Grid size={{ xs: 12, md: 3 }}>
             <Autocomplete
               size="small"
               options={skuOptions}
@@ -362,23 +357,37 @@ const handleUpdateStock = async () => {
             />
           </Grid>
 
-          {/* ==================================================
-              CLEAR FILTERS
-          ================================================== */}
+          {/* SIZE */}
+          <Grid size={{ xs: 12, md: 3 }}>
+            <Autocomplete
+              size="small"
+              options={sizeOptions}
+              value={sizeFilter || null}
+              onChange={(event, newValue) => {
+                setSizeFilter(newValue || "");
+              }}
+              getOptionLabel={(option) => String(option || "")}
+              isOptionEqualToValue={(option, value) =>
+                String(option) === String(value)
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Size"
+                  placeholder="Select size..."
+                />
+              )}
+              fullWidth
+            />
+          </Grid>
 
-          <Grid
-            size={{
-              xs: 12,
-              md: 3,
-            }}
-          >
+          {/* CLEAR FILTERS */}
+          <Grid size={{ xs: 12, md: 2 }}>
             <Button
               variant="outlined"
               fullWidth
               onClick={handleClearFilters}
-              sx={{
-                height: 40,
-              }}
+              sx={{ height: 40 }}
             >
               Clear Filters
             </Button>
@@ -476,7 +485,7 @@ const handleUpdateStock = async () => {
           DATA GRID
       ====================================================== */}
 
-      <InventoryDataGrid 
+      <InventoryDataGrid
         data={filteredData}
         loading={loading}
         onEdit={handleEditStock}
