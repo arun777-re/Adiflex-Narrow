@@ -6,6 +6,7 @@ import MerchandiserDashBoard from "../components/dashboards/MerchandiserDashBoar
 import PackingDashBoard from "../components/dashboards/production/PackingDashBoard";
 import ProductionDashBoard from "../components/dashboards/production/ProductionDashBoard";
 import QualityDashBoard from "../components/dashboards/production/QualityDashBoard";
+import SnrMrchndsrDashboard from "../components/dashboards/SnrMrchndsrDashboard";
 
 export const DASHBOARD_COMPONENTS = {
   admin: AdminDashBoard,
@@ -15,5 +16,6 @@ export const DASHBOARD_COMPONENTS = {
   billing: BillingDashBoard,
   employee:EmployeeDashboard,
   qualitysupervisor:QualityDashBoard,
-  packingsupervisor:PackingDashBoard
+  packingsupervisor:PackingDashBoard,
+  seniormerchandiser:SnrMrchndsrDashboard,
 };
