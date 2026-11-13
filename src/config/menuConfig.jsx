@@ -215,7 +215,7 @@ export const menuConfig = {
  
     {
       id: 3,
-      title: "Complete Dispatch Orders",
+      title: "Dispatch/Challan History",
       path: "/complete-dispatch",
       icon: <CheckCircleRoundedIcon />,
     },
@@ -287,14 +287,9 @@ export const menuConfig = {
       icon: <Inventory2RoundedIcon />,
     },
 
+ 
     {
       id: 7,
-      title: "Billing Done",
-      path: "/billing-done",
-      icon: <TaskAltRoundedIcon />,
-    },
-    {
-      id: 8,
       title: "Holiday",
       path: "/company-holidays",
       icon: <TaskAltRoundedIcon />,

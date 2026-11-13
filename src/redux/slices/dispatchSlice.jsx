@@ -51,7 +51,7 @@ export const dispatchOrder = createAsyncThunk(
 export const getAllCompletedDispatchOrders = createAsyncThunk('/dispatch/complete',async(_,thunkAPI)=>{
   try {
       const response = await getAllcompletedDispatch();
-       
+       console.log("response in api lala",response);
 
       return response;
   } catch (error) {
@@ -239,7 +239,7 @@ const dispatchSlice = createSlice({
       state.loading = false;
 
       state.completedDispatchOrders =
-        action.payload?.completedDispatchOrders || [];
+        action.payload?.data || [];
     }
   )
 
