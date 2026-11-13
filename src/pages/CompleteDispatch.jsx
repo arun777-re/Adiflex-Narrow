@@ -8,6 +8,8 @@ import {
   Stack,
   Chip,
   Divider,
+  TextField,
+  MenuItem,
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
@@ -18,7 +20,9 @@ import {
   getAllCompletedDispatchOrders,
 } from "../redux/slices/dispatchSlice";
 
-import toast from "react-hot-toast";
+// =============================================
+// HELPERS
+// =============================================
 
 const formatAmount = (value) => {
   const amount = Number(value);
@@ -41,8 +45,16 @@ const formatDate = (value) => {
   return date.toLocaleString("en-IN");
 };
 
+// =============================================
+// COMPONENT
+// =============================================
+
 const CompleteDispatch = () => {
   const dispatch = useDispatch();
+
+  // =========================================
+  // LOCAL STATE
+  // =========================================
 
   const [selectedChallan, setSelectedChallan] = useState(null);
 
@@ -56,40 +68,159 @@ const CompleteDispatch = () => {
     pageSize: 5,
   });
 
+  // Search
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Filters
+  const [status, setStatus] = useState("");
+  const [route, setRoute] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  // Sorting
+  const [sortModel, setSortModel] = useState([
+    {
+      field: "createdAt",
+      sort: "desc",
+    },
+  ]);
+
+  // =========================================
+  // REDUX STATE
+  // =========================================
+
   const {
     completedDispatchOrders = [],
+    completedDispatchPagination = {},
     loading = false,
   } = useSelector((state) => state.dispatch);
 
-  // Fetch challan history
+  const totalRecords =
+    completedDispatchPagination?.totalRecords || 0;
+
+  // =========================================
+  // SEARCH DEBOUNCE
+  // =========================================
+
   useEffect(() => {
-    dispatch(getAllCompletedDispatchOrders());
-  }, [dispatch]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 350);
 
-  // Normalize API response
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // =========================================
+  // FETCH CHALLAN HISTORY
+  // =========================================
+
+  useEffect(() => {
+    const currentSort = sortModel[0] || {
+      field: "createdAt",
+      sort: "desc",
+    };
+
+    dispatch(
+      getAllCompletedDispatchOrders({
+        page: paginationModel.page,
+        limit: paginationModel.pageSize,
+
+        search: debouncedSearch,
+        status,
+        route,
+        fromDate,
+        toDate,
+
+        sortBy: currentSort.field,
+        sortOrder: currentSort.sort,
+      })
+    );
+  }, [
+    dispatch,
+    paginationModel,
+    debouncedSearch,
+    status,
+    route,
+    fromDate,
+    toDate,
+    sortModel,
+  ]);
+
+  // =========================================
+  // NORMALIZE API RESPONSE
+  // =========================================
+
   const challanRows = useMemo(() => {
-    if (!Array.isArray(completedDispatchOrders)) return [];
+    if (!Array.isArray(completedDispatchOrders)) {
+      return [];
+    }
 
-    return completedDispatchOrders.filter(
-      (row) => row && row.id != null
-    ).map((row) => ({
-      ...row,
-      items: Array.isArray(row.items) ? row.items : [],
-    }));
+    return completedDispatchOrders
+      .filter((row) => row && row.id != null)
+      .map((row) => ({
+        ...row,
+        items: Array.isArray(row.items) ? row.items : [],
+      }));
   }, [completedDispatchOrders]);
 
-  // Keep selected challan updated
+  // =========================================
+  // UPDATE SELECTED CHALLAN IF REFRESHED
+  // =========================================
+
   useEffect(() => {
     if (!selectedChallan) return;
 
     const updatedChallan = challanRows.find(
-      (row) => String(row.id) === String(selectedChallan.id)
+      (row) =>
+        String(row.id) === String(selectedChallan.id)
     );
 
-    setSelectedChallan(updatedChallan || null);
+    if (updatedChallan) {
+      setSelectedChallan(updatedChallan);
+    }
   }, [challanRows]);
 
-  // Parent challan columns
+  // =========================================
+  // RESET PAGE WHEN FILTER CHANGES
+  // =========================================
+
+  const resetPage = () => {
+    setPaginationModel((prev) => ({
+      ...prev,
+      page: 0,
+    }));
+  };
+
+  const handleSearchChange = (event) => {
+    setSearch(event.target.value);
+    resetPage();
+  };
+
+  const handleStatusChange = (event) => {
+    setStatus(event.target.value);
+    resetPage();
+  };
+
+  const handleRouteChange = (event) => {
+    setRoute(event.target.value);
+    resetPage();
+  };
+
+  const handleFromDateChange = (event) => {
+    setFromDate(event.target.value);
+    resetPage();
+  };
+
+  const handleToDateChange = (event) => {
+    setToDate(event.target.value);
+    resetPage();
+  };
+
+  // =========================================
+  // CHALLAN COLUMNS
+  // =========================================
+
   const challanColumns = useMemo(
     () => [
       {
@@ -139,7 +270,8 @@ const CompleteDispatch = () => {
         field: "totalAmount",
         headerName: "Total Amount",
         width: 145,
-        valueFormatter: (value) => `₹${formatAmount(value)}`,
+        valueFormatter: (value) =>
+          `₹${formatAmount(value)}`,
       },
       {
         field: "gstRate",
@@ -150,23 +282,27 @@ const CompleteDispatch = () => {
         field: "amountIncludingGst",
         headerName: "Amount + GST",
         width: 155,
-        valueFormatter: (value) => `₹${formatAmount(value)}`,
+        valueFormatter: (value) =>
+          `₹${formatAmount(value)}`,
       },
       {
         field: "status",
         headerName: "Status",
         width: 130,
+        sortable: true,
         renderCell: (params) => {
-          const status = String(params.value || "").toUpperCase();
+          const currentStatus = String(
+            params.value || ""
+          ).toUpperCase();
 
           return (
             <Chip
               label={params.value || "-"}
               size="small"
               color={
-                status === "COMPLETED"
+                currentStatus === "COMPLETED"
                   ? "success"
-                  : status === "CANCELLED"
+                  : currentStatus === "CANCELLED"
                   ? "error"
                   : "primary"
               }
@@ -178,7 +314,10 @@ const CompleteDispatch = () => {
     []
   );
 
-  // Individual dispatched product columns
+  // =========================================
+  // ITEM COLUMNS
+  // =========================================
+
   const itemColumns = useMemo(
     () => [
       {
@@ -214,17 +353,23 @@ const CompleteDispatch = () => {
         field: "ratePerMeter",
         headerName: "Rate / Meter",
         width: 130,
-        valueFormatter: (value) => `₹${formatAmount(value)}`,
+        valueFormatter: (value) =>
+          `₹${formatAmount(value)}`,
       },
       {
         field: "amount",
         headerName: "Amount",
         width: 140,
-        valueFormatter: (value) => `₹${formatAmount(value)}`,
+        valueFormatter: (value) =>
+          `₹${formatAmount(value)}`,
       },
     ],
     []
   );
+
+  // =========================================
+  // SELECTED CHALLAN
+  // =========================================
 
   const selectedItems = selectedChallan?.items || [];
 
@@ -237,6 +382,10 @@ const CompleteDispatch = () => {
     });
   };
 
+  // =========================================
+  // RENDER
+  // =========================================
+
   return (
     <Box
       sx={{
@@ -248,12 +397,78 @@ const CompleteDispatch = () => {
         gap: 2,
       }}
     >
-      {/* Page Heading */}
       <Typography variant="h5" fontWeight={700}>
         Challan History
       </Typography>
 
-      {/* Challan List */}
+      {/* ===================================
+          SEARCH AND FILTERS
+      =================================== */}
+
+      <Paper elevation={2} sx={{ p: 2 }}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          flexWrap="wrap"
+        >
+          <TextField
+            label="Search Challan / Customer / SO / Driver / Vehicle"
+            size="small"
+            value={search}
+            onChange={handleSearchChange}
+            sx={{ flex: 2, minWidth: 220 }}
+          />
+
+          <TextField
+            select
+            label="Status"
+            size="small"
+            value={status}
+            onChange={handleStatusChange}
+            sx={{ minWidth: 150 }}
+          >
+            <MenuItem value="">All Status</MenuItem>
+            <MenuItem value="COMPLETED">Completed</MenuItem>
+            <MenuItem value="CANCELLED">Cancelled</MenuItem>
+            <MenuItem value="PENDING">Pending</MenuItem>
+          </TextField>
+
+          <TextField
+            label="Route"
+            size="small"
+            value={route}
+            onChange={handleRouteChange}
+            sx={{ minWidth: 150 }}
+          />
+
+          <TextField
+            label="From Date"
+            type="date"
+            size="small"
+            value={fromDate}
+            onChange={handleFromDateChange}
+            slotProps={{
+              inputLabel: { shrink: true },
+            }}
+          />
+
+          <TextField
+            label="To Date"
+            type="date"
+            size="small"
+            value={toDate}
+            onChange={handleToDateChange}
+            slotProps={{
+              inputLabel: { shrink: true },
+            }}
+          />
+        </Stack>
+      </Paper>
+
+      {/* ===================================
+          CHALLAN LIST
+      =================================== */}
+
       <Paper
         elevation={2}
         sx={{
@@ -267,12 +482,25 @@ const CompleteDispatch = () => {
           columns={challanColumns}
           loading={loading}
           getRowId={(row) => row.id}
-          onRowClick={handleChallanClick}
-          disableRowSelectionOnClick
-          density="compact"
+
+          rowCount={totalRecords}
+
+          paginationMode="server"
+          sortingMode="server"
+
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
+
+          sortModel={sortModel}
+          onSortModelChange={setSortModel}
+
           pageSizeOptions={[10, 20, 50]}
+
+          onRowClick={handleChallanClick}
+          disableRowSelectionOnClick
+          disableColumnFilter
+          density="compact"
+
           sx={{
             border: 0,
             "& .MuiDataGrid-row": {
@@ -285,7 +513,10 @@ const CompleteDispatch = () => {
         />
       </Paper>
 
-      {/* Selected Challan Details */}
+      {/* ===================================
+          SELECTED CHALLAN DETAILS
+      =================================== */}
+
       {selectedChallan && (
         <Paper
           elevation={2}
@@ -322,6 +553,7 @@ const CompleteDispatch = () => {
           <Divider sx={{ mb: 2 }} />
 
           {/* Challan Information */}
+
           <Box
             sx={{
               display: "grid",
@@ -376,6 +608,7 @@ const CompleteDispatch = () => {
           </Typography>
 
           {/* Items DataGrid */}
+
           <Box sx={{ width: "100%" }}>
             <DataGrid
               rows={selectedItems}
@@ -397,6 +630,7 @@ const CompleteDispatch = () => {
           <Divider sx={{ my: 2 }} />
 
           {/* Challan Totals */}
+
           <Box
             sx={{
               display: "grid",
@@ -447,6 +681,7 @@ const CompleteDispatch = () => {
           <Divider sx={{ my: 2 }} />
 
           {/* Locations */}
+
           <Stack
             direction={{ xs: "column", md: "row" }}
             justifyContent="space-between"

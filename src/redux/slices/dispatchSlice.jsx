@@ -48,9 +48,9 @@ export const dispatchOrder = createAsyncThunk(
   },
 );
 
-export const getAllCompletedDispatchOrders = createAsyncThunk('/dispatch/complete',async(_,thunkAPI)=>{
+export const getAllCompletedDispatchOrders = createAsyncThunk('/dispatch/complete',async(params={},thunkAPI)=>{
   try {
-      const response = await getAllcompletedDispatch();
+      const response = await getAllcompletedDispatch(params);
        console.log("response in api lala",response);
 
       return response;
@@ -113,15 +113,19 @@ try {
 const initialState = {
   dispatchOrders: [],
   completedDispatchOrders:[],
-
   loading: false,
-
   dispatching: false,
   billing:false,
-
   error: null,
-lastChallan:null,
+  lastChallan:null,
   success: false,
+  completeDispatchPagination:{
+    totalRecords:0,
+    totalPages:0,
+    currentPage:0,
+    pageSize:10
+  },
+
 };
 
 // =====================================================
@@ -240,8 +244,14 @@ const dispatchSlice = createSlice({
 
       state.completedDispatchOrders =
         action.payload?.data || [];
+    
+    state.completeDispatchPagination = action?.payload?.pagination || {
+      totalPages:0,
+      totalRecords:0,
+      currentPage:0,
+      pageSize:10,
     }
-  )
+  })
 
   .addCase(
     getAllCompletedDispatchOrders.rejected,
@@ -249,42 +259,43 @@ const dispatchSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     }
-  )  .addCase(
-    billingDone.pending,
-    (state) => {
-      state.billing = true;
-      state.error = null;
-    }
-  )
+  ) 
+  //  .addCase(
+  //   billingDone.pending,
+  //   (state) => {
+  //     state.billing = true;
+  //     state.error = null;
+  //   }
+  // )
 
-  .addCase(
-    billingDone.fulfilled,
-    (state, action) => {
-      state.billing = false;
-      state.success = true;
+  // .addCase(
+  //   billingDone.fulfilled,
+  //   (state, action) => {
+  //     state.billing = false;
+  //     state.success = true;
 
-      const { soNo, skuCode, cycleID } = action.meta.arg;
+  //     const { soNo, skuCode, cycleID } = action.meta.arg;
 
-      const index = state.completedDispatchOrders.findIndex(
-        (order) =>
-          String(order.soNo).trim() === String(soNo).trim() &&
-          String(order.skuCode).trim() === String(skuCode).trim() &&
-          String(order.cycleID || "").trim() === String(cycleID || "").trim()
-      );
+  //     const index = state.completedDispatchOrders.findIndex(
+  //       (order) =>
+  //         String(order.soNo).trim() === String(soNo).trim() &&
+  //         String(order.skuCode).trim() === String(skuCode).trim() &&
+  //         String(order.cycleID || "").trim() === String(cycleID || "").trim()
+  //     );
 
-      if (index !== -1) {
-        state.completedDispatchOrders[index].billing = "Done";
-      }
-    }
-  )
+  //     if (index !== -1) {
+  //       state.completedDispatchOrders[index].billing = "Done";
+  //     }
+  //   }
+  // )
 
-  .addCase(
-    billingDone.rejected,
-    (state, action) => {
-      state.billing = false;
-      state.error = action.payload;
-    }
-  )
+  // .addCase(
+  //   billingDone.rejected,
+  //   (state, action) => {
+  //     state.billing = false;
+  //     state.error = action.payload;
+  //   }
+  // )
   // Confirm dispatch
       .addCase(confirmDispatchSlice.pending, (state) => {
         state.dispatching = true;
