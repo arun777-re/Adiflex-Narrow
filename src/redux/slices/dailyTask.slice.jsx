@@ -203,7 +203,7 @@ export const getAllEmployeesPerformance = createAsyncThunk(
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
       const res = await api.get(
-        `/delegation-tasks/all-employee-performance?startDate=${startDate}&endDate=${endDate}`,
+        `/daily-tasks/all-employee-performance?startDate=${startDate}&endDate=${endDate}`,
       );
       return res.data;
     } catch (error) {
