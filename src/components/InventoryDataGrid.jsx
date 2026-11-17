@@ -375,6 +375,7 @@ const columns = useMemo(
                   <TableRow sx={{ backgroundColor: "#f3f6fa" }}>
                     <TableCell><b>SO No.</b></TableCell>
                     <TableCell><b>Party / Customer</b></TableCell>
+                    <TableCell align="right"><b>Requested Qty</b></TableCell>
                     <TableCell align="right"><b>Reserved</b></TableCell>
                     <TableCell align="right"><b>Dispatched</b></TableCell>
                     <TableCell align="right"><b>Remaining</b></TableCell>
@@ -396,6 +397,9 @@ const columns = useMemo(
                         {item.customer || "-"}
                       </TableCell>
 
+                      <TableCell align="right">
+                        {formatQty(item.requestedQty)}
+                      </TableCell>
                       <TableCell align="right">
                         {formatQty(item.reservedQty)}
                       </TableCell>

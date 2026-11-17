@@ -217,6 +217,20 @@ const CompleteDispatch = () => {
     resetPage();
   };
 
+  const handleClearFilters = () => {
+  setSearch("");
+  setDebouncedSearch("");
+  setStatus("");
+  setRoute("");
+  setFromDate("");
+  setToDate("");
+
+  setPaginationModel((prev) => ({
+    ...prev,
+    page: 0,
+  }));
+};
+
   // =========================================
   // CHALLAN COLUMNS
   // =========================================
@@ -405,65 +419,142 @@ const CompleteDispatch = () => {
           SEARCH AND FILTERS
       =================================== */}
 
-      <Paper elevation={2} sx={{ p: 2 }}>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={2}
-          flexWrap="wrap"
-        >
-          <TextField
-            label="Search Challan / Customer / SO / Driver / Vehicle"
-            size="small"
-            value={search}
-            onChange={handleSearchChange}
-            sx={{ flex: 2, minWidth: 220 }}
-          />
+     
+{/* ===================================
+    SEARCH AND FILTERS
+=================================== */}
 
-          <TextField
-            select
-            label="Status"
-            size="small"
-            value={status}
-            onChange={handleStatusChange}
-            sx={{ minWidth: 150 }}
-          >
-            <MenuItem value="">All Status</MenuItem>
-            <MenuItem value="COMPLETED">Completed</MenuItem>
-            <MenuItem value="CANCELLED">Cancelled</MenuItem>
-            <MenuItem value="PENDING">Pending</MenuItem>
-          </TextField>
+<Paper
+  elevation={2}
+  sx={{
+    p: 2,
+    borderRadius: 2,
+  }}
+>
+  <Stack spacing={2}>
 
-          <TextField
-            label="Route"
-            size="small"
-            value={route}
-            onChange={handleRouteChange}
-            sx={{ minWidth: 150 }}
-          />
+    {/* Header */}
 
-          <TextField
-            label="From Date"
-            type="date"
-            size="small"
-            value={fromDate}
-            onChange={handleFromDateChange}
-            slotProps={{
-              inputLabel: { shrink: true },
-            }}
-          />
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      alignItems="center"
+    >
+      <Box>
+        <Typography variant="subtitle1" fontWeight={700}>
+          Search & Filters
+        </Typography>
 
-          <TextField
-            label="To Date"
-            type="date"
-            size="small"
-            value={toDate}
-            onChange={handleToDateChange}
-            slotProps={{
-              inputLabel: { shrink: true },
-            }}
-          />
-        </Stack>
-      </Paper>
+        <Typography variant="caption" color="text.secondary">
+          Find challans using search and filters
+        </Typography>
+      </Box>
+
+      <Chip
+        label={`${totalRecords} Records`}
+        color="primary"
+        variant="outlined"
+        size="small"
+      />
+    </Stack>
+
+    {/* Search */}
+
+    <TextField
+      fullWidth
+      placeholder="Search challan, customer, SO number, driver or vehicle..."
+      size="small"
+      value={search}
+      onChange={handleSearchChange}
+      sx={{
+        "& .MuiOutlinedInput-root": {
+          borderRadius: 2,
+          backgroundColor: "action.hover",
+        },
+      }}
+    />
+
+    {/* Filters */}
+
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "1fr",
+          sm: "repeat(2, 1fr)",
+          lg: "repeat(4, 1fr)",
+        },
+        gap: 2,
+      }}
+    >
+      <TextField
+        select
+        label="Status"
+        size="small"
+        value={status}
+        onChange={handleStatusChange}
+        fullWidth
+      >
+        <MenuItem value="">All Status</MenuItem>
+        <MenuItem value="COMPLETED">Completed</MenuItem>
+        <MenuItem value="CANCELLED">Cancelled</MenuItem>
+        <MenuItem value="PENDING">Pending</MenuItem>
+      </TextField>
+
+      <TextField
+        label="Route"
+        placeholder="Enter route"
+        size="small"
+        value={route}
+        onChange={handleRouteChange}
+        fullWidth
+      />
+
+      <TextField
+        label="From Date"
+        type="date"
+        size="small"
+        value={fromDate}
+        onChange={handleFromDateChange}
+        fullWidth
+        slotProps={{
+          inputLabel: { shrink: true },
+        }}
+      />
+
+      <TextField
+        label="To Date"
+        type="date"
+        size="small"
+        value={toDate}
+        onChange={handleToDateChange}
+        fullWidth
+        slotProps={{
+          inputLabel: { shrink: true },
+        }}
+      />
+    </Box>
+
+    {/* Footer */}
+
+    <Stack
+      direction="row"
+      justifyContent="flex-end"
+      alignItems="center"
+    >
+      <Chip
+        label="Clear Filters"
+        clickable
+        onClick={handleClearFilters}
+        variant="outlined"
+        color="default"
+        size="small"
+      />
+    </Stack>
+
+  </Stack>
+</Paper>
+
 
       {/* ===================================
           CHALLAN LIST

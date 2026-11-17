@@ -263,6 +263,12 @@ const DispatchTable = ({ rows = [], loading = false }) => {
         ),
       },
       {
+        field: "item_qty_meter",
+        headerName: "Order Qty (m)",
+        width: 130,
+        type: "number",
+      },
+      {
         field: "reserved_qty_meter",
         headerName: "Reserved Qty (m)",
         width: 130,
