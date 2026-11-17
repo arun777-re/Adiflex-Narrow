@@ -53,10 +53,7 @@ export const updateDailyTask = createAsyncThunk(
   "dailyTask/updateDailyTask",
   async ({ taskId, updates }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(
-        `${API_URL}/update/${taskId}`,
-        updates,
-      );
+      const response = await api.patch(`${API_URL}/update/${taskId}`, updates);
 
       return response.data;
     } catch (error) {
@@ -164,31 +161,23 @@ export const getDelegationTasksofEmployee = createAsyncThunk(
   },
 );
 
-
 export const completeDelegationTask = createAsyncThunk(
   "/complete-delegation",
   async ({ taskId }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(
-        `/delegation-tasks/complete/${taskId}`,
-        {
-          taskId,
-        }
-      );
+      const response = await api.patch(`/delegation-tasks/complete/${taskId}`, {
+        taskId,
+      });
 
       return response.data;
     } catch (error) {
-      console.error(
-        "Failed to complete delegation task:",
-        error
-      );
+      console.error("Failed to complete delegation task:", error);
 
       return rejectWithValue(
-        error.response?.data?.message ||
-          "Failed to complete delegation task"
+        error.response?.data?.message || "Failed to complete delegation task",
       );
     }
-  }
+  },
 );
 
 export const notCompleteDelegationTask = createAsyncThunk(
@@ -209,6 +198,24 @@ export const notCompleteDelegationTask = createAsyncThunk(
   },
 );
 
+export const getAllEmployeesPerformance = createAsyncThunk(
+  "/get-all-performance",
+  async ({ startDate, endDate }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(
+        `/delegation-tasks/all-employee-performance?startDate=${startDate}&endDate=${endDate}`,
+      );
+      return res.data;
+    } catch (error) {
+      console.error("not complete delegation task error", error);
+      return rejectWithValue(
+        error.response?.data?.message ||
+          `Failed to not complete delegation tasks`,
+      );
+    }
+  },
+);
+
 // =========================================================
 // INITIAL STATE
 // =========================================================
@@ -218,6 +225,12 @@ const initialState = {
   pendingTasks: [],
   weeklySummary: null,
   delegationTasks: [],
+
+  // All employees performance report
+  allEmployeesPerformance: [],
+  performanceSummary: null,
+  performanceLoading: false,
+
   loading: false,
   creating: false,
   updating: false,
@@ -375,23 +388,59 @@ const dailyTaskSlice = createSlice({
         state.error = null;
         state.loading = false;
       })
-      .addCase(completeDelegationTask.fulfilled,(state,action)=>{
+      .addCase(completeDelegationTask.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
       })
-      .addCase(completeDelegationTask.rejected,(state,action)=>{
+      .addCase(completeDelegationTask.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(notCompleteDelegationTask.fulfilled,(state,action)=>{
+      .addCase(notCompleteDelegationTask.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
       })
-      .addCase(notCompleteDelegationTask.rejected,(state,action)=>{
+      .addCase(notCompleteDelegationTask.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      ;
+      // =========================================================
+      // ALL EMPLOYEES PERFORMANCE - PENDING
+      // =========================================================
+
+      .addCase(getAllEmployeesPerformance.pending, (state) => {
+        state.performanceLoading = true;
+        state.error = null;
+      })
+
+      // =========================================================
+      // ALL EMPLOYEES PERFORMANCE - FULFILLED
+      // =========================================================
+
+      .addCase(getAllEmployeesPerformance.fulfilled, (state, action) => {
+        state.performanceLoading = false;
+        state.error = null;
+
+        state.allEmployeesPerformance = action.payload?.data?.employees || [];
+
+        state.performanceSummary = action.payload?.data?.summary || null;
+
+        state.message = action.payload?.message || "";
+      })
+
+      // =========================================================
+      // ALL EMPLOYEES PERFORMANCE - REJECTED
+      // =========================================================
+
+      .addCase(getAllEmployeesPerformance.rejected, (state, action) => {
+        state.performanceLoading = false;
+
+        state.error =
+          action.payload || "Failed to fetch all employees performance";
+
+        state.allEmployeesPerformance = [];
+        state.performanceSummary = null;
+      });
   },
 });
 

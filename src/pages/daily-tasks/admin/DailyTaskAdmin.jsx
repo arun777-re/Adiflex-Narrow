@@ -1,4 +1,3 @@
-
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -37,6 +36,7 @@ import {
 
 import { getAllUsersData } from "../../../redux/slices/authSlices.jsx";
 import ViewScoreOfEmployes from "./ViewScoreOfEmployes.jsx";
+import AllEmployeesPerformanceReport from "./AllEmployeesPerformanceReport.jsx";
 
 const TASK_TYPE = {
   DAILY: "daily_task",
@@ -80,6 +80,7 @@ const DailyTaskAdmin = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [viewScore, setViewScore] = useState(false);
+  const [viewAllScore, setViewAllScore] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
 
@@ -99,16 +100,15 @@ const DailyTaskAdmin = () => {
     }));
   }, [users]);
 
-  console.log("DailyTaskAdmin Rendered", employees)
+  console.log("DailyTaskAdmin Rendered", employees);
 
   const totalTasks = Array.isArray(tasks) ? tasks.length : 0;
 
   const activeTasks = useMemo(
     () =>
-      tasks.filter((task) =>
-        isTaskActive(task.is_active ?? task.active)
-      ).length,
-    [tasks]
+      tasks.filter((task) => isTaskActive(task.is_active ?? task.active))
+        .length,
+    [tasks],
   );
 
   const inactiveTasks = totalTasks - activeTasks;
@@ -124,16 +124,13 @@ const DailyTaskAdmin = () => {
     setForm((prev) => ({
       ...prev,
       taskType,
-      dueDate:
-        taskType === TASK_TYPE.DAILY ? "" : prev.dueDate,
+      dueDate: taskType === TASK_TYPE.DAILY ? "" : prev.dueDate,
     }));
   }, []);
 
   const handleEmployeeChange = useCallback(
     (userId) => {
-      const employee = employees.find(
-        (item) => item.userId === userId
-      );
+      const employee = employees.find((item) => item.userId === userId);
 
       setForm((prev) => ({
         ...prev,
@@ -141,7 +138,7 @@ const DailyTaskAdmin = () => {
         department: employee?.department || "",
       }));
     },
-    [employees]
+    [employees],
   );
 
   const handleOpenCreate = useCallback(() => {
@@ -158,9 +155,7 @@ const DailyTaskAdmin = () => {
       description: task.description || "",
       assignedTo: task.user_id || task.assignedTo || "",
       department: task.department || "",
-      dueDate: task.due_date
-        ? String(task.due_date).slice(0, 10)
-        : "",
+      dueDate: task.due_date ? String(task.due_date).slice(0, 10) : "",
     });
 
     setDrawerOpen(true);
@@ -194,10 +189,7 @@ const DailyTaskAdmin = () => {
       return;
     }
 
-    if (
-      form.taskType === TASK_TYPE.DELEGATION &&
-      !form.dueDate
-    ) {
+    if (form.taskType === TASK_TYPE.DELEGATION && !form.dueDate) {
       toast.error("Due date is required for delegation task");
       return;
     }
@@ -206,10 +198,7 @@ const DailyTaskAdmin = () => {
       description,
       department: form.department,
       task_type: form.taskType,
-      due_date:
-        form.taskType === TASK_TYPE.DELEGATION
-          ? form.dueDate
-          : null,
+      due_date: form.taskType === TASK_TYPE.DELEGATION ? form.dueDate : null,
       user_id: form.assignedTo,
     };
 
@@ -227,12 +216,12 @@ const DailyTaskAdmin = () => {
           updateDailyTask({
             taskId,
             taskData,
-          })
+          }),
         ).unwrap();
 
         toast.success("Task updated successfully");
       } else {
-          await dispatch(createDailyTask(taskData)).unwrap();
+        await dispatch(createDailyTask(taskData)).unwrap();
         toast.success("Task created successfully");
       }
 
@@ -247,7 +236,7 @@ const DailyTaskAdmin = () => {
       toast.error(
         typeof error === "string"
           ? error
-          : error?.message || "Unable to save task"
+          : error?.message || "Unable to save task",
       );
     } finally {
       setSubmitting(false);
@@ -264,8 +253,7 @@ const DailyTaskAdmin = () => {
       taskType: task.task_type ?? task.taskType,
       assignedTo: task.user_id ?? task.assignedTo,
       dueDate: task.due_date ?? task.dueDate,
-      effectiveDueDate:
-        task.effective_due_date ?? task.effectiveDueDate,
+      effectiveDueDate: task.effective_due_date ?? task.effectiveDueDate,
       active: task.is_active ?? task.active,
       createdAt: task.created_at ?? task.createdAt,
     }));
@@ -283,8 +271,7 @@ const DailyTaskAdmin = () => {
         headerName: "TASK TYPE",
         width: 140,
         renderCell: (params) => {
-          const isDelegation =
-            params.value === TASK_TYPE.DELEGATION;
+          const isDelegation = params.value === TASK_TYPE.DELEGATION;
 
           return (
             <Chip
@@ -308,7 +295,7 @@ const DailyTaskAdmin = () => {
         width: 170,
         renderCell: (params) => {
           const employee = employees.find(
-            (item) => item.userId === params.value
+            (item) => item.userId === params.value,
           );
 
           return (
@@ -317,10 +304,7 @@ const DailyTaskAdmin = () => {
                 {employee?.name || params.value || "--"}
               </Typography>
               {employee?.role && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
+                <Typography variant="caption" color="text.secondary">
                   {employee.role}
                 </Typography>
               )}
@@ -342,9 +326,7 @@ const DailyTaskAdmin = () => {
             return "--";
           }
 
-          return formatDate(
-            params.row.effectiveDueDate || params.value
-          );
+          return formatDate(params.row.effectiveDueDate || params.value);
         },
       },
       {
@@ -377,24 +359,26 @@ const DailyTaskAdmin = () => {
         sortable: false,
         filterable: false,
         renderCell: (params) => (
-          <IconButton
-            size="small"
-            onClick={() => handleOpenEdit(params.row)}
-          >
+          <IconButton size="small" onClick={() => handleOpenEdit(params.row)}>
             <EditIcon fontSize="small" />
           </IconButton>
         ),
       },
     ],
-    [employees, handleOpenEdit]
+    [employees, handleOpenEdit],
   );
 
   if (viewScore) {
     return (
       <Box sx={{ p: 3 }}>
-        <ViewScoreOfEmployes
-          onBack={() => setViewScore(false)}
-        />
+        <ViewScoreOfEmployes onBack={() => setViewScore(false)} />
+      </Box>
+    );
+  }
+  if (viewAllScore) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <AllEmployeesPerformanceReport onBack={() => setViewAllScore(false)} />
       </Box>
     );
   }
@@ -413,23 +397,18 @@ const DailyTaskAdmin = () => {
             Task Management
           </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 0.5 }}
-          >
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Manage recurring daily tasks and one-time delegated tasks
           </Typography>
         </Box>
 
         <Stack direction="row" spacing={1}>
-          <Button
-            variant="outlined"
-            onClick={() => setViewScore(true)}
-          >
+          <Button variant="outlined" onClick={() => setViewScore(true)}>
             View Score Card
           </Button>
-
+          <Button variant="outlined" onClick={() => setViewAllScore(true)}>
+            View All Score Card
+          </Button>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -449,9 +428,7 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography color="text.secondary">
-                  Total Tasks
-                </Typography>
+                <Typography color="text.secondary">Total Tasks</Typography>
                 <Typography variant="h4" fontWeight={700}>
                   {totalTasks}
                 </Typography>
@@ -469,9 +446,7 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography color="text.secondary">
-                  Active Tasks
-                </Typography>
+                <Typography color="text.secondary">Active Tasks</Typography>
                 <Typography variant="h4" fontWeight={700}>
                   {activeTasks}
                 </Typography>
@@ -489,9 +464,7 @@ const DailyTaskAdmin = () => {
               alignItems="center"
             >
               <Box>
-                <Typography color="text.secondary">
-                  Inactive Tasks
-                </Typography>
+                <Typography color="text.secondary">Inactive Tasks</Typography>
                 <Typography variant="h4" fontWeight={700}>
                   {inactiveTasks}
                 </Typography>
@@ -555,11 +528,7 @@ const DailyTaskAdmin = () => {
         </Box>
       </Paper>
 
-      <Drawer
-        anchor="right"
-        open={drawerOpen}
-        onClose={handleCloseDrawer}
-      >
+      <Drawer anchor="right" open={drawerOpen} onClose={handleCloseDrawer}>
         <Box
           sx={{
             width: { xs: "100vw", sm: 430 },
@@ -587,17 +556,11 @@ const DailyTaskAdmin = () => {
               fullWidth
               value={form.taskType}
               disabled={Boolean(editingTask)}
-              onChange={(e) =>
-                handleTaskTypeChange(e.target.value)
-              }
+              onChange={(e) => handleTaskTypeChange(e.target.value)}
             >
-              <MenuItem value={TASK_TYPE.DAILY}>
-                Daily Task
-              </MenuItem>
+              <MenuItem value={TASK_TYPE.DAILY}>Daily Task</MenuItem>
 
-              <MenuItem value={TASK_TYPE.DELEGATION}>
-                Delegation Task
-              </MenuItem>
+              <MenuItem value={TASK_TYPE.DELEGATION}>Delegation Task</MenuItem>
             </TextField>
 
             <TextField
@@ -607,9 +570,7 @@ const DailyTaskAdmin = () => {
               fullWidth
               required
               value={form.description}
-              onChange={(e) =>
-                handleChange("description", e.target.value)
-              }
+              onChange={(e) => handleChange("description", e.target.value)}
               placeholder="Enter task description..."
             />
 
@@ -619,15 +580,10 @@ const DailyTaskAdmin = () => {
               required
               fullWidth
               value={form.assignedTo}
-              onChange={(e) =>
-                handleEmployeeChange(e.target.value)
-              }
+              onChange={(e) => handleEmployeeChange(e.target.value)}
             >
               {employees.map((employee) => (
-                <MenuItem
-                  key={employee.userId}
-                  value={employee.userId}
-                >
+                <MenuItem key={employee.userId} value={employee.userId}>
                   {employee.name} ({employee.userId})
                 </MenuItem>
               ))}
@@ -649,9 +605,7 @@ const DailyTaskAdmin = () => {
                 required
                 fullWidth
                 value={form.dueDate}
-                onChange={(e) =>
-                  handleChange("dueDate", e.target.value)
-                }
+                onChange={(e) => handleChange("dueDate", e.target.value)}
                 InputLabelProps={{
                   shrink: true,
                 }}
@@ -660,11 +614,7 @@ const DailyTaskAdmin = () => {
 
             <Divider />
 
-            <Stack
-              direction="row"
-              spacing={1.5}
-              justifyContent="flex-end"
-            >
+            <Stack direction="row" spacing={1.5} justifyContent="flex-end">
               <Button
                 variant="outlined"
                 onClick={handleCloseDrawer}
