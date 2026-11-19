@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -47,7 +48,16 @@ const toNumber = (value) => {
   return Number.isFinite(number) ? number : 0;
 };
 
-const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
+const formatQty = (value) =>
+  toNumber(value).toLocaleString("en-IN");
+
+const UpdateProductionDialog = ({
+  open,
+  onClose,
+  order,
+  process,
+  action,
+}) => {
   const dispatch = useDispatch();
   const location = useLocation();
 
@@ -108,18 +118,29 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
   const needsReleaseQty = isMachineProcess || isQualityProcess;
   const loading = starting || completing || completingQuality;
 
+  // =====================================================
+  // PRODUCTION QUANTITY DETAILS
+  // =====================================================
+
   const soTargetQty = toNumber(order?.production_target_qty);
-  const allocatedCycleQty = toNumber(order?.actual_cycle_production_qty);
+  const allocatedCycleQty = toNumber(
+    order?.actual_cycle_production_qty,
+  );
   const firstTimeQty = toNumber(order?.first_time_production_qty);
-  const cycleRemainingQty = toNumber(order?.cycle_remaining_production_qty);
+  const cycleRemainingQty = toNumber(
+    order?.cycle_remaining_production_qty,
+  );
   const packedQty = toNumber(order?.total_production_qty);
 
-  // A previously allocated cycle must not be reallocated.
+  // Already allocated cycle quantity cannot be allocated again.
   const cycleAlreadyAllocated = allocatedCycleQty > 0;
 
-  // For a pending cycle, use its saved available quantity.
-  // Backend remains the authoritative allocation validator.
-  const availableQty = firstTimeQty > 0 ? firstTimeQty : soTargetQty;
+  // IMPORTANT:
+  // Backend should populate first_time_production_qty
+  // with the remaining unallocated SO quantity for this pending cycle.
+  // Do not fallback to SO target, otherwise old cycles' allocations
+  // could become available again.
+  const availableQty = Math.max(0, firstTimeQty);
 
   const {
     register,
@@ -154,12 +175,10 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
 
   const refreshProductionData = async () => {
     try {
-      // Main production list refresh
       if (currentDivision) {
         await dispatch(getAllProductions(currentDivision)).unwrap();
       }
 
-      // Quality/Finishing supervisor ki list bhi refresh
       if (location.pathname === "/quality-production") {
         await dispatch(
           getAllQualityProductions(
@@ -167,6 +186,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
           ),
         ).unwrap();
       }
+
       if (location.pathname === "/packing-production") {
         await dispatch(
           getAllPackingProductions(
@@ -184,7 +204,9 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
 
     const firstError = Object.values(formErrors)[0];
 
-    toast.error(firstError?.message || "Please check the required fields.");
+    toast.error(
+      firstError?.message || "Please check the required fields.",
+    );
   };
 
   const onSubmit = async (data) => {
@@ -204,7 +226,9 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
     }
 
     try {
-      // ================= START PROCESS =================
+      // =====================================================
+      // START PROCESS
+      // =====================================================
 
       if (effectiveAction === "start") {
         const payload = {
@@ -225,17 +249,23 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
             return;
           }
 
-          // Already allocated cycles cannot be changed.
           if (cycleAlreadyAllocated) {
             toast.error(
-              `This cycle is already allocated ${allocatedCycleQty}m. Its quantity is locked.`,
+              `This cycle is already allocated ${formatQty(allocatedCycleQty)}m. Its quantity is locked.`,
+            );
+            return;
+          }
+
+          if (availableQty <= 0) {
+            toast.error(
+              "No remaining quantity is available for a new production cycle.",
             );
             return;
           }
 
           if (selectedQty > availableQty) {
             toast.error(
-              `Selected quantity cannot exceed the available quantity of ${availableQty}m.`,
+              `Selected quantity cannot exceed the available quantity of ${formatQty(availableQty)}m.`,
             );
             return;
           }
@@ -243,7 +273,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
           payload.productionQty = selectedQty;
         }
 
-        const result = await dispatch(startProduction(payload)).unwrap();
+        await dispatch(startProduction(payload)).unwrap();
 
         toast.success(
           `${PROCESS_LABELS[normalizedProcess] || normalizedProcess} started successfully.`,
@@ -259,11 +289,12 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
         return;
       }
 
-      // ================= STAGE QUANTITY =================
+      // =====================================================
+      // STAGE QUANTITY
+      // =====================================================
 
       const stageInputQty = toNumber(currentStage?.input_qty);
       const alreadyReleased = toNumber(currentStage?.released_qty);
-      const alreadyWasted = toNumber(currentStage?.wastage_qty);
 
       let releaseQty;
 
@@ -286,7 +317,9 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
         }
       }
 
-      // ================= QUALITY VALIDATION =================
+      // =====================================================
+      // QUALITY VALIDATION
+      // =====================================================
 
       if (isQualityProcess) {
         const wastageQty = Number(data.wastageQty);
@@ -296,52 +329,33 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
           return;
         }
 
-        // remaining qty for wastage validation only
-        const remainingQty = Math.max(0, stageInputQty - alreadyReleased);
+        const remainingQty = Math.max(
+          0,
+          stageInputQty - alreadyReleased,
+        );
 
-        // Wastage cannot exceed the release quantity.
-        if (wastageQty >= remainingQty) {
-          toast.error("Wastage quantity cannot exceed the release quantity.");
+        if (wastageQty > remainingQty + 0.001) {
+          toast.error(
+            `Wastage quantity cannot exceed remaining quantity (${formatQty(remainingQty)} m).`,
+          );
           return;
         }
 
-        // Release quantity cannot exceed Quality stage input.
-
-        if (isQualityProcess) {
-          const wastageQty = Number(data.wastageQty);
-
-          if (!Number.isFinite(wastageQty) || wastageQty < 0) {
-            toast.error("Wastage quantity cannot be negative.");
-            return;
-          }
-
-          const remainingQty = Math.max(
-            0,
-            stageInputQty - alreadyReleased ,
+        if (
+          !Number.isFinite(releaseQty) ||
+          releaseQty <= 0 ||
+          releaseQty > stageInputQty + 0.001
+        ) {
+          toast.error(
+            "Release quantity cannot exceed the Quality input quantity.",
           );
-
-          // Wastage must be LESS THAN OR EQUAL TO remaining quantity.
-          if (wastageQty > remainingQty + 0.001) {
-            toast.error(
-              `Wastage quantity cannot exceed remaining quantity (${remainingQty} m).`,
-            );
-            return;
-          }
-
-          if (
-            !Number.isFinite(releaseQty) ||
-            releaseQty <= 0 ||
-            releaseQty > stageInputQty + 0.001
-          ) {
-            toast.error(
-              "Release quantity cannot exceed the Quality input quantity.",
-            );
-            return;
-          }
+          return;
         }
       }
 
-      // ================= COMPLETION PAYLOAD =================
+      // =====================================================
+      // COMPLETION PAYLOAD
+      // =====================================================
 
       const payload = {
         soNo,
@@ -363,7 +377,10 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
       if (isPackingProcess) {
         const actualQtyAtPacking = Number(data.actualQtyAtPacking);
 
-        if (!Number.isFinite(actualQtyAtPacking) || actualQtyAtPacking < 0) {
+        if (
+          !Number.isFinite(actualQtyAtPacking) ||
+          actualQtyAtPacking < 0
+        ) {
           toast.error("Enter a valid actual packed quantity.");
           return;
         }
@@ -373,7 +390,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
           actualQtyAtPacking > cycleRemainingQty + 0.001
         ) {
           toast.error(
-            `Actual packed quantity cannot exceed the remaining cycle quantity of ${cycleRemainingQty}m.`,
+            `Actual packed quantity cannot exceed the remaining cycle quantity of ${formatQty(cycleRemainingQty)}m.`,
           );
           return;
         }
@@ -381,7 +398,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
         payload.actualQtyAtPacking = actualQtyAtPacking;
       }
 
-      const result = await dispatch(completeProduction(payload)).unwrap();
+      await dispatch(completeProduction(payload)).unwrap();
 
       toast.success(
         `${PROCESS_LABELS[normalizedProcess] || normalizedProcess} updated successfully.`,
@@ -453,6 +470,10 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
               />
             </Grid>
 
+            {/* =================================================
+                PRODUCTION SUMMARY
+            ================================================= */}
+
             <Grid size={12}>
               <Box
                 sx={{
@@ -463,22 +484,22 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
               >
                 <Typography variant="body2">
                   Sales Order Target:{" "}
-                  <strong>{soTargetQty.toLocaleString("en-IN")} m</strong>
+                  <strong>{formatQty(soTargetQty)} m</strong>
                 </Typography>
 
                 <Typography variant="body2" sx={{ mt: 1 }}>
                   Cycle Allocated:{" "}
-                  <strong>{allocatedCycleQty.toLocaleString("en-IN")} m</strong>
+                  <strong>{formatQty(allocatedCycleQty)} m</strong>
                 </Typography>
 
                 <Typography variant="body2" sx={{ mt: 1 }}>
                   Actual Packed:{" "}
-                  <strong>{packedQty.toLocaleString("en-IN")} m</strong>
+                  <strong>{formatQty(packedQty)} m</strong>
                 </Typography>
 
                 <Typography variant="body2" sx={{ mt: 1 }}>
                   Cycle Remaining:{" "}
-                  <strong>{cycleRemainingQty.toLocaleString("en-IN")} m</strong>
+                  <strong>{formatQty(cycleRemainingQty)} m</strong>
                 </Typography>
 
                 {currentStage && (
@@ -494,17 +515,95 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
 
                     <Typography variant="body2" sx={{ mt: 1 }}>
                       Stage Input:{" "}
-                      <strong>{inputQty.toLocaleString("en-IN")} m</strong>
+                      <strong>{formatQty(inputQty)} m</strong>
                     </Typography>
 
                     <Typography variant="body2" sx={{ mt: 1 }}>
                       Previously Released:{" "}
-                      <strong>{releasedQty.toLocaleString("en-IN")} m</strong>
+                      <strong>{formatQty(releasedQty)} m</strong>
                     </Typography>
                   </>
                 )}
               </Box>
             </Grid>
+
+            {/* =================================================
+                AVAILABLE QUANTITY FOR NEW CYCLE
+                Only JOB_WORK / WARPING first process
+            ================================================= */}
+
+            {effectiveAction === "start" && isFirstProcess && (
+              <Grid size={12}>
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    textAlign: "center",
+                    bgcolor:
+                      availableQty > 0
+                        ? "success.light"
+                        : "error.light",
+                    border: "2px solid",
+                    borderColor:
+                      availableQty > 0
+                        ? "success.main"
+                        : "error.main",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={900}
+                    color={
+                      availableQty > 0
+                        ? "success.dark"
+                        : "error.dark"
+                    }
+                  >
+                    YOU CAN START PRODUCTION FOR
+                  </Typography>
+
+                  <Typography
+                    variant="h3"
+                    fontWeight={900}
+                    color={
+                      availableQty > 0
+                        ? "success.dark"
+                        : "error.dark"
+                    }
+                    sx={{ my: 1 }}
+                  >
+                    {formatQty(availableQty)} METER
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    fontWeight={800}
+                    color={
+                      availableQty > 0
+                        ? "success.dark"
+                        : "error.dark"
+                    }
+                  >
+                    AVAILABLE QUANTITY FOR NEW CYCLE
+                  </Typography>
+
+                  {availableQty <= 0 && (
+                    <Typography
+                      variant="body2"
+                      fontWeight={700}
+                      color="error.dark"
+                      sx={{ mt: 1 }}
+                    >
+                      No remaining quantity available for a new cycle.
+                    </Typography>
+                  )}
+                </Box>
+              </Grid>
+            )}
+
+            {/* =================================================
+                FIRST PROCESS ALLOCATION INPUT
+            ================================================= */}
 
             {effectiveAction === "start" && isFirstProcess && (
               <Grid size={12}>
@@ -512,17 +611,20 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
                   fullWidth
                   type="number"
                   label="Cycle Allocation Quantity (Meter)"
-                  disabled={cycleAlreadyAllocated}
+                  disabled={
+                    cycleAlreadyAllocated || availableQty <= 0
+                  }
                   inputProps={{
                     min: 0.01,
-                    max: availableQty > 0 ? availableQty : undefined,
+                    max: availableQty,
                     step: "any",
                   }}
                   error={!!errors.productionQty}
                   helperText={
-                    cycleAlreadyAllocated
-                      ? `This cycle is already allocated ${allocatedCycleQty}m. The quantity is locked.`
-                      : `Available for allocation: ${availableQty.toLocaleString("en-IN")} m`
+                    errors.productionQty?.message ||
+                    (cycleAlreadyAllocated
+                      ? `This cycle is already allocated ${formatQty(allocatedCycleQty)}m. Quantity is locked.`
+                      : `Minimum: Greater than 0 | Maximum: ${formatQty(availableQty)} m`)
                   }
                   {...register("productionQty", {
                     required: "Cycle allocation quantity is required",
@@ -533,7 +635,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
                       }
 
                       if (value > availableQty) {
-                        return `Maximum available quantity is ${availableQty}m.`;
+                        return `Maximum available quantity is ${formatQty(availableQty)}m.`;
                       }
 
                       return true;
@@ -543,14 +645,22 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
               </Grid>
             )}
 
+            {/* =================================================
+                OTHER PROCESS START
+            ================================================= */}
+
             {effectiveAction === "start" && !isFirstProcess && (
               <Grid size={12}>
                 <Typography variant="body2" color="text.secondary">
-                  This stage uses the quantity already allocated to this cycle.
-                  No new cycle quantity will be allocated here.
+                  This stage uses the quantity already allocated to this
+                  cycle. No new cycle quantity will be allocated here.
                 </Typography>
               </Grid>
             )}
+
+            {/* =================================================
+                RELEASE QUANTITY
+            ================================================= */}
 
             {effectiveAction === "complete" && needsReleaseQty && (
               <Grid size={12}>
@@ -558,7 +668,10 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
                   fullWidth
                   type="number"
                   label="Release Quantity (Meter)"
-                  inputProps={{ min: 0.01, step: "any" }}
+                  inputProps={{
+                    min: 0.01,
+                    step: "any",
+                  }}
                   error={!!errors.releaseQty}
                   helperText={
                     errors.releaseQty?.message ||
@@ -576,13 +689,20 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
               </Grid>
             )}
 
+            {/* =================================================
+                QUALITY WASTAGE
+            ================================================= */}
+
             {effectiveAction === "complete" && isQualityProcess && (
               <Grid size={12}>
                 <TextField
                   fullWidth
                   type="number"
                   label="New Wastage Quantity (Meter)"
-                  inputProps={{ min: 0, step: "any" }}
+                  inputProps={{
+                    min: 0,
+                    step: "any",
+                  }}
                   error={!!errors.wastageQty}
                   helperText={
                     errors.wastageQty?.message ||
@@ -600,13 +720,20 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
               </Grid>
             )}
 
+            {/* =================================================
+                PACKING QUANTITY
+            ================================================= */}
+
             {effectiveAction === "complete" && isPackingProcess && (
               <Grid size={12}>
                 <TextField
                   fullWidth
                   type="number"
                   label="Actual Packed Quantity (Meter)"
-                  inputProps={{ min: 0, step: "any" }}
+                  inputProps={{
+                    min: 0,
+                    step: "any",
+                  }}
                   error={!!errors.actualQtyAtPacking}
                   helperText={
                     errors.actualQtyAtPacking?.message ||
@@ -624,7 +751,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
                         cycleRemainingQty > 0 &&
                         value > cycleRemainingQty + 0.001
                       ) {
-                        return `Maximum remaining cycle quantity is ${cycleRemainingQty}m.`;
+                        return `Maximum remaining cycle quantity is ${formatQty(cycleRemainingQty)}m.`;
                       }
 
                       return true;
@@ -648,7 +775,7 @@ const UpdateProductionDialog = ({ open, onClose, order, process, action }) => {
               loading ||
               (effectiveAction === "start" &&
                 isFirstProcess &&
-                cycleAlreadyAllocated)
+                (cycleAlreadyAllocated || availableQty <= 0))
             }
           >
             {loading
