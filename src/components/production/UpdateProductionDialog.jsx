@@ -123,24 +123,39 @@ const UpdateProductionDialog = ({
   // =====================================================
 
   const soTargetQty = toNumber(order?.production_target_qty);
+
   const allocatedCycleQty = toNumber(
     order?.actual_cycle_production_qty,
   );
+
   const firstTimeQty = toNumber(order?.first_time_production_qty);
+
   const cycleRemainingQty = toNumber(
     order?.cycle_remaining_production_qty,
   );
+
   const packedQty = toNumber(order?.total_production_qty);
 
-  // Already allocated cycle quantity cannot be allocated again.
+  // Cycle already allocated?
   const cycleAlreadyAllocated = allocatedCycleQty > 0;
 
-  // IMPORTANT:
-  // Backend should populate first_time_production_qty
-  // with the remaining unallocated SO quantity for this pending cycle.
-  // Do not fallback to SO target, otherwise old cycles' allocations
-  // could become available again.
-  const availableQty = Math.max(0, firstTimeQty);
+  // Fresh order means:
+  // 1. No quantity allocated to this cycle.
+  // 2. No production packed yet.
+  //
+  // Only for a fresh order, fallback to SO production target
+  // when first_time_production_qty is missing or zero.
+  const isFreshUnallocatedCycle =
+    allocatedCycleQty <= 0 && packedQty <= 0;
+
+  const availableQty = Math.max(
+    0,
+    firstTimeQty > 0
+      ? firstTimeQty
+      : isFreshUnallocatedCycle
+        ? soTargetQty
+        : 0,
+  );
 
   const {
     register,
@@ -470,9 +485,7 @@ const UpdateProductionDialog = ({
               />
             </Grid>
 
-            {/* =================================================
-                PRODUCTION SUMMARY
-            ================================================= */}
+            {/* PRODUCTION SUMMARY */}
 
             <Grid size={12}>
               <Box
@@ -527,10 +540,7 @@ const UpdateProductionDialog = ({
               </Box>
             </Grid>
 
-            {/* =================================================
-                AVAILABLE QUANTITY FOR NEW CYCLE
-                Only JOB_WORK / WARPING first process
-            ================================================= */}
+            {/* AVAILABLE QUANTITY FOR NEW CYCLE */}
 
             {effectiveAction === "start" && isFirstProcess && (
               <Grid size={12}>
@@ -601,9 +611,7 @@ const UpdateProductionDialog = ({
               </Grid>
             )}
 
-            {/* =================================================
-                FIRST PROCESS ALLOCATION INPUT
-            ================================================= */}
+            {/* FIRST PROCESS ALLOCATION INPUT */}
 
             {effectiveAction === "start" && isFirstProcess && (
               <Grid size={12}>
@@ -645,9 +653,7 @@ const UpdateProductionDialog = ({
               </Grid>
             )}
 
-            {/* =================================================
-                OTHER PROCESS START
-            ================================================= */}
+            {/* OTHER PROCESS START */}
 
             {effectiveAction === "start" && !isFirstProcess && (
               <Grid size={12}>
@@ -658,9 +664,7 @@ const UpdateProductionDialog = ({
               </Grid>
             )}
 
-            {/* =================================================
-                RELEASE QUANTITY
-            ================================================= */}
+            {/* RELEASE QUANTITY */}
 
             {effectiveAction === "complete" && needsReleaseQty && (
               <Grid size={12}>
@@ -689,9 +693,7 @@ const UpdateProductionDialog = ({
               </Grid>
             )}
 
-            {/* =================================================
-                QUALITY WASTAGE
-            ================================================= */}
+            {/* QUALITY WASTAGE */}
 
             {effectiveAction === "complete" && isQualityProcess && (
               <Grid size={12}>
@@ -720,9 +722,7 @@ const UpdateProductionDialog = ({
               </Grid>
             )}
 
-            {/* =================================================
-                PACKING QUANTITY
-            ================================================= */}
+            {/* PACKING QUANTITY */}
 
             {effectiveAction === "complete" && isPackingProcess && (
               <Grid size={12}>
