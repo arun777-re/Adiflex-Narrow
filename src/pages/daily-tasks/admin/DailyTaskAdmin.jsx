@@ -97,10 +97,10 @@ const DailyTaskAdmin = () => {
       name: user?.name || "",
       department: user?.division || "",
       role: user?.role || "",
+      task_id:user?.id
     }));
   }, [users]);
 
-  console.log("DailyTaskAdmin Rendered", employees);
 
   const totalTasks = Array.isArray(tasks) ? tasks.length : 0;
 
@@ -149,13 +149,13 @@ const DailyTaskAdmin = () => {
 
   const handleOpenEdit = useCallback((task) => {
     setEditingTask(task);
-
     setForm({
       taskType: task.task_type || task.taskType || TASK_TYPE.DAILY,
       description: task.description || "",
       assignedTo: task.user_id || task.assignedTo || "",
       department: task.department || "",
       dueDate: task.due_date ? String(task.due_date).slice(0, 10) : "",
+      task_id:task.id,
     });
 
     setDrawerOpen(true);
@@ -200,6 +200,7 @@ const DailyTaskAdmin = () => {
       task_type: form.taskType,
       due_date: form.taskType === TASK_TYPE.DELEGATION ? form.dueDate : null,
       user_id: form.assignedTo,
+      
     };
 
     try {

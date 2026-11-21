@@ -51,9 +51,9 @@ export const createDailyTask = createAsyncThunk(
 
 export const updateDailyTask = createAsyncThunk(
   "dailyTask/updateDailyTask",
-  async ({ taskId, updates }, { rejectWithValue }) => {
+  async ({ taskId,taskData }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`${API_URL}/update/${taskId}`, updates);
+      const response = await api.patch(`${API_URL}/update/${taskId}`, taskData);
 
       return response.data;
     } catch (error) {
